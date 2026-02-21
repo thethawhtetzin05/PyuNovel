@@ -3,8 +3,8 @@ compatibility_date = "2024-02-08"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "pyunovel-database"
-database_id = "9eb2953e-d8ce-4046-b9c7-97e147984062"
+database_name = "pyunovel-db"
+database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 migrations_dir = "drizzle"
 
 # R2 Bucket Local Setup

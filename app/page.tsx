@@ -1,7 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { headers } from 'next/headers';
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getNovels, getTotalNovelsCount, getTopNovelsByViews } from '../lib/resources/novels/queries';
 import { drizzle } from 'drizzle-orm/d1';
@@ -13,58 +12,26 @@ export const runtime = 'edge';
 
 type Novel = typeof novels.$inferSelect;
 
-export default async function Home(props: { searchParams: Promise<{ page?: string }> }) {
-  // MUST force dynamic rendering for proper Cloudflare Edge execution in Next 15
-  await headers();
+export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams;
+  const currentPage = Number(params.page) || 1;
+  const limits = 20;
+
+  const { env } = getRequestContext();
+  const db = drizzle(env.DB);
 
   let allNovels: Novel[] = [];
   let totalNovels = 0;
   let spotlightNovels: Novel[] = [];
-  let dbError = false;
-  let currentPage = 1;
 
   try {
-    const params = await props.searchParams;
-    currentPage = Number(params?.page) || 1;
-    const limits = 20;
-
-    const { env } = getRequestContext();
-
-    // Guard against missing DB binding on Cloudflare Pages
-    if (!env || !env.DB) {
-      dbError = true;
-    } else {
-      const db = drizzle(env.DB);
-      [allNovels, totalNovels, spotlightNovels] = await Promise.all([
-        getNovels(db, currentPage, limits),
-        getTotalNovelsCount(db),
-        getTopNovelsByViews(db, 6),
-      ]);
-    }
+    [allNovels, totalNovels, spotlightNovels] = await Promise.all([
+      getNovels(db, currentPage, limits),
+      getTotalNovelsCount(db),
+      getTopNovelsByViews(db, 6),
+    ]);
   } catch (error) {
-    console.error("Home Page Data Fetch Error:", error);
-    dbError = true;
-  }
-
-  if (dbError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--background)] text-[var(--foreground)] p-4">
-        <div className="max-w-md w-full bg-[var(--surface)] border border-red-500/50 rounded-2xl p-6 text-center space-y-4 shadow-xl">
-          <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <h1 className="text-xl font-bold text-[var(--foreground)]">Runtime Connection Error</h1>
-          <p className="text-sm text-[var(--text-muted)]">
-            Failed to process database or environment variables on the Cloudflare Edge Node.
-          </p>
-          <p className="text-xs text-[var(--text-muted)] pt-2 border-t border-[var(--border)]">
-            Ensure that your D1 database binding is named exactly <strong>DB</strong> in Cloudflare settings.
-          </p>
-        </div>
-      </div>
-    );
+    console.error("Database Connection Error:", error);
   }
 
   const latestNovels = allNovels.slice(0, 18);
