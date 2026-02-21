@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { headers } from 'next/headers';
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getNovels, getTotalNovelsCount, getTopNovelsByViews } from '../lib/resources/novels/queries';
 import { drizzle } from 'drizzle-orm/d1';
@@ -13,6 +14,9 @@ export const runtime = 'edge';
 type Novel = typeof novels.$inferSelect;
 
 export default async function Home(props: { searchParams: Promise<{ page?: string }> }) {
+  // MUST force dynamic rendering for proper Cloudflare Edge execution in Next 15
+  await headers();
+
   let allNovels: Novel[] = [];
   let totalNovels = 0;
   let spotlightNovels: Novel[] = [];
