@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import { useSession, signOut } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,18 @@ export default function Navbar() {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setIsProfileOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setIsProfileOpen(false);
+    }, 300); // 300ms delay before it disappears
+  };
 
   const { data: session, isPending } = useSession();
   const router = useRouter();
@@ -113,8 +125,8 @@ export default function Navbar() {
               ) : session ? (
                 <div
                   className="relative"
-                  onMouseEnter={() => setIsProfileOpen(true)}
-                  onMouseLeave={() => setIsProfileOpen(false)}
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
                 >
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}

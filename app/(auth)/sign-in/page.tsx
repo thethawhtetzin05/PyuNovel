@@ -30,35 +30,35 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-        
+    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4">
+      <div className="max-w-md w-full bg-[var(--surface)] p-8 rounded-2xl shadow-sm border border-[var(--border)]">
+
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Welcome Back 👋</h1>
-          <p className="text-gray-500 mt-2">Sign in to continue to Aladdin.</p>
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">Welcome Back 👋</h1>
+          <p className="mt-2 text-[var(--text-muted)]">Sign in to continue to PyuNovel.</p>
         </div>
 
         <div className="space-y-4">
           {/* Email Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border px-4 py-2 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full border border-[var(--border)] bg-[var(--surface-2)] text-[var(--foreground)] px-4 py-2 rounded-xl focus:border-[var(--action)] focus:ring-1 focus:ring-[var(--action)] outline-none transition-colors placeholder:text-[var(--text-muted)]"
               placeholder="hello@example.com"
             />
           </div>
 
           {/* Password Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border px-4 py-2 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full border border-[var(--border)] bg-[var(--surface-2)] text-[var(--foreground)] px-4 py-2 rounded-xl focus:border-[var(--action)] focus:ring-1 focus:ring-[var(--action)] outline-none transition-colors placeholder:text-[var(--text-muted)]"
               placeholder="••••••••"
             />
           </div>
@@ -67,15 +67,15 @@ export default function SignInPage() {
           <button
             onClick={handleSignIn}
             disabled={loading}
-            className="w-full bg-black text-white py-2.5 rounded-xl font-bold hover:bg-gray-800 transition-all disabled:opacity-50"
+            className="w-full bg-[var(--action)] text-white py-2.5 rounded-xl font-bold hover:bg-[var(--action-hover)] transition-all shadow-md disabled:opacity-50"
           >
             {loading ? "Signing In..." : "Sign In"}
           </button>
         </div>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
+        <div className="mt-6 text-center text-sm text-[var(--text-muted)]">
           Don't have an account?{" "}
-          <Link href="/sign-up" className="text-indigo-600 font-semibold hover:underline">
+          <Link href="/sign-up" className="text-[var(--action)] font-semibold hover:underline">
             Sign up
           </Link>
         </div>

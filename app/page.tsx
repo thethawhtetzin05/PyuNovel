@@ -7,12 +7,14 @@ import { drizzle } from 'drizzle-orm/d1';
 import { novels } from "@/db/schema";
 import CinematicHero from '@/components/CinematicHero';
 import ContinueReadingBanner from '@/components/ContinueReading';
+import { headers } from 'next/headers';
 
 export const runtime = 'edge';
 
 type Novel = typeof novels.$inferSelect;
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  await headers(); // Force dynamic rendering on edge
   const params = await searchParams;
   const currentPage = Number(params.page) || 1;
   const limits = 20;
