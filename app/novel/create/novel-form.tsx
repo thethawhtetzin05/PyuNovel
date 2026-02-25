@@ -101,14 +101,37 @@ export default function NovelForm({
 
       {/* English Title */}
       <div>
-        <label className="block text-sm font-bold text-[var(--foreground)] mb-1">English Title (URL Slug)</label>
+        <div className="flex justify-between items-center mb-1">
+          <label className="block text-sm font-bold text-[var(--foreground)]">English Title (URL Slug)</label>
+          <span className={`text-[11px] font-medium ${(initialData?.englishTitle?.length || 0) > 100 ? 'text-red-500' : 'text-[var(--text-muted)]'
+            }`}>
+            {initialData?.englishTitle?.length || 0} / 100
+          </span>
+        </div>
         <input
           name="englishTitle"
           required
           defaultValue={initialData?.englishTitle}
           placeholder="e.g. solo-leveling"
+          onChange={(e) => {
+            const count = e.target.value.length;
+            const counter = e.target.previousElementSibling?.querySelector('span');
+            if (counter) {
+              counter.textContent = `${count} / 100`;
+              if (count > 100) {
+                counter.classList.add('text-red-500');
+                counter.classList.remove('text-[var(--text-muted)]');
+              } else {
+                counter.classList.remove('text-red-500');
+                counter.classList.add('text-[var(--text-muted)]');
+              }
+            }
+          }}
           className="w-full border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--action)] focus:border-transparent outline-none transition-shadow"
         />
+        <p className="text-[11px] text-[var(--text-muted)] mt-1 pl-1">
+          * စာလုံးရေ ၁၀၀ ထက် ကျော်သွားပါက Slug ကို အလိုလို ဖြတ်တောက်ပါမည်။
+        </p>
       </div>
 
       {/* 👇 Tags (အသစ်ထည့်ထားသော အပိုင်း) */}
