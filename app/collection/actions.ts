@@ -38,6 +38,7 @@ export async function toggleCollectionAction(novelId: number, pathToRevalidate: 
         }
 
         revalidatePath(pathToRevalidate);
+        revalidatePath('/collection');
         return { success: true, isCollected: !isCollected };
     } catch (error) {
         console.error("Toggle collection error:", error);

@@ -4,8 +4,8 @@ import { headers } from "next/headers";
 import { redirect, notFound } from 'next/navigation';
 import { updateChapterAction } from './actions';
 import { drizzle } from 'drizzle-orm/d1';
-import { chapters } from '@/db/schema'; // Import Schema
-import { eq } from 'drizzle-orm';
+import { chapters, novels } from '@/db/schema'; // Import Schema
+import { eq, and } from 'drizzle-orm';
 import ChapterForm from '../../create/chapter-form';
 
 export const runtime = 'edge';
@@ -20,8 +20,16 @@ export default async function EditChapterPage({ params }: { params: Promise<{ sl
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/sign-in');
 
-  // Chapter Data ဆွဲထုတ်မယ်
-  const chapter = await db.select().from(chapters).where(eq(chapters.id, parseInt(chapterId, 10))).get();
+  // Chapter Data ဆွဲထုတ်မယ် (Sort Index နဲ့ Novel ID ကို သုံးပြီး ရှာမယ်)
+  const novel = await db.select({ id: novels.id }).from(novels).where(eq(novels.slug, slug)).get();
+  if (!novel) notFound();
+
+  const chapter = await db.select().from(chapters).where(
+    and(
+      eq(chapters.novelId, novel.id),
+      eq(chapters.sortIndex, parseFloat(chapterId))
+    )
+  ).get();
 
   if (!chapter) notFound();
 

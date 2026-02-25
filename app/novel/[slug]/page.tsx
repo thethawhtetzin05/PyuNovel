@@ -207,10 +207,8 @@ export default async function NovelDetailsPage({ params }: Props) {
       <div className="mt-16 border-t border-gray-100 pt-8">
         <NovelTabs
           novelSlug={novel.slug}
-          // ❗ String အဖြစ် ပြောင်းပို့ပေးတယ်
-          novelId={novel.id.toString()}
+          novelId={novel.id}
           description={novel.description || ''}
-          // ❗ String IDs နဲ့ ပြင်ထားတဲ့ chapters ကိုပို့တယ်
           chapters={formattedChapters}
           isOwner={isOwner}
         />
