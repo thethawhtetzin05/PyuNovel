@@ -2,8 +2,11 @@
 
 import { useRef, useState, useTransition } from 'react';
 import { Upload, X, FileText, Loader2, CheckCircle, AlertCircle, ChevronDown } from 'lucide-react';
-import { bulkUploadChaptersAction, BulkUploadResult } from './bulk-upload-action';
 import { parseChaptersFromText, ParsedChapter } from '@/lib/utils';
+
+type BulkUploadResult =
+    | { success: true; count: number }
+    | { success: false; error: string };
 
 interface BulkUploadModalProps {
     novelId: number;
@@ -56,12 +59,30 @@ export default function BulkUploadModal({ novelId, novelSlug, onClose }: BulkUpl
         if (!preview || preview.length === 0) return;
 
         startTransition(async () => {
-            const res = await bulkUploadChaptersAction(novelId, novelSlug, preview);
-            setResult(res);
-            if (res.success) {
-                setPreview(null);
-                setFileName('');
-                if (fileRef.current) fileRef.current.value = '';
+            try {
+                const response = await fetch(`/api/novel/${novelSlug}/bulk-upload`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        novelId,
+                        chapters: preview
+                    }),
+                });
+
+                const res = await response.json() as { success: boolean; count?: number; error?: string };
+
+                setResult(res.success
+                    ? { success: true, count: res.count || 0 }
+                    : { success: false, error: res.error || 'Unknown error' }
+                );
+
+                if (res.success) {
+                    setPreview(null);
+                    setFileName('');
+                    if (fileRef.current) fileRef.current.value = '';
+                }
+            } catch (err: any) {
+                setResult({ success: false, error: `Upload failed: ${err.message}` });
             }
         });
     };
