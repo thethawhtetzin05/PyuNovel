@@ -40,9 +40,13 @@ export async function toggleCollectionAction(novelId: number, pathToRevalidate: 
         revalidatePath(pathToRevalidate);
         revalidatePath('/collection');
         return { success: true, isCollected: !isCollected };
-    } catch (error) {
-        console.error("Toggle collection error:", error);
-        return { success: false, error: "Failed to update collection" };
+    } catch (error: any) {
+        console.error("Toggle collection error details:", {
+            error: error?.message || error,
+            novelId,
+            pathToRevalidate
+        });
+        return { success: false, error: "Failed to update collection. Please try again later." };
     }
 }
 

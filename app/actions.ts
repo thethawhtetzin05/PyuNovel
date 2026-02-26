@@ -1,10 +1,10 @@
 'use server';
 
 import { getRequestContext } from '@cloudflare/next-on-pages';
-import { createNovel } from '@/lib/resources/novels/mutations'; 
+import { createNovel } from '@/lib/resources/novels/mutations';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { z } from 'zod'; 
+import { z } from 'zod';
 
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from "@/db/schema";
@@ -28,11 +28,11 @@ export async function addNovelAction(formData: FormData) {
   // ၂။ User Session ကို ယူပါ
   const auth = createAuth(env.DB);
   const session = await auth.api.getSession({
-      headers: await headers()
+    headers: await headers()
   });
 
   if (!session) {
-      throw new Error("Unauthorized: Please login first");
+    throw new Error("Unauthorized: Please login first");
   }
 
   // ၃။ Form Data များကို ဘေးကင်းလုံခြုံစွာ ရယူခြင်း (null ဖြစ်မသွားအောင် ကာကွယ်ထားတယ်)
@@ -57,13 +57,13 @@ export async function addNovelAction(formData: FormData) {
   // ၅။ Tag များကို သန့်ရှင်းရေးလုပ်ခြင်း
   const processedTags = data.tags
     ? data.tags.split(',')
-        .map(tag => tag.trim()) 
-        .filter(tag => tag.length > 0) 
-        .map(tag => {
-           const lower = tag.toLowerCase();
-           return lower.charAt(0).toUpperCase() + lower.slice(1);
-        })
-        .join(', ')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0)
+      .map(tag => {
+        const lower = tag.toLowerCase();
+        return lower.charAt(0).toUpperCase() + lower.slice(1);
+      })
+      .join(', ')
     : '';
 
   // ၆။ Database ထဲ ထည့်ခြင်း
@@ -71,17 +71,17 @@ export async function addNovelAction(formData: FormData) {
     await createNovel(db, session.user.id, {
       title: data.title,
       author: data.author,
-      description: data.description || '', 
+      description: data.description || '',
       tags: processedTags,
-      
+
       englishTitle: data.englishTitle, // 👈 Zod ကနေ စစ်ပြီးသား data ကို သုံးလိုက်ပြီ
-      imageUrl: null,      
-      status: "ongoing",   
+      imageUrl: null,
+      status: "ongoing",
     });
 
     // Cache ရှင်းမယ်
     revalidatePath('/');
-    
+
   } catch (error) {
     console.error("Database Error:", error);
     throw new Error("Failed to create novel. Please try again.");
