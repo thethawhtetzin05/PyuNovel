@@ -46,28 +46,34 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, initialData
       const sortIndex = formData.get("sortIndex");
 
       const endpoint = initialData ? '/api/novel/chapter/edit' : '/api/novel/chapter/create';
-      const body = initialData
-        ? formData
-        : JSON.stringify({
-          novelId,
-          novelSlug: slug,
-          title,
-          content,
-          sortIndex,
-          isPaid
-        });
-
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: initialData ? {} : { 'Content-Type': 'application/json' },
-        body: body,
+        body: initialData
+          ? (() => {
+            formData.set("content", contentRef.current);
+            return formData;
+          })()
+          : JSON.stringify({
+            novelId,
+            novelSlug: slug,
+            title,
+            content,
+            sortIndex,
+            isPaid
+          }),
       });
 
       const res = await response.json() as { success: boolean; sortIndex?: number; error?: string };
       if (res.success) {
-        const finalSortIndex = res.sortIndex || sortIndex;
-        router.push(`/novel/${slug}/${finalSortIndex}`);
-        router.refresh();
+        // Edit mode ဆိုရင် novel page ကို ပြန်သွားမယ်၊ Create mode ဆိုရင် အခန်းထဲ တန်းဝင်မယ်
+        if (initialData) {
+          router.push(`/novel/${slug}`);
+        } else {
+          const finalSortIndex = res.sortIndex || sortIndex;
+          router.push(`/novel/${slug}/${finalSortIndex}`);
+        }
+        router.refresh(); // ဒေတာအသစ်ပေါ်အောင် refresh လုပ်ပေးမယ်
       } else {
         alert(res.error || "Failed to save chapter");
       }

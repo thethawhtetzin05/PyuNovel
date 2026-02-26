@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Pencil, Trash2, Crown, ChevronRight, Calendar, UploadCloud } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -30,7 +31,7 @@ export default function NovelTabs({
   chapters,
   isOwner = false
 }: NovelTabsProps) {
-
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'about' | 'chapters'>('about');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
@@ -47,7 +48,11 @@ export default function NovelTabs({
           body: JSON.stringify({ chapterId, novelSlug }),
         });
         const res = await response.json() as { success: boolean; error?: string };
-        if (!res.success) alert(res.error || "Failed to delete chapter");
+        if (res.success) {
+          router.refresh();
+        } else {
+          alert(res.error || "Failed to delete chapter");
+        }
       } catch (error) {
         alert("Failed to delete chapter");
       } finally {

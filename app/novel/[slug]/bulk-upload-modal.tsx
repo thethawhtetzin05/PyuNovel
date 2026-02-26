@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Upload, X, FileText, Loader2, CheckCircle, AlertCircle, ChevronDown } from 'lucide-react';
 import { parseChaptersFromText, ParsedChapter } from '@/lib/utils';
 
@@ -15,6 +16,7 @@ interface BulkUploadModalProps {
 }
 
 export default function BulkUploadModal({ novelId, novelSlug, onClose }: BulkUploadModalProps) {
+    const router = useRouter();
     const fileRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<ParsedChapter[] | null>(null);
     const [fileName, setFileName] = useState<string>('');
@@ -79,6 +81,7 @@ export default function BulkUploadModal({ novelId, novelSlug, onClose }: BulkUpl
                     setPreview(null);
                     setFileName('');
                     if (fileRef.current) fileRef.current.value = '';
+                    router.refresh(); // Data အသစ်တွေ ပေါ်လာအောင် refresh လုပ်မယ်
                 }
             } catch (err: any) {
                 setResult({ success: false, error: `Upload failed: ${err.message}` });

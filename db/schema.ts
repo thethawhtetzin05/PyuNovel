@@ -87,6 +87,9 @@ export const novels = sqliteTable('novels', {
 }, (table) => ({
   ownerIdx: index('owner_idx').on(table.ownerId),
   slugIdx: index('slug_idx').on(table.slug),
+  createdAtIdx: index('novels_created_at_idx').on(table.createdAt),
+  updatedAtIdx: index('novels_updated_at_idx').on(table.updatedAt),
+  viewsIdx: index('novels_views_idx').on(table.views),
 }));
 
 export const chapters = sqliteTable('chapters', {
