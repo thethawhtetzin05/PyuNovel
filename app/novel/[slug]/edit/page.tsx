@@ -4,7 +4,6 @@ import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect, notFound } from 'next/navigation';
 import NovelForm from '../../create/novel-form'; // Reused Form
-import { updateNovelAction } from './actions'; // Update Action
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from "@/db/schema";
 

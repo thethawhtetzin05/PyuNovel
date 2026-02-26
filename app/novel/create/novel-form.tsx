@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // ✅ Props လက်ခံနိုင်အောင် Interface ဆောက်လိုက်ပါတယ်
 interface NovelFormProps {
@@ -11,20 +12,46 @@ interface NovelFormProps {
     englishTitle: string;
     description: string | null;
     coverUrl: string | null;
-    tags?: string | null; // 👈 Edit လုပ်တဲ့အခါ Tag အဟောင်းတွေ ပြန်ပေါ်အောင် ထည့်ထားပါသည်
+    tags?: string | null;
   };
-  action: (formData: FormData) => void; // Server Action ကို အပြင်ကနေ လှမ်းပို့ရမယ်
-  submitLabel?: string; // ခလုတ်စာသား (Create Novel vs Save Changes)
+  action?: (formData: FormData) => void; // Create mode အတွက် legacy support
+  submitLabel?: string;
 }
 
 export default function NovelForm({
   initialData,
-  action,
   submitLabel = "Create Novel"
 }: NovelFormProps) {
-
-  // Preview ကို initialData ရှိရင် ရှိတဲ့ပုံပြမယ်၊ မရှိရင် null
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [preview, setPreview] = useState<string | null>(initialData?.coverUrl || null);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    if (!initialData) return; // Only handle edit mode here for now
+
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const formData = new FormData(e.currentTarget);
+      const response = await fetch('/api/novel/edit', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const res = await response.json() as { success: boolean; slug?: string; error?: string };
+      if (res.success && res.slug) {
+        router.push(`/novel/${res.slug}`);
+        router.refresh();
+      } else {
+        alert(res.error || "Failed to update novel");
+      }
+    } catch (error) {
+      alert("An error occurred while updating the novel");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -35,8 +62,12 @@ export default function NovelForm({
   };
 
   return (
-    // ✅ action prop ကို သုံးထားပါတယ် (createNovelAction တိုက်ရိုက်မခေါ်တော့ပါ)
-    <form action={action} className="space-y-6 bg-[var(--surface)] p-8 rounded-2xl shadow-sm border border-[var(--border)]">
+    <form
+      onSubmit={initialData ? handleSubmit : undefined}
+      action={!initialData ? "/api/novel/create" : undefined} // TODO: Create API route if needed
+      method="POST"
+      className="space-y-6 bg-[var(--surface)] p-8 rounded-2xl shadow-sm border border-[var(--border)]"
+    >
 
       {/* ✅ Edit Mode ဆိုရင် ID နဲ့ Old Image URL ကို Hidden Input အနေနဲ့ ထည့်ပေးရမယ် */}
       {initialData && (
@@ -169,8 +200,12 @@ export default function NovelForm({
           Cancel
         </Link>
 
-        <button type="submit" className="btn-primary w-full sm:w-auto px-8 py-2.5 rounded-xl font-bold transition-transform active:scale-95 text-center">
-          {submitLabel}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="btn-primary w-full sm:w-auto px-8 py-2.5 rounded-xl font-bold transition-transform active:scale-95 text-center disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? "Saving..." : submitLabel}
         </button>
       </div>
 

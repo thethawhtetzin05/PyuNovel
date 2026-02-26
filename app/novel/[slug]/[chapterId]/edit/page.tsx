@@ -2,7 +2,6 @@ import { getRequestContext } from '@cloudflare/next-on-pages';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect, notFound } from 'next/navigation';
-import { updateChapterAction } from './actions';
 import { drizzle } from 'drizzle-orm/d1';
 import { chapters, novels } from '@/db/schema'; // Import Schema
 import { eq, and } from 'drizzle-orm';

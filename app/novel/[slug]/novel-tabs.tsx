@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Pencil, Trash2, Crown, ChevronRight, Calendar, UploadCloud } from 'lucide-react';
-import { deleteChapterAction } from './[chapterId]/actions';
 import dynamic from 'next/dynamic';
 
 const BulkUploadModal = dynamic(() => import('./bulk-upload-modal'), { ssr: false });
@@ -38,12 +37,17 @@ export default function NovelTabs({
 
   const handleDelete = async (e: React.MouseEvent, chapterId: string) => {
     e.preventDefault();
-    // e.stopPropagation(); // Link ထဲမှာ မဟုတ်တော့လို့ ဒါမလိုတော့ပါဘူး
 
     if (confirm("Are you sure you want to delete this chapter? This action cannot be undone.")) {
       setIsDeleting(chapterId);
       try {
-        await deleteChapterAction(chapterId, novelSlug);
+        const response = await fetch('/api/novel/chapter/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chapterId, novelSlug }),
+        });
+        const res = await response.json() as { success: boolean; error?: string };
+        if (!res.success) alert(res.error || "Failed to delete chapter");
       } catch (error) {
         alert("Failed to delete chapter");
       } finally {
