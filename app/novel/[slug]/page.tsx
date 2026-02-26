@@ -14,6 +14,7 @@ import * as schema from "@/db/schema"; // 👈 Schema import လုပ်ထာ�
 import type { Metadata, ResolvingMetadata } from 'next';
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 type Props = {
   params: Promise<{ slug: string }>
