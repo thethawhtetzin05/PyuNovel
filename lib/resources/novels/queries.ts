@@ -56,3 +56,23 @@ export async function getNovelsByUserId(db: DrizzleD1Database<Record<string, unk
     .orderBy(desc(novels.createdAt))
     .all();
 }
+
+// ၅။ Ranking Page - အသစ်ထွက် ဝတ္ထုများ
+export const getLatestNovels = cache(async (db: DrizzleD1Database<Record<string, unknown>>, limit: number = 20) => {
+  return await db
+    .select()
+    .from(novels)
+    .orderBy(desc(novels.createdAt))
+    .limit(limit)
+    .all();
+});
+
+// ၆။ Ranking Page - Update အဖြစ်ဆုံး ဝတ္ထုများ
+export const getRecentlyUpdatedNovels = cache(async (db: DrizzleD1Database<Record<string, unknown>>, limit: number = 20) => {
+  return await db
+    .select()
+    .from(novels)
+    .orderBy(desc(novels.updatedAt))
+    .limit(limit)
+    .all();
+});
