@@ -5,6 +5,7 @@ import Sidebar from "./Sidebar";
 import { useSession, signOut } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import ThemeSwitcher from "./theme-switcher";
+import ReportModal from "./ReportModal";
 
 export default function Navbar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
