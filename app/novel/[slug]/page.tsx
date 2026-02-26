@@ -7,6 +7,7 @@ import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import NovelTabs from './novel-tabs';
 import CollectButton from './collect-button';
+import { testAction } from '@/app/test-action';
 import Link from 'next/link';
 import Image from 'next/image';
 import { drizzle } from 'drizzle-orm/d1';

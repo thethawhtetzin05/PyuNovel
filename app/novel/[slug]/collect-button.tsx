@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { toggleCollectionAction } from "@/app/collection/actions";
 
 interface Props {
     novelId: number;
@@ -18,14 +17,35 @@ export default function CollectButton({ novelId, initialCollected, slug }: Props
         setIsCollected(!isCollected);
 
         startTransition(async () => {
-            const result = await toggleCollectionAction(novelId, `/novel/${slug}`);
+            try {
+                const response = await fetch("/api/collection/toggle", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        novelId,
+                        pathToRevalidate: `/novel/${slug}`,
+                    }),
+                });
 
-            if (!result.success) {
-                // Revert on failure
+                const result = await response.json() as {
+                    success: boolean;
+                    isCollected?: boolean;
+                    error?: string;
+                };
+
+                if (!result.success) {
+                    // Revert on failure
+                    setIsCollected(isCollected);
+                    alert(result.error);
+                } else if (result.isCollected !== undefined) {
+                    setIsCollected(result.isCollected);
+                }
+            } catch (error) {
+                console.error("Fetch error:", error);
                 setIsCollected(isCollected);
-                alert(result.error);
-            } else if (result.isCollected !== undefined) {
-                setIsCollected(result.isCollected);
+                alert("Failed to update collection. Please try again.");
             }
         });
     };
@@ -35,8 +55,8 @@ export default function CollectButton({ novelId, initialCollected, slug }: Props
             onClick={handleToggle}
             disabled={isPending}
             className={`w-full sm:w-auto h-12 px-6 rounded-xl font-bold border hover:border-[var(--action)] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm ${isCollected
-                    ? "bg-[var(--surface)] text-[var(--action)] border-[var(--action)]"
-                    : "bg-[var(--surface-2)] text-[var(--foreground)] border-[var(--border)] hover:text-[var(--action)] hover:bg-[var(--surface)]"
+                ? "bg-[var(--surface)] text-[var(--action)] border-[var(--action)]"
+                : "bg-[var(--surface-2)] text-[var(--foreground)] border-[var(--border)] hover:text-[var(--action)] hover:bg-[var(--surface)]"
                 } ${isPending ? "opacity-70 cursor-not-allowed" : ""}`}
         >
             {isCollected ? (
