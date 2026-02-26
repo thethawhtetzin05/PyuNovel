@@ -49,7 +49,6 @@ export default async function EditNovelPage({ params }: { params: Promise<{ slug
       {/* Reusable Form ကို Update Action နဲ့ တွဲသုံးလိုက်ပါပြီ */}
       <NovelForm
         initialData={initialData}
-        action={updateNovelAction}
         submitLabel="Save Changes"
       />
     </div>

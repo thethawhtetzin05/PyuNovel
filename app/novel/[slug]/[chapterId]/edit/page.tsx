@@ -50,7 +50,6 @@ export default async function EditChapterPage({ params }: { params: Promise<{ sl
       <ChapterForm
         initialData={initialData}
         slug={slug}
-        saveAction={updateChapterAction}
       />
     </div>
   );
