@@ -27,27 +27,28 @@ export default function NovelForm({
   const [preview, setPreview] = useState<string | null>(initialData?.coverUrl || null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    if (!initialData) return; // Only handle edit mode here for now
-
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
       const formData = new FormData(e.currentTarget);
-      const response = await fetch('/api/novel/edit', {
+      const endpoint = initialData ? '/api/novel/edit' : '/api/novel/create';
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
       });
 
       const res = await response.json() as { success: boolean; slug?: string; error?: string };
       if (res.success && res.slug) {
+        // success ရရင် detail page ကိုသွားမယ် (Edit ရော Create ရော အတူတူပဲ)
         router.push(`/novel/${res.slug}`);
         router.refresh();
       } else {
-        alert(res.error || "Failed to update novel");
+        alert(res.error || "Failed to save novel");
       }
     } catch (error) {
-      alert("An error occurred while updating the novel");
+      alert("An error occurred while saving the novel");
     } finally {
       setIsSubmitting(false);
     }
@@ -63,8 +64,7 @@ export default function NovelForm({
 
   return (
     <form
-      onSubmit={initialData ? handleSubmit : undefined}
-      action={!initialData ? "/api/novel/create" : undefined} // TODO: Create API route if needed
+      onSubmit={handleSubmit}
       method="POST"
       className="space-y-6 bg-[var(--surface)] p-8 rounded-2xl shadow-sm border border-[var(--border)]"
     >

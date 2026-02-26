@@ -3,7 +3,6 @@ import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from 'next/navigation';
 import NovelForm from './novel-form'; // Client Component ကို ခေါ်သုံးမယ်
-import { createNovelAction } from './actions';
 
 export const runtime = 'edge';
 
@@ -27,7 +26,6 @@ export default async function CreateNovelPage() {
 
       {/* Form ကို သပ်သပ်ခွဲထုတ်လိုက်တဲ့အတွက် ကုဒ်က ရှင်းသွားပါပြီ */}
       <NovelForm
-        action={createNovelAction}
         submitLabel="Create Novel"
       />
 

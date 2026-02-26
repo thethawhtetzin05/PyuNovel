@@ -15,6 +15,7 @@ const Editor = dynamic(() => import("@/components/Editor"), {
 // ✅ Props Interface သတ်မှတ်ခြင်း (Edit အတွက် initialData ထပ်ဖြည့်ထားသည်)
 interface ChapterFormProps {
   slug: string;
+  novelId: number;
   suggestedIndex?: number;
   initialData?: {
     id: string;
@@ -26,7 +27,7 @@ interface ChapterFormProps {
   saveAction?: (formData: FormData) => Promise<void>; // Create mode အတွက် legacy support
 }
 
-export default function ChapterForm({ slug, suggestedIndex, initialData }: ChapterFormProps) {
+export default function ChapterForm({ slug, novelId, suggestedIndex, initialData }: ChapterFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -34,29 +35,44 @@ export default function ChapterForm({ slug, suggestedIndex, initialData }: Chapt
   const contentRef = useRef(initialData?.content || "");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    if (!initialData) return; // Only handle edit mode here for now
-
     e.preventDefault();
     setLoading(true);
 
     try {
       const formData = new FormData(e.currentTarget);
-      formData.set("content", contentRef.current);
+      const content = contentRef.current;
+      const isPaid = formData.get("isPaid") === "on";
+      const title = formData.get("title") as string;
+      const sortIndex = formData.get("sortIndex");
 
-      const response = await fetch('/api/novel/chapter/edit', {
+      const endpoint = initialData ? '/api/novel/chapter/edit' : '/api/novel/chapter/create';
+      const body = initialData
+        ? formData
+        : JSON.stringify({
+          novelId,
+          novelSlug: slug,
+          title,
+          content,
+          sortIndex,
+          isPaid
+        });
+
+      const response = await fetch(endpoint, {
         method: 'POST',
-        body: formData,
+        headers: initialData ? {} : { 'Content-Type': 'application/json' },
+        body: body,
       });
 
-      const res = await response.json() as { success: boolean; error?: string };
+      const res = await response.json() as { success: boolean; sortIndex?: number; error?: string };
       if (res.success) {
-        router.push(`/novel/${slug}`);
+        const finalSortIndex = res.sortIndex || sortIndex;
+        router.push(`/novel/${slug}/${finalSortIndex}`);
         router.refresh();
       } else {
-        alert(res.error || "Failed to update chapter");
+        alert(res.error || "Failed to save chapter");
       }
     } catch (error) {
-      alert("An error occurred while updating the chapter");
+      alert("An error occurred while saving the chapter");
     } finally {
       setLoading(false);
     }
@@ -64,12 +80,11 @@ export default function ChapterForm({ slug, suggestedIndex, initialData }: Chapt
 
   return (
     <form
-      onSubmit={initialData ? handleSubmit : undefined}
-      action={!initialData ? `/api/novel/chapter/create` : undefined} // TODO: Create API route if needed
+      onSubmit={handleSubmit}
       className="min-h-screen bg-white"
     >
 
-      {/* ✅ Edit Mode ဆိုရင် ID ကို Hidden Input အနေနဲ့ ထည့်ပေးရမယ် */}
+      {/* ✅ Edit Mode ဆိုရင် ID ကို Hidden Input အနေနဲ့ ထည့်ပေးပေးရမယ် */}
       {initialData && <input type="hidden" name="chapterId" value={initialData.id} />}
       <input type="hidden" name="novelSlug" value={slug} />
 
