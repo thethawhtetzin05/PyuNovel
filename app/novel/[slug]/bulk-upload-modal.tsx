@@ -37,13 +37,12 @@ export default function BulkUploadModal({ novelId, novelSlug, onClose }: BulkUpl
                 const res = await mammoth.extractRawText({ arrayBuffer });
                 const text = res.value;
                 console.log("DEBUG: Extracted text from .docx", text.slice(0, 500));
-                // preview အတွက် raw text ပဲယူမယ် (HTML tag တွေမပါစေဖို့)
-                const parsed = parseChaptersFromText(text, false);
+                const parsed = parseChaptersFromText(text, true);
                 setPreview(parsed);
             } else if (file.name.endsWith('.txt')) {
                 const text = await file.text();
-                // preview အတွက် raw text ပဲယူမယ်
-                const parsed = parseChaptersFromText(text, false);
+                // preview အတွက် HTML format နဲ့ယူမယ် (Formatting preserve လုပ်ဖို့)
+                const parsed = parseChaptersFromText(text, true);
                 setPreview(parsed);
             } else {
                 setPreview(null);
