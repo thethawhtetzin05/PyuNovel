@@ -37,7 +37,7 @@ export default function RankingSpotlight({ novels }: Props) {
     };
 
     return (
-        <div className="flex flex-col md:flex-row items-end justify-center gap-6 md:gap-4 lg:gap-8 py-12 px-4">
+        <div className="flex flex-col md:flex-row items-center md:items-end justify-center gap-10 md:gap-4 lg:gap-8 py-12 px-4">
             {spotlight.map((novel) => {
                 const actualRank = novels.indexOf(novel) + 1;
                 const isFirst = actualRank === 1;
@@ -46,7 +46,7 @@ export default function RankingSpotlight({ novels }: Props) {
                     <Link
                         key={novel.slug}
                         href={`/novel/${novel.slug}`}
-                        className={`group flex flex-col items-center transition-all duration-500 ${isFirst ? 'order-1 md:order-2 mb-4 md:mb-8' : actualRank === 2 ? 'order-2 md:order-1' : 'order-3'}`}
+                        className={`group flex flex-col items-center transition-all duration-500 ${isFirst ? 'order-1 md:order-2 md:mb-8' : actualRank === 2 ? 'order-2 md:order-1' : 'order-3'}`}
                     >
                         <div className={`relative w-[140px] md:w-[160px] lg:w-[200px] aspect-[2/3] rounded-2xl overflow-hidden bg-[var(--surface-2)] border-2 transition-transform group-hover:-translate-y-2 ${getRankStyles(actualRank)}`}>
                             {novel.coverUrl ? (
