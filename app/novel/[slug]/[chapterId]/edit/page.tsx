@@ -3,25 +3,35 @@ import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect, notFound } from 'next/navigation';
 import { drizzle } from 'drizzle-orm/d1';
-import { chapters, novels } from '@/db/schema'; // Import Schema
+import * as schema from "@/db/schema";
+const { chapters, novels } = schema;
 import { eq, and } from 'drizzle-orm';
 import ChapterForm from '../../create/chapter-form';
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 export default async function EditChapterPage({ params }: { params: Promise<{ slug: string, chapterId: string }> }) {
   const { slug, chapterId } = await params;
   const { env } = getRequestContext();
-  const db = drizzle(env.DB);
+  const db = drizzle(env.DB, { schema });
 
   // Auth Check
   const auth = createAuth(env.DB);
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect('/sign-in');
 
   // Chapter Data ဆွဲထုတ်မယ် (Sort Index နဲ့ Novel ID ကို သုံးပြီး ရှာမယ်)
-  const novel = await db.select({ id: novels.id }).from(novels).where(eq(novels.slug, slug)).get();
+  const novel = await db.select({
+    id: novels.id,
+    ownerId: novels.ownerId
+  }).from(novels).where(eq(novels.slug, slug)).get();
+
   if (!novel) notFound();
+
+  // ပိုင်ရှင်ဖြစ်ကြောင်း စစ်ဆေးမယ်
+  if (!session || session.user.id !== novel.ownerId) {
+    redirect('/sign-in');
+  }
 
   const chapter = await db.select().from(chapters).where(
     and(

@@ -8,6 +8,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import * as schema from "@/db/schema";
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 export default async function EditNovelPage({ params }: { params: Promise<{ slug: string }> }) {
   const { env } = getRequestContext();
