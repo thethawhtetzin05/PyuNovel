@@ -17,7 +17,7 @@ export type BulkUploadResult =
 export async function bulkUploadChaptersAction(
     novelId: number,
     novelSlug: string,
-    rawText: string
+    parsedChapters: { title: string; content: string }[]
 ): Promise<BulkUploadResult> {
     const { env } = getRequestContext();
     const db = drizzle(env.DB, { schema });
@@ -31,16 +31,7 @@ export async function bulkUploadChaptersAction(
     });
     if (!novel) return { success: false, error: 'Novel not found or you do not own it.' };
 
-    if (!rawText || rawText.trim().length === 0) return { success: false, error: 'No content to upload.' };
-
-    // ၅။ Parse Chapters
-    const parsed = parseChaptersFromText(rawText);
-    if (parsed.length === 0) {
-        return {
-            success: false,
-            error: "Could not detect any chapters. Ensure each chapter starts with 'အခန်း (၁)' or use '---' / '***' / '====' as dividers.",
-        };
-    }
+    if (!parsedChapters || parsedChapters.length === 0) return { success: false, error: 'No chapters to upload.' };
 
     // ၆။ Last sortIndex ယူပြီး ဆက်ပေါင်းမယ်
     const lastIndexRow = await db
@@ -50,9 +41,9 @@ export async function bulkUploadChaptersAction(
         .get();
     const startIndex = (lastIndexRow?.val ?? 0) + 1;
 
-    // ၇။ Batch Insert (D1 သည် batch insert values() array ကို support လုပ်သည်)
+    // ၇။ Batch Insert with Chunking (D1 message size limits ရှောင်ဖို့)
     try {
-        const rows = parsed.map((ch, i) => ({
+        const rows = parsedChapters.map((ch, i) => ({
             novelId,
             title: ch.title,
             content: ch.content,
@@ -60,11 +51,19 @@ export async function bulkUploadChaptersAction(
             isPaid: false,
             createdAt: new Date(),
         }));
-        await db.insert(chapters).values(rows);
+
+        // Chunking: 50 rows per insert
+        const chunkSize = 50;
+        for (let i = 0; i < rows.length; i += chunkSize) {
+            const chunk = rows.slice(i, i + chunkSize);
+            await db.insert(chapters).values(chunk);
+        }
+
     } catch (e: any) {
+        console.error("Bulk upload DB error:", e);
         return { success: false, error: `Database error: ${e?.message ?? 'Unknown error'}` };
     }
 
     revalidatePath(`/novel/${novelSlug}`);
-    return { success: true, count: parsed.length };
+    return { success: true, count: parsedChapters.length };
 }

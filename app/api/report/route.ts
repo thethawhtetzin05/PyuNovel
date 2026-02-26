@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { sendTelegramMessage } from "@/lib/telegram";
+import { escapeHtml } from "@/lib/utils";
 
 export const runtime = 'edge';
 
@@ -18,11 +19,11 @@ export async function POST(request: NextRequest) {
 
         const formattedMessage = [
             `<b>🚨 New Error Report</b>`,
-            `<b>Message:</b> ${message}`,
+            `<b>Message:</b> ${escapeHtml(message)}`,
             url ? `<b>URL:</b> ${url}` : null,
-            userId ? `<b>User ID:</b> <code>${userId}</code>` : null,
-            userEmail ? `<b>Email:</b> ${userEmail}` : null,
-            stack ? `\n<b>Stack Trace:</b>\n<code>${stack.substring(0, 500)}...</code>` : null,
+            userId ? `<b>User ID:</b> <code>${escapeHtml(userId)}</code>` : null,
+            userEmail ? `<b>Email:</b> ${escapeHtml(userEmail)}` : null,
+            stack ? `\n<b>Stack Trace:</b>\n<code>${escapeHtml(stack.substring(0, 500))}...</code>` : null,
         ].filter(Boolean).join("\n");
 
         const result = await sendTelegramMessage(env, formattedMessage);

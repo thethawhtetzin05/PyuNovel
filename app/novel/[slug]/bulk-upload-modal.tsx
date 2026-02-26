@@ -55,16 +55,8 @@ export default function BulkUploadModal({ novelId, novelSlug, onClose }: BulkUpl
     const handleUpload = () => {
         if (!preview || preview.length === 0) return;
 
-        // Pass the already split chapters back to the server as a JSON string?
-        // No, let's keep the server action simple and send the combined text.
-        const getRawTextFromPreview = () => {
-            return preview.map(ch => `${ch.title}\n${ch.content}`).join('\n---\n');
-        };
-
-        const rawText = getRawTextFromPreview();
-
         startTransition(async () => {
-            const res = await bulkUploadChaptersAction(novelId, novelSlug, rawText);
+            const res = await bulkUploadChaptersAction(novelId, novelSlug, preview);
             setResult(res);
             if (res.success) {
                 setPreview(null);
