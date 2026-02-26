@@ -76,3 +76,18 @@ export const getRecentlyUpdatedNovels = cache(async (db: DrizzleD1Database<Recor
     .limit(limit)
     .all();
 });
+
+// ၇။ Search Function - ဝတ္ထုများကို ခေါင်းစဉ် သို့မဟုတ် စာရေးဆရာ နာမည်ဖြင့် ရှာဖွေခြင်း
+export const searchNovels = cache(async (db: DrizzleD1Database<Record<string, unknown>>, query: string, limit: number = 5) => {
+  if (!query.trim()) return [];
+
+  const searchPattern = `%${query}%`;
+  return await db
+    .select()
+    .from(novels)
+    .where(
+      sql`${novels.title} LIKE ${searchPattern} OR ${novels.author} LIKE ${searchPattern} OR ${novels.englishTitle} LIKE ${searchPattern}`
+    )
+    .limit(limit)
+    .all();
+});
