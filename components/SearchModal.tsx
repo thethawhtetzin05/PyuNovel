@@ -47,7 +47,7 @@ export default function SearchModal({ isOpen, onClose }: Props) {
             setIsLoading(true);
             try {
                 const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-                const data = await response.json();
+                const data = await response.json() as { success: boolean; results: Novel[] };
                 if (data.success) {
                     setResults(data.results);
                 }
