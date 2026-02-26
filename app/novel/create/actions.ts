@@ -8,6 +8,7 @@ import { redirect } from 'next/navigation';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from "@/db/schema";
 import { z } from 'zod';
+import { eq } from 'drizzle-orm';
 
 import { revalidatePath } from 'next/cache';
 
@@ -73,6 +74,14 @@ export async function createNovelAction(formData: FormData) {
       author: session.user.name || "Unknown Author",
       status: 'ongoing'
     });
+
+    // 🌟 Auto-upgrade Role to Writer if they are currently a Reader
+    if (newNovel && session.user.role === 'reader') {
+      await db.update(schema.user)
+        .set({ role: 'writer', updatedAt: new Date() })
+        .where(eq(schema.user.id, userId))
+        .run();
+    }
   } catch (e: any) {
     console.error("🔴 Error:", e);
     throw new Error("Failed to create novel: " + e.message);
