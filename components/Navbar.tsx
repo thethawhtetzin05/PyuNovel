@@ -9,6 +9,7 @@ import ThemeSwitcher from "./theme-switcher";
 export default function Navbar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -149,6 +150,16 @@ export default function Navbar() {
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
                           Profile
                         </Link>
+                        <button
+                          onClick={() => {
+                            setIsReportOpen(true);
+                            setIsProfileOpen(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-[var(--surface-2)] transition text-[var(--foreground)]"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+                          Report Issue
+                        </button>
                         <div className="border-t border-[var(--border)] my-1" />
                         <button onClick={handleSignOut} className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition">
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
@@ -172,6 +183,7 @@ export default function Navbar() {
       </nav>
 
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <ReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} />
     </>
   );
 }
