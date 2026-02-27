@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
-import { drizzle } from "drizzle-orm/d1";
-import * as schema from "@/db/schema";
-import { createAuth } from "@/lib/auth";
+import { getServerContext } from "@/lib/server-context";
 import { z } from "zod";
 import { volumes, chapters } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export const runtime = 'edge';
 
@@ -16,10 +13,7 @@ const deleteVolumeSchema = z.object({
 
 export async function POST(request: NextRequest) {
     try {
-        const { env } = getRequestContext();
-        const db = drizzle(env.DB, { schema });
-
-        const auth = createAuth(env.DB);
+        const { db, auth } = getServerContext();
         const session = await auth.api.getSession({ headers: request.headers });
 
         if (!session) {
@@ -38,7 +32,6 @@ export async function POST(request: NextRequest) {
 
         const data = validation.data;
 
-        // Verify ownership
         const novel = await db.query.novels.findFirst({
             where: (novels, { eq }) => eq(novels.id, data.novelId)
         });
@@ -47,7 +40,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
         }
 
-        // Verify volume exists and belongs to novel
         const volume = await db.query.volumes.findFirst({
             where: (volumes, { eq, and }) => and(eq(volumes.id, data.volumeId), eq(volumes.novelId, data.novelId))
         });
@@ -56,25 +48,19 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: "Volume not found" }, { status: 404 });
         }
 
-        // 1. Unassign chapters (Set `volumeId` to null for chapters in this volume)
+        // 1. Unassign chapters from volume
         await db.update(chapters)
             .set({ volumeId: null })
             .where(eq(chapters.volumeId, data.volumeId));
 
         // 2. Delete the volume
-        await db.delete(volumes)
-            .where(eq(volumes.id, data.volumeId));
+        await db.delete(volumes).where(eq(volumes.id, data.volumeId));
 
-        return NextResponse.json({
-            success: true,
-            message: "Volume deleted successfully"
-        });
+        return NextResponse.json({ success: true });
 
-    } catch (error: any) {
-        console.error("Delete volume API error:", error);
-        return NextResponse.json({
-            success: false,
-            error: error?.message || "Internal Server Error"
-        }, { status: 500 });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Internal Server Error";
+        console.error("Delete volume API error:", String(error));
+        return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }

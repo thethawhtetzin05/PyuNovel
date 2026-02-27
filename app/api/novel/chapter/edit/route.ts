@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
-import { drizzle } from "drizzle-orm/d1";
-import * as schema from "@/db/schema";
+import { getServerContext } from "@/lib/server-context";
 import { updateChapter } from "@/lib/resources/chapters/mutations";
-import { createAuth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
     try {
-        const { env } = getRequestContext();
-        const db = drizzle(env.DB, { schema });
-
-        const auth = createAuth(env.DB);
+        const { db, auth } = getServerContext();
         const session = await auth.api.getSession({ headers: request.headers });
 
         if (!session) {
@@ -42,16 +36,14 @@ export async function POST(request: NextRequest) {
             sortIndex,
             volumeId,
             updatedAt: new Date()
-        });
+        }, session.user.id);
 
         revalidatePath(`/novel/${novelSlug}`);
         return NextResponse.json({ success: true, sortIndex, slug: novelSlug });
 
-    } catch (error: any) {
-        console.error("Edit chapter API error:", error);
-        return NextResponse.json({
-            success: false,
-            error: error?.message || "Internal Server Error"
-        }, { status: 500 });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Internal Server Error";
+        console.error("Edit chapter API error:", String(error));
+        return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }

@@ -146,7 +146,7 @@ export const reviews = sqliteTable('reviews', {
 }));
 
 // ==========================================
-// 3. User Interactions (Collections & Progress)
+// 4. User Interactions (Collections & Progress)
 // ==========================================
 
 export const collections = sqliteTable('collections', {

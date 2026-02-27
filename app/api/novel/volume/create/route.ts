@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
-import { drizzle } from "drizzle-orm/d1";
-import * as schema from "@/db/schema";
-import { createAuth } from "@/lib/auth";
+import { getServerContext } from "@/lib/server-context";
 import { z } from "zod";
 import { volumes } from "@/db/schema";
 
@@ -16,10 +13,7 @@ const volumeSchema = z.object({
 
 export async function POST(request: NextRequest) {
     try {
-        const { env } = getRequestContext();
-        const db = drizzle(env.DB, { schema });
-
-        const auth = createAuth(env.DB);
+        const { db, auth } = getServerContext();
         const session = await auth.api.getSession({ headers: request.headers });
 
         if (!session) {
@@ -38,7 +32,6 @@ export async function POST(request: NextRequest) {
 
         const data = validation.data;
 
-        // Verify ownership
         const novel = await db.query.novels.findFirst({
             where: (novels, { eq }) => eq(novels.id, data.novelId)
         });
@@ -47,7 +40,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
         }
 
-        // Get max sortIndex for this novel's volumes
         const existingVolumes = await db.query.volumes.findMany({
             where: (volumes, { eq }) => eq(volumes.novelId, data.novelId),
             columns: { sortIndex: true }
@@ -57,27 +49,17 @@ export async function POST(request: NextRequest) {
             ? Math.max(...existingVolumes.map(v => v.sortIndex))
             : 0;
 
-        const nextSortIndex = maxSortIndex + 1;
-
-        // Insert new volume
         const result = await db.insert(volumes).values({
             novelId: data.novelId,
             name: data.name,
-            sortIndex: nextSortIndex
+            sortIndex: maxSortIndex + 1
         }).returning();
 
-        const newVolume = result[0];
+        return NextResponse.json({ success: true, volume: result[0] });
 
-        return NextResponse.json({
-            success: true,
-            volume: newVolume
-        });
-
-    } catch (error: any) {
-        console.error("Create volume API error:", error);
-        return NextResponse.json({
-            success: false,
-            error: error?.message || "Internal Server Error"
-        }, { status: 500 });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Internal Server Error";
+        console.error("Create volume API error:", String(error));
+        return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }

@@ -2,7 +2,9 @@ export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 export function generateSlug(title: string, maxLength: number = 100): string {
@@ -15,9 +17,34 @@ export function generateSlug(title: string, maxLength: number = 100): string {
     .substring(0, maxLength); // Length ကန့်သတ်မယ်
 }
 
+/**
+ * Raw tag string တစ်ခုကို normalize လုပ်ပေးသည် (Title Case, trim, dedupe blank)
+ * @example processTags("action, romance,  comedy") → "Action, Romance, Comedy"
+ */
+export function processTags(raw: string): string {
+  if (!raw?.trim()) return '';
+  return raw
+    .split(',')
+    .map(tag => tag.trim())
+    .filter(tag => tag.length > 0)
+    .map(tag => {
+      const lower = tag.toLowerCase();
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(', ');
+}
+
+
 // ==========================================
 // Chapter Parsing Utility
 // ==========================================
+
+// Regex တွေကို module-level တွင် တစ်ကြိမ်သာ compile လုပ်သည် (performance)
+// ၁။ အခန်း (သို့) Chapter + (English or Burmese digits)
+// ၂။ Markdown style (# Heading)
+const TITLE_REGEX = /^(အခန်း\s*[\(\（]?[0-9၀-၉]+[\)\）]?|Chapter\s+[0-9၀-၉]+|^#\s+)/i;
+const DELIMITER_REGEX = /^(---+|\*\*\*+|={3,})\s*$/;
+
 
 export interface ParsedChapter {
   title: string;
@@ -31,15 +58,14 @@ export interface ParsedChapter {
  *  2. Lines matching ---, ***, ==== as explicit delimiters (next meaningful line is title).
  */
 export function parseChaptersFromText(raw: string, asHtml: boolean = true): ParsedChapter[] {
+  // Input guard — null/empty string ဆိုရင် empty array ပြန်ပေးမည်
+  if (typeof raw !== 'string' || !raw.trim()) return [];
+
   // Normalize line endings
   const text = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   const lines = text.split('\n');
 
-  // Regex patterns
-  // ၁။ အခန်း (သို့) Chapter + (English or Burmese digits)
-  // ၂။ Markdown style (# Heading)
-  const titleRegex = /^(အခန်း\s*[\(\（]?[0-9၀-၉]+[\)\）]?|Chapter\s+[0-9၀-၉]+|^#\s+)/i;
-  const delimiterRegex = /^(---+|\*\*\*+|={3,})\s*$/;
+  // Module-level ကြေငြာထားသော TITLE_REGEX / DELIMITER_REGEX ကို အသုံးပြုသည်
 
   const chapters: ParsedChapter[] = [];
   let currentTitle = '';
@@ -71,14 +97,14 @@ export function parseChaptersFromText(raw: string, asHtml: boolean = true): Pars
     const trimmed = line.trim();
 
     // ---- Delimiter line ----
-    if (delimiterRegex.test(trimmed)) {
+    if (DELIMITER_REGEX.test(trimmed)) {
       flush();
       awaitingTitleAfterDelimiter = true;
       continue;
     }
 
     // ---- Burmese/English chapter heading ----
-    if (titleRegex.test(trimmed)) {
+    if (TITLE_REGEX.test(trimmed)) {
       flush();
       awaitingTitleAfterDelimiter = false;
       currentTitle = trimmed;

@@ -78,7 +78,7 @@ export const deleteChapter = async (
 }
 
 export const updateChapter = async (
-  db: DrizzleD1Database<any>,
+  db: DrizzleD1Database<typeof schema>,
   chapterId: number | string,
   data: {
     title?: string;
@@ -87,19 +87,32 @@ export const updateChapter = async (
     isPaid?: boolean;
     volumeId?: number | null;
     updatedAt?: Date;
-  }
+  },
+  userId: string
 ) => {
   const cId = Number(chapterId);
 
+  // Ownership check — deleteChapter နဲ့ တူတူ inArray subquery သုံးပါ
   const updatedChapter = await db.update(chapters)
     .set(data)
-    .where(eq(chapters.id, cId))
+    .where(
+      and(
+        eq(chapters.id, cId),
+        inArray(
+          chapters.novelId,
+          db.select({ id: novels.id })
+            .from(novels)
+            .where(eq(novels.ownerId, userId))
+        )
+      )
+    )
     .returning()
     .get();
 
   if (!updatedChapter) {
-    throw new Error("Failed to update: Chapter not found.");
+    throw new Error("Failed to update: Chapter not found or Unauthorized.");
   }
 
   return updatedChapter;
 };
+

@@ -1,28 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
-import { drizzle } from "drizzle-orm/d1";
-import * as schema from "@/db/schema";
+import { getServerContext } from "@/lib/server-context";
 import { createNovel } from "@/lib/resources/novels/mutations";
-import { createAuth } from "@/lib/auth";
+import { CreateNovelSchema } from "@/lib/schemas/novel";
+import { processTags } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { eq } from "drizzle-orm";
+import * as schema from "@/db/schema";
 
 export const runtime = 'edge';
 
-const CreateNovelSchema = z.object({
-    englishTitle: z.string().min(1, "English Title is required"),
-    title: z.string().min(1, "Title is required"),
-    description: z.string().optional().default(""),
-    tags: z.string().optional().default(""),
-});
-
 export async function POST(request: NextRequest) {
     try {
-        const { env } = getRequestContext();
-        const db = drizzle(env.DB, { schema });
-
-        const auth = createAuth(env.DB);
+        const { db, auth, env } = getServerContext();
         const session = await auth.api.getSession({ headers: request.headers });
 
         if (!session) {
@@ -33,6 +22,7 @@ export async function POST(request: NextRequest) {
         const validatedFields = CreateNovelSchema.safeParse({
             englishTitle: formData.get('englishTitle'),
             title: formData.get('title'),
+            author: session.user.name || "Unknown Author",
             description: formData.get('description'),
             tags: formData.get('tags'),
         });
@@ -56,33 +46,22 @@ export async function POST(request: NextRequest) {
                     httpMetadata: { contentType: coverFile.type },
                 });
                 imageUrl = `/api/file/${fileName}`;
-            } catch (error) {
-                console.error("Image Upload Failed:", error);
+            } catch (uploadError) {
+                console.error("Image Upload Failed:", String(uploadError));
             }
         }
-
-        const processedTags = tags
-            ? tags.split(',')
-                .map(tag => tag.trim())
-                .filter(tag => tag.length > 0)
-                .map(tag => {
-                    const lower = tag.toLowerCase();
-                    return lower.charAt(0).toUpperCase() + lower.slice(1);
-                })
-                .join(', ')
-            : '';
 
         const newNovel = await createNovel(db, session.user.id, {
             englishTitle,
             title,
-            description,
+            description: description || '',
             imageUrl,
-            tags: processedTags,
+            tags: processTags(tags || ''),
             author: session.user.name || "Unknown Author",
             status: 'ongoing'
         });
 
-        // Auto-upgrade Role to Writer if they are currently a Reader
+        // Auto-upgrade Role to Writer
         if (newNovel && session.user.role === 'reader') {
             await db.update(schema.user)
                 .set({ role: 'writer', updatedAt: new Date() })
@@ -92,17 +71,11 @@ export async function POST(request: NextRequest) {
 
         revalidatePath('/writer', 'page');
         revalidatePath('/', 'page');
+        return NextResponse.json({ success: true, slug: newNovel.slug });
 
-        return NextResponse.json({
-            success: true,
-            slug: newNovel.slug
-        });
-
-    } catch (error: any) {
-        console.error("Create novel API error:", error);
-        return NextResponse.json({
-            success: false,
-            error: error?.message || "Internal Server Error"
-        }, { status: 500 });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Internal Server Error";
+        console.error("Create novel API error:", String(error));
+        return NextResponse.json({ success: false, error: message }, { status: 500 });
     }
 }
