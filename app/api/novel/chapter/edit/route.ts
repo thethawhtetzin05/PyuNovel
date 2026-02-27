@@ -25,6 +25,11 @@ export async function POST(request: NextRequest) {
         const novelSlug = formData.get('novelSlug') as string;
         const title = formData.get('title') as string;
         const content = formData.get('content') as string;
+        const isPaid = formData.get('isPaid') === 'on';
+        const sortIndexRaw = formData.get('sortIndex');
+        const sortIndex = sortIndexRaw ? Number(sortIndexRaw) : undefined;
+        const volumeIdRaw = formData.get('volumeId');
+        const volumeId = volumeIdRaw ? Number(volumeIdRaw) : null;
 
         if (!chapterId || !novelSlug || !title || !content) {
             return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
@@ -33,11 +38,14 @@ export async function POST(request: NextRequest) {
         await updateChapter(db, chapterId, {
             title,
             content,
+            isPaid,
+            sortIndex,
+            volumeId,
             updatedAt: new Date()
         });
 
         revalidatePath(`/novel/${novelSlug}`);
-        return NextResponse.json({ success: true, slug: novelSlug });
+        return NextResponse.json({ success: true, sortIndex, slug: novelSlug });
 
     } catch (error: any) {
         console.error("Edit chapter API error:", error);

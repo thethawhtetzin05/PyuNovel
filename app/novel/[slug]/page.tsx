@@ -1,12 +1,15 @@
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getNovelBySlug } from '@/lib/resources/novels/queries';
 import { getChaptersByNovelId } from '@/lib/resources/chapters/queries';
+import { getVolumesByNovelId } from '@/lib/resources/volumes/queries';
 import { isNovelCollected } from '@/lib/resources/collections/queries';
+import { getReviewsByNovelId, getUserReview } from '@/lib/resources/reviews/queries';
 import { notFound } from 'next/navigation';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import NovelTabs from './novel-tabs';
 import CollectButton from './collect-button';
+import ReviewSection from '@/components/review-section';
 import { testAction } from '@/app/test-action';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -79,6 +82,7 @@ export default async function NovelDetailsPage({ params }: Props) {
 
   // Chapters ရှာမယ်
   const chapters = await getChaptersByNovelId(db, novel.id);
+  const volumes = await getVolumesByNovelId(db, novel.id);
 
   // ပထမဆုံး အခန်းကို ရှာထားမယ် (Read Button အတွက်)
   const firstChapter = chapters.length > 0 ? chapters.sort((a, b) => a.sortIndex - b.sortIndex)[0] : null;
@@ -87,7 +91,8 @@ export default async function NovelDetailsPage({ params }: Props) {
   const formattedChapters = chapters.map((chapter) => ({
     ...chapter,
     id: chapter.id.toString(), // Number ကို String ပြောင်းမယ်
-    isPaid: chapter.isPaid ?? false // null ဖြစ်နေရင် false သတ်မှတ်မယ်
+    isPaid: chapter.isPaid ?? false, // null ဖြစ်နေရင် false သတ်မှတ်မယ်
+    volumeId: chapter.volumeId ?? null
   }));
 
   // Session စစ်မယ် (Owner ဟုတ်မဟုတ် သိဖို့)
@@ -97,9 +102,15 @@ export default async function NovelDetailsPage({ params }: Props) {
 
   // Collection Status စစ်မယ်
   let isCollected = false;
+  let userReview = null;
+
   if (session?.user) {
     isCollected = await isNovelCollected(db, session.user.id, novel.id);
+    userReview = await getUserReview(db, novel.id, session.user.id);
   }
+
+  // Reviews data ယူမယ်
+  const reviews = await getReviewsByNovelId(db, novel.id);
 
   // Tags စာရင်းကို Array ပြောင်းမယ် (ကော်မာ၊ Space တွေ ရှင်းမယ်)
   const tagsList = novel.tags
@@ -212,7 +223,19 @@ export default async function NovelDetailsPage({ params }: Props) {
           novelId={novel.id}
           description={novel.description || ''}
           chapters={formattedChapters}
+          volumes={volumes}
           isOwner={isOwner}
+        />
+      </div>
+
+      {/* REVIEWS SECTION */}
+      <div className="mt-4">
+        <ReviewSection
+          novelId={novel.id}
+          novelSlug={novel.slug}
+          reviews={reviews as any}
+          userReview={userReview}
+          isLoggedIn={!!session?.user}
         />
       </div>
 

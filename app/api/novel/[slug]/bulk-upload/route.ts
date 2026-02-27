@@ -15,8 +15,9 @@ export async function POST(
 ) {
     try {
         const { slug } = await params;
-        const { novelId, chapters: parsedChapters } = await request.json() as {
+        const { novelId, volumeId, chapters: parsedChapters } = await request.json() as {
             novelId: number;
+            volumeId?: number | null;
             chapters: { title: string; content: string }[];
         };
 
@@ -53,6 +54,7 @@ export async function POST(
         // Batch Insert with Chunking
         const rows = parsedChapters.map((ch, i) => ({
             novelId,
+            volumeId: volumeId || null,
             title: ch.title,
             content: ch.content,
             sortIndex: startIndex + i,

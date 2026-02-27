@@ -15,6 +15,7 @@ export async function getChaptersByNovelId(db: DrizzleD1Database<any>, novelId: 
       sortIndex: chapters.sortIndex,
       isPaid: chapters.isPaid,
       createdAt: chapters.createdAt,
+      volumeId: chapters.volumeId,
     })
     .from(chapters)
     .where(eq(chapters.novelId, novelId))
@@ -51,60 +52,55 @@ export async function getLastChapterIndex(db: DrizzleD1Database<any>, novelId: n
 export async function getChapterForReader(db: DrizzleD1Database<any>, slug: string, index: string) {
   const chapterIndex = Number(index);
 
-  // A. ဝတ္ထုကို Slug နဲ့ အရင်ရှာမယ်
-  const novel = await db
-    .select({ id: novels.id, title: novels.title, slug: novels.slug })
-    .from(novels)
-    .where(eq(novels.slug, slug))
-    .get();
-
-  if (!novel) return null;
-
-  // B. လက်ရှိ ဖတ်မယ့် အခန်းကို ရှာမယ်
-  const chapter = await db
-    .select()
+  // A. ဝတ္ထုနဲ့ အခန်းကို JOIN သုံးပြီး တခါတည်း ရှာမယ် (Query Count လျှော့ချရန်)
+  const result = await db
+    .select({
+      chapter: chapters,
+      novel: novels
+    })
     .from(chapters)
+    .innerJoin(novels, eq(chapters.novelId, novels.id))
     .where(
       and(
-        eq(chapters.novelId, novel.id),
+        eq(novels.slug, slug),
         eq(chapters.sortIndex, chapterIndex)
       )
     )
     .get();
 
-  if (!chapter) return null;
+  if (!result) return null;
 
-  // C. ရှေ့အခန်း (Previous)
-  const prevChapter = await db
-    .select({ sortIndex: chapters.sortIndex })
-    .from(chapters)
-    .where(
-      and(
-        eq(chapters.novelId, novel.id),
-        lt(chapters.sortIndex, chapterIndex)
-      )
-    )
-    .orderBy(desc(chapters.sortIndex))
-    .limit(1)
-    .get();
+  const novelId = result.novel.id;
 
-  // D. နောက်အခန်း (Next)
-  const nextChapter = await db
-    .select({ sortIndex: chapters.sortIndex })
-    .from(chapters)
-    .where(
-      and(
-        eq(chapters.novelId, novel.id),
-        gt(chapters.sortIndex, chapterIndex)
+  // B. ရှေ့အခန်းနဲ့ နောက်အခန်းကို Parallel (Promise.all) နဲ့ ရှာမယ်
+  const [prevChapter, nextChapter] = await Promise.all([
+    db.select({ sortIndex: chapters.sortIndex })
+      .from(chapters)
+      .where(
+        and(
+          eq(chapters.novelId, novelId),
+          lt(chapters.sortIndex, chapterIndex)
+        )
       )
-    )
-    .orderBy(asc(chapters.sortIndex))
-    .limit(1)
-    .get();
+      .orderBy(desc(chapters.sortIndex))
+      .limit(1)
+      .get(),
+    db.select({ sortIndex: chapters.sortIndex })
+      .from(chapters)
+      .where(
+        and(
+          eq(chapters.novelId, novelId),
+          gt(chapters.sortIndex, chapterIndex)
+        )
+      )
+      .orderBy(asc(chapters.sortIndex))
+      .limit(1)
+      .get()
+  ]);
 
   return {
-    chapter,
-    novel,
+    chapter: result.chapter,
+    novel: { id: result.novel.id, title: result.novel.title, slug: result.novel.slug },
     prev: prevChapter,
     next: nextChapter
   };

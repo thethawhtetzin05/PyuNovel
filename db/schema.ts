@@ -92,9 +92,23 @@ export const novels = sqliteTable('novels', {
   viewsIdx: index('novels_views_idx').on(table.views),
 }));
 
+export const volumes = sqliteTable('volumes', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  novelId: integer('novel_id').references(() => novels.id).notNull(),
+  name: text('name').notNull(),
+  sortIndex: real('sort_index').notNull(),
+
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
+}, (table) => ({
+  novelSortIdx: index('volume_novel_sort_idx').on(table.novelId, table.sortIndex),
+}));
+
 export const chapters = sqliteTable('chapters', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   novelId: integer('novel_id').references(() => novels.id).notNull(),
+  volumeId: integer('volume_id').references(() => volumes.id), // Added volumeId
 
   title: text('title').notNull(),
   content: text('content').notNull(),
@@ -109,6 +123,26 @@ export const chapters = sqliteTable('chapters', {
 
 }, (table) => ({
   novelSortIdx: uniqueIndex('novel_sort_idx').on(table.novelId, table.sortIndex),
+  volumeIdx: index('chapter_volume_idx').on(table.volumeId),
+}));
+
+// ==========================================
+// 3. User Interactions (Collections, Progress & Reviews)
+// ==========================================
+
+export const reviews = sqliteTable('reviews', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: text('user_id').references(() => user.id).notNull(),
+  novelId: integer('novel_id').references(() => novels.id).notNull(),
+
+  rating: integer('rating').notNull(), // 1 to 5
+  comment: text('comment'),
+
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+}, (table) => ({
+  userNovelUnique: uniqueIndex('review_user_novel_unique_idx').on(table.userId, table.novelId),
+  novelIdx: index('review_novel_idx').on(table.novelId),
 }));
 
 // ==========================================

@@ -1,6 +1,7 @@
 import * as schema from "@/db/schema";
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getLastChapterIndex } from '@/lib/resources/chapters/queries';
+import { getVolumesByNovelId } from '@/lib/resources/volumes/queries';
 import { getNovelBySlug } from '@/lib/resources/novels/queries';
 import { redirect } from 'next/navigation';
 import { createAuth } from "@/lib/auth";
@@ -48,9 +49,19 @@ export default async function CreateChapterPage({
     );
   }
 
-  // Logic: နောက်ဆုံးအခန်းနံပါတ်ကို ရှာပြီး Auto Suggest လုပ်မယ်
-  const lastChapter = await getLastChapterIndex(db, novel.id);
+  // Logic: နောက်ဆုံးအခန်းကို ရှာပြီး Auto Suggest လုပ်မယ်
+  // ⚠️ getChapterDetail ကို သုံးလို့မရပါ (sortIndex မသိသေးလို့)။ getLastChapterIndex က sortIndex ပဲ ပြန်ပေးတယ်။
+  // ဒါကြောင့် queries.ts ကို မပြင်ဘဲ DB ကနေ တိုက်ရိုက်ယူပါမယ်။
+  const lastChapter = await db.query.chapters.findFirst({
+    where: (chapters, { eq }) => eq(chapters.novelId, novel.id),
+    orderBy: (chapters, { desc }) => [desc(chapters.sortIndex)],
+  });
+
   const suggestedIndex = lastChapter ? lastChapter.sortIndex + 1 : 1;
+  const lastVolumeId = lastChapter?.volumeId || undefined;
+
+  // volumes ယူမယ်
+  const volumes = await getVolumesByNovelId(db, novel.id);
 
   // ==========================================
   // UI Rendering
@@ -61,6 +72,8 @@ export default async function CreateChapterPage({
         novelId={novel.id}
         slug={slug}
         suggestedIndex={suggestedIndex}
+        volumes={volumes}
+        lastVolumeId={lastVolumeId}
       />
     </div>
   );

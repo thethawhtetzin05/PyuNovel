@@ -8,10 +8,10 @@ type SpotlightNovel = {
     slug: string;
     title: string;
     author: string;
-    description: string | null;
+    description?: string | null;
     coverUrl: string | null;
-    views: number | null;
-    status: string | null;
+    views?: number | null;
+    status?: string | null;
 };
 
 type Props = {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Settings, Minus, Plus } from 'lucide-react';
+import DOMPurify from 'isomorphic-dompurify';
 
 interface ReaderViewProps {
   content: string;
@@ -25,6 +26,9 @@ export default function ReaderView({ content }: ReaderViewProps) {
     localStorage.setItem('reader-font-settings', JSON.stringify({ fontSize: newSize }));
   };
 
+  // လုံခြုံရေးအတွက် HTML များကို Sanitize လုပ်ပြီးသားမှ ဖတ်မယ်
+  const cleanContent = DOMPurify.sanitize(content);
+
   return (
     // 💡 မျက်နှာပြင်အပြည့် (w-full) ဖြစ်ပါတယ်။ နောက်ခံအရောင်တွေ လုံးဝ မရေးထားတော့ပါဘူး။ 
     // Website ရဲ့ Global Theme အရောင်က အလိုလို ဒီနေရာကို လာသက်ရောက်သွားမှာပါ။
@@ -32,8 +36,10 @@ export default function ReaderView({ content }: ReaderViewProps) {
 
       {/* စာသားများကို အလယ်တွင် သေသပ်စွာ ရှိနေစေရန် - prose ဖြင့် လှပစွာ ချိန်ညှိထားသည် */}
       <div
-        className="w-full max-w-5xl mx-auto px-5 sm:px-8 md:px-12 font-serif leading-relaxed text-justify md:text-left chapter-content-wrapper"
+        className="w-full max-w-5xl mx-auto px-5 sm:px-8 md:px-12 font-serif leading-relaxed text-justify md:text-left chapter-content-wrapper select-none"
         style={{ fontSize: `${fontSize}px` }}
+        onCopy={(e) => { e.preventDefault(); return false; }}
+        onContextMenu={(e) => { e.preventDefault(); return false; }}
       >
         <style dangerouslySetInnerHTML={{
           __html: `
@@ -41,7 +47,7 @@ export default function ReaderView({ content }: ReaderViewProps) {
           .chapter-content-wrapper h1, .chapter-content-wrapper h2 { margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold; }
           .chapter-content-wrapper h3, .chapter-content-wrapper h4 { margin-top: 1.25em; margin-bottom: 0.5em; font-weight: bold; }
         `}} />
-        <div dangerouslySetInnerHTML={{ __html: content }} />
+        <div dangerouslySetInnerHTML={{ __html: cleanContent }} />
       </div>
 
       {/* Settings အဖွင့်/အပိတ် ခလုတ် */}

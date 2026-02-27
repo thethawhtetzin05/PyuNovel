@@ -2,21 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "@/db/schema";
-import { createChapter } from "@/lib/resources/chapters/mutations";
 import { createAuth } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { volumes, chapters } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 
 export const runtime = 'edge';
 
-const chapterSchema = z.object({
-    title: z.string().min(1, "ခေါင်းစဉ် မပါမဖြစ် ပါရပါမယ်"),
-    content: z.string().min(1, "စာသား တိုလွန်းပါတယ်"),
-    sortIndex: z.coerce.number(),
-    isPaid: z.boolean().default(false),
-    novelSlug: z.string(),
+const deleteVolumeSchema = z.object({
+    volumeId: z.coerce.number(),
     novelId: z.coerce.number(),
-    volumeId: z.coerce.number().nullable().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -32,7 +27,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const validation = chapterSchema.safeParse(body);
+        const validation = deleteVolumeSchema.safeParse(body);
 
         if (!validation.success) {
             return NextResponse.json({
@@ -43,7 +38,7 @@ export async function POST(request: NextRequest) {
 
         const data = validation.data;
 
-        // Verify ownership (optional but recommended since novelId is passed)
+        // Verify ownership
         const novel = await db.query.novels.findFirst({
             where: (novels, { eq }) => eq(novels.id, data.novelId)
         });
@@ -52,24 +47,31 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
         }
 
-        const newChapter = await createChapter(db, {
-            novelId: data.novelId,
-            volumeId: data.volumeId,
-            title: data.title,
-            content: data.content,
-            sortIndex: data.sortIndex,
-            isPaid: data.isPaid,
-        }, session.user.id);
+        // Verify volume exists and belongs to novel
+        const volume = await db.query.volumes.findFirst({
+            where: (volumes, { eq, and }) => and(eq(volumes.id, data.volumeId), eq(volumes.novelId, data.novelId))
+        });
 
-        revalidatePath(`/novel/${data.novelSlug}`);
+        if (!volume) {
+            return NextResponse.json({ success: false, error: "Volume not found" }, { status: 404 });
+        }
+
+        // 1. Unassign chapters (Set `volumeId` to null for chapters in this volume)
+        await db.update(chapters)
+            .set({ volumeId: null })
+            .where(eq(chapters.volumeId, data.volumeId));
+
+        // 2. Delete the volume
+        await db.delete(volumes)
+            .where(eq(volumes.id, data.volumeId));
 
         return NextResponse.json({
             success: true,
-            sortIndex: data.sortIndex
+            message: "Volume deleted successfully"
         });
 
     } catch (error: any) {
-        console.error("Create chapter API error:", error);
+        console.error("Delete volume API error:", error);
         return NextResponse.json({
             success: false,
             error: error?.message || "Internal Server Error"

@@ -2,7 +2,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { novels } from "@/db/schema";
 
-type Novel = typeof novels.$inferSelect;
+interface Novel {
+    id: number;
+    title: string;
+    slug: string;
+    author: string;
+    coverUrl: string | null;
+    status?: "completed" | "ongoing" | "hiatus" | null;
+    views?: number | null;
+    tags?: string | null;
+}
 
 interface Props {
     novels: Novel[];

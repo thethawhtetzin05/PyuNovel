@@ -10,7 +10,16 @@ import ContinueReadingBanner from '@/components/ContinueReading';
 
 export const runtime = 'edge';
 
-type Novel = typeof novels.$inferSelect;
+interface Novel {
+  id: number;
+  title: string;
+  slug: string;
+  author: string;
+  coverUrl: string | null;
+  status?: "completed" | "ongoing" | "hiatus" | null;
+  views?: number | null;
+  description?: string | null;
+}
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const params = await searchParams;

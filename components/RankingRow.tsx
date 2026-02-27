@@ -2,7 +2,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { novels } from "@/db/schema";
 
-type Novel = typeof novels.$inferSelect;
+interface Novel {
+    id: number;
+    title: string;
+    slug: string;
+    author: string;
+    coverUrl: string | null;
+    status?: "completed" | "ongoing" | "hiatus" | null;
+    views?: number | null;
+    tags?: string | null;
+}
 
 interface Props {
     novel: Novel;
@@ -46,7 +55,9 @@ export default function RankingRow({ novel, rank }: Props) {
                     </div>
                     <div className="flex items-center gap-1.5">
                         <span className="text-xs">🏷️</span>
-                        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider line-clamp-1">{novel.tags.split(',')[0]}</span>
+                        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider line-clamp-1">
+                            {novel.tags ? novel.tags.split(',')[0] : 'Fiction'}
+                        </span>
                     </div>
                     {novel.status && (
                         <div className="hidden sm:inline-flex items-center gap-1 bg-[var(--surface-3)] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">

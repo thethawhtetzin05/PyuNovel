@@ -10,6 +10,7 @@ export const createChapter = async (
   db: DrizzleD1Database<typeof schema>,
   data: {
     novelId: number,
+    volumeId?: number | null,
     title: string,
     content: string,
     sortIndex: string | number,
@@ -31,6 +32,7 @@ export const createChapter = async (
   // ၂။ Insert Data Preparation
   const newChapter: NewChapter = {
     novelId: data.novelId,
+    volumeId: data.volumeId || null,
     title: data.title,
     content: data.content,
     sortIndex: Number(data.sortIndex || 0),
@@ -83,6 +85,7 @@ export const updateChapter = async (
     content?: string;
     sortIndex?: number;
     isPaid?: boolean;
+    volumeId?: number | null;
     updatedAt?: Date;
   }
 ) => {

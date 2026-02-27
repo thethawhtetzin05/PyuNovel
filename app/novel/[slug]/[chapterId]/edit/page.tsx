@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect, notFound } from 'next/navigation';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from "@/db/schema";
+import { getVolumesByNovelId } from '@/lib/resources/volumes/queries';
 const { chapters, novels } = schema;
 import { eq, and } from 'drizzle-orm';
 import ChapterForm from '../../create/chapter-form';
@@ -42,13 +43,16 @@ export default async function EditChapterPage({ params }: { params: Promise<{ sl
 
   if (!chapter) notFound();
 
+  const volumes = await getVolumesByNovelId(db, novel.id);
+
   // Data ပြင်ဆင်မယ်
   const initialData = {
     id: chapter.id.toString(),
     title: chapter.title,
     content: chapter.content,
     sortIndex: chapter.sortIndex,
-    isPaid: chapter.isPaid ?? false
+    isPaid: chapter.isPaid ?? false,
+    volumeId: chapter.volumeId ?? null
   };
 
   return (
@@ -60,6 +64,8 @@ export default async function EditChapterPage({ params }: { params: Promise<{ sl
       <ChapterForm
         initialData={initialData}
         slug={slug}
+        novelId={novel.id}
+        volumes={volumes}
       />
     </div>
   );

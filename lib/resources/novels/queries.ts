@@ -15,7 +15,16 @@ export const getNovels = cache(async (
 ) => {
   const offset = (page - 1) * limit;
   return await db
-    .select()
+    .select({
+      id: novels.id,
+      title: novels.title,
+      slug: novels.slug,
+      author: novels.author,
+      coverUrl: novels.coverUrl,
+      status: novels.status,
+      views: novels.views,
+      createdAt: novels.createdAt,
+    })
     .from(novels)
     .orderBy(desc(novels.createdAt))
     .limit(limit)
@@ -31,7 +40,16 @@ export const getTotalNovelsCount = cache(async (db: DrizzleD1Database<Record<str
 // ၄။ Hero Spotlight — views အများဆုံး ဝတ္ထု N ခုကို ဆွဲထုတ်မည့် Function
 export const getTopNovelsByViews = cache(async (db: DrizzleD1Database<Record<string, unknown>>, limit: number = 3) => {
   return await db
-    .select()
+    .select({
+      id: novels.id,
+      title: novels.title,
+      slug: novels.slug,
+      author: novels.author,
+      coverUrl: novels.coverUrl,
+      status: novels.status,
+      views: novels.views,
+      description: novels.description,
+    })
     .from(novels)
     .orderBy(desc(novels.views), desc(novels.createdAt))
     .limit(limit)
@@ -83,7 +101,13 @@ export const searchNovels = cache(async (db: DrizzleD1Database<Record<string, un
 
   const searchPattern = `%${query}%`;
   return await db
-    .select()
+    .select({
+      id: novels.id,
+      title: novels.title,
+      author: novels.author,
+      slug: novels.slug,
+      coverUrl: novels.coverUrl,
+    })
     .from(novels)
     .where(
       sql`${novels.title} LIKE ${searchPattern} OR ${novels.author} LIKE ${searchPattern} OR ${novels.englishTitle} LIKE ${searchPattern}`
