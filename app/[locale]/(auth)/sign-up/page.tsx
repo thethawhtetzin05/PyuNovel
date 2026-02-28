@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signUp } from "@/lib/auth-client"; // Client function ကို ခေါ်သုံးမယ်
 import { useRouter } from "next/navigation";
+export const runtime = 'edge';
 import Link from "next/link";
 
 export default function SignUpPage() {

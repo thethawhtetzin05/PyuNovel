@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { signIn } from "@/lib/auth-client"; // auth-client က function ကိုသုံးမယ်
+import { getTranslations } from "next-intl/server";
+export const runtime = 'edge';
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
