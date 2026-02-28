@@ -7,7 +7,7 @@ import { desc } from 'drizzle-orm';
 export const runtime = 'edge';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pyunovel.com';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pyunovel.pages.dev';
     let novelUrls: MetadataRoute.Sitemap = [];
 
     try {

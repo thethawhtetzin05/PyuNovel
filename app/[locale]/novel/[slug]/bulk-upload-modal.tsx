@@ -219,7 +219,7 @@ export default function BulkUploadModal({ novelId, novelSlug, volumes = [], onCl
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 border-b border-[var(--border)] shrink-0">
                         <div>
-                            <h2 className="text-xl font-extrabold text-[var(--foreground)]">Bulk Chapter Upload</h2>
+                            <h2 className="text-xl font-extrabold text-[var(--foreground)]">File Chapter Upload</h2>
                             <p className="text-sm text-[var(--text-muted)] mt-0.5">Upload a .txt or .docx file to add multiple chapters at once.</p>
                         </div>
                         <button onClick={onClose} className="p-2 rounded-full hover:bg-[var(--surface-2)] transition-colors text-[var(--text-muted)]">

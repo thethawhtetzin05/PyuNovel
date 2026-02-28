@@ -13,11 +13,11 @@ const config: CapacitorConfig = {
     server: {
         // Development မှာ local server ကို point
         // Production မှာ ဒါကို ဖြုတ်ပြီး static files သုံးမယ်
-        // url: 'http://192.168.x.x:3000', // ← dev မှာ uncomment
+        url: 'https://pyunovel.pages.dev',
 
         // Android app ထဲမှာ cleartext (http) ခွင့်ပြုမယ်
         androidScheme: 'https',
-        allowNavigation: ['*.r2.dev', '*.cloudflare.com'],
+        allowNavigation: ['pyunovel.pages.dev', 'pyunovel.com', '*.r2.dev', '*.cloudflare.com'],
     },
 
     android: {

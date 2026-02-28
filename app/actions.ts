@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/routing';
+import { getLocale } from 'next-intl/server';
 import { headers } from 'next/headers';
 
 import { getServerContext } from '@/lib/server-context';
@@ -74,5 +75,5 @@ export async function addNovelAction(formData: FormData) {
   }
 
   // ၆။ အောင်မြင်ရင် Homepage သို့ ပြန်ပို့မည်
-  redirect('/');
+  redirect({ href: '/', locale: await getLocale() });
 }

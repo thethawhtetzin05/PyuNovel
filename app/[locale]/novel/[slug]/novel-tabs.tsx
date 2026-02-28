@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Link } from '@/i18n/routing';
 import { Calendar, Crown, Folder, Pencil, Trash2, ChevronRight, UploadCloud, ChevronDown, ChevronUp } from "lucide-react";
+import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
+import { ConfirmModal, AlertModal } from '@/components/ui/Modals';
 
 const BulkUploadModal = dynamic(() => import('./bulk-upload-modal'), { ssr: false });
 
@@ -41,8 +43,11 @@ export default function NovelTabs({
   isOwner = false
 }: NovelTabsProps) {
   const router = useRouter();
+  const t = useTranslations('Navbar');
   const [activeTab, setActiveTab] = useState<'about' | 'chapters'>('about');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [chapterToDelete, setChapterToDelete] = useState<Chapter | null>(null);
+  const [alertMsg, setAlertMsg] = useState('');
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [expandedVolumes, setExpandedVolumes] = useState<Record<string, boolean>>({});
 
@@ -50,28 +55,32 @@ export default function NovelTabs({
     setExpandedVolumes(prev => ({ ...prev, [volumeId]: !prev[volumeId] }));
   };
 
-  const handleDelete = async (e: React.MouseEvent, chapterId: string) => {
+  const handleDelete = (e: React.MouseEvent, chapter: Chapter) => {
     e.preventDefault();
+    setChapterToDelete(chapter);
+  };
 
-    if (confirm("Are you sure you want to delete this chapter? This action cannot be undone.")) {
-      setIsDeleting(chapterId);
-      try {
-        const response = await fetch('/api/novel/chapter/delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chapterId, novelSlug }),
-        });
-        const res = await response.json() as { success: boolean; error?: string };
-        if (res.success) {
-          router.refresh();
-        } else {
-          alert(res.error || "Failed to delete chapter");
-        }
-      } catch (error) {
-        alert("Failed to delete chapter");
-      } finally {
-        setIsDeleting(null);
+  const confirmDelete = async () => {
+    if (!chapterToDelete) return;
+
+    setIsDeleting(chapterToDelete.id);
+    try {
+      const response = await fetch('/api/novel/chapter/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chapterId: chapterToDelete.id, novelSlug }),
+      });
+      const res = await response.json() as { success: boolean; error?: string };
+      if (res.success) {
+        router.refresh();
+      } else {
+        setAlertMsg(res.error || "Failed to delete chapter");
       }
+    } catch (error) {
+      setAlertMsg("An error occurred while deleting the chapter");
+    } finally {
+      setIsDeleting(null);
+      setChapterToDelete(null);
     }
   };
 
@@ -119,7 +128,7 @@ export default function NovelTabs({
             </Link>
 
             <button
-              onClick={(e) => handleDelete(e, chapter.id)}
+              onClick={(e) => handleDelete(e, chapter)}
               className="p-2 text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
               title="Delete Chapter"
               disabled={isDeleting === chapter.id}
@@ -148,7 +157,7 @@ export default function NovelTabs({
     <>
       <div className="mt-8">
         {/* 1. Tab Headers */}
-        <div className="flex gap-8 border-b border-gray-200 mb-8">
+        <div className="flex gap-8 border-b border-[var(--border)] mb-8">
           <button
             onClick={() => setActiveTab('about')}
             className={`pb-4 text-xl font-bold transition-all relative ${activeTab === 'about' ? 'text-[var(--foreground)]' : 'text-[var(--text-muted)] hover:text-[var(--foreground)]'
@@ -193,7 +202,7 @@ export default function NovelTabs({
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold btn-primary transition-transform active:scale-95"
                   >
                     <UploadCloud size={16} />
-                    Upload File
+                    {t('bulkUpload')}
                   </button>
                 </div>
               )}

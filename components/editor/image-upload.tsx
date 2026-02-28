@@ -31,9 +31,9 @@ export default function ImageUpload() {
   return (
     <div className="flex flex-col gap-4 border p-4 rounded-xl max-w-sm">
       <label className="block text-sm font-medium text-gray-700">Cover Image</label>
-      
-      <input 
-        type="file" 
+
+      <input
+        type="file"
         accept="image/*"
         onChange={handleFileChange}
         className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
@@ -44,10 +44,10 @@ export default function ImageUpload() {
       {/* ပုံတင်ပြီးရင် Preview ပြမယ် */}
       {imageUrl && (
         <div className="relative aspect-[2/3] w-32 bg-gray-100 rounded-lg overflow-hidden border">
-           <img src={imageUrl} alt="Cover Preview" className="object-cover w-full h-full" />
+          <img src={imageUrl} alt="Cover Preview" className="object-cover w-full h-full" />
         </div>
       )}
-      
+
       {/* Form Submit လုပ်တဲ့အခါ Database ထဲထည့်ဖို့ URL ကို Hidden Input အနေနဲ့ ထည့်ထားမယ် */}
       <input type="hidden" name="coverUrl" value={imageUrl || ""} />
     </div>

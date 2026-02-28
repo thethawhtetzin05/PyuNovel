@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Link } from '@/i18n/routing';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 // ✅ Props လက်ခံနိုင်အောင် Interface ဆောက်လိုက်ပါတယ်
 interface NovelFormProps {
@@ -20,11 +21,15 @@ interface NovelFormProps {
 
 export default function NovelForm({
   initialData,
-  submitLabel = "Create Novel"
+  submitLabel
 }: NovelFormProps) {
   const router = useRouter();
+  const t = useTranslations('NovelForm');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [preview, setPreview] = useState<string | null>(initialData?.coverUrl || null);
+
+  // Default submit label translation fallback
+  const finalSubmitLabel = submitLabel || (initialData ? t('saveChanges') : t('createNovel'));
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -80,7 +85,7 @@ export default function NovelForm({
       {/* Cover Image Area */}
       <div>
         <label className="block text-sm font-bold text-[var(--foreground)] mb-1">
-          Cover Image
+          {t('coverImage')}
         </label>
 
         <label
@@ -100,10 +105,10 @@ export default function NovelForm({
               </svg>
               <div className="text-sm">
                 <span className="font-semibold text-[var(--action)]">
-                  Upload cover
+                  {t('uploadCover')}
                 </span>
               </div>
-              <p className="text-xs text-[var(--text-muted)]">PNG, JPG</p>
+              <p className="text-xs text-[var(--text-muted)]">{t('formats')}</p>
             </div>
           )}
 
@@ -120,12 +125,12 @@ export default function NovelForm({
 
       {/* Novel Title */}
       <div>
-        <label className="block text-sm font-bold text-[var(--foreground)] mb-1">Novel Title</label>
+        <label className="block text-sm font-bold text-[var(--foreground)] mb-1">{t('novelTitle')}</label>
         <input
           name="title"
           required
           defaultValue={initialData?.title}
-          placeholder="Your Novel Title"
+          placeholder={t('novelTitlePlaceholder')}
           className="w-full border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--action)] focus:border-transparent outline-none transition-shadow"
         />
       </div>
@@ -133,7 +138,7 @@ export default function NovelForm({
       {/* English Title */}
       <div>
         <div className="flex justify-between items-center mb-1">
-          <label className="block text-sm font-bold text-[var(--foreground)]">English Title (URL Slug)</label>
+          <label className="block text-sm font-bold text-[var(--foreground)]">{t('englishTitle')}</label>
           <span className={`text-[11px] font-medium ${(initialData?.englishTitle?.length || 0) > 100 ? 'text-red-500' : 'text-[var(--text-muted)]'
             }`}>
             {initialData?.englishTitle?.length || 0} / 100
@@ -143,7 +148,7 @@ export default function NovelForm({
           name="englishTitle"
           required
           defaultValue={initialData?.englishTitle}
-          placeholder="e.g. solo-leveling"
+          placeholder={t('englishTitlePlaceholder')}
           onChange={(e) => {
             const count = e.target.value.length;
             const counter = e.target.previousElementSibling?.querySelector('span');
@@ -161,32 +166,32 @@ export default function NovelForm({
           className="w-full border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--action)] focus:border-transparent outline-none transition-shadow"
         />
         <p className="text-[11px] text-[var(--text-muted)] mt-1 pl-1">
-          * စာလုံးရေ ၁၀၀ ထက် ကျော်သွားပါက Slug ကို အလိုလို ဖြတ်တောက်ပါမည်။
+          {t('slugWarning')}
         </p>
       </div>
 
       {/* 👇 Tags (အသစ်ထည့်ထားသော အပိုင်း) */}
       <div>
-        <label className="block text-sm font-bold text-[var(--foreground)] mb-1">Tags</label>
+        <label className="block text-sm font-bold text-[var(--foreground)] mb-1">{t('tags')}</label>
         <input
           name="tags"
           defaultValue={initialData?.tags || ""}
-          placeholder="e.g. Action, Romance, Fantasy (Separate with commas)"
+          placeholder={t('tagsPlaceholder')}
           className="w-full border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--action)] focus:border-transparent outline-none transition-shadow"
         />
         <p className="text-[11px] text-[var(--text-muted)] mt-1 pl-1 font-medium">
-          * အမျိုးအစားများကို ကော်မာ ( , ) ခြားပြီး ရေးပေးပါ။
+          {t('tagsWarning')}
         </p>
       </div>
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-bold text-[var(--foreground)] mb-1">Synopsis</label>
+        <label className="block text-sm font-bold text-[var(--foreground)] mb-1">{t('synopsis')}</label>
         <textarea
           name="description"
           rows={5}
           defaultValue={initialData?.description || ""}
-          placeholder="Story description..."
+          placeholder={t('synopsisPlaceholder')}
           className="w-full border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--action)] focus:border-transparent outline-none transition-shadow"
         />
       </div>
@@ -197,7 +202,7 @@ export default function NovelForm({
           href={initialData ? `/novel/${initialData.englishTitle}` : "/"}
           className="px-6 py-2.5 rounded-xl font-medium text-[var(--text-muted)] hover:bg-[var(--surface-2)] flex items-center justify-center transition"
         >
-          Cancel
+          {t('cancel')}
         </Link>
 
         <button
@@ -205,7 +210,7 @@ export default function NovelForm({
           disabled={isSubmitting}
           className="btn-primary w-full sm:w-auto px-8 py-2.5 rounded-xl font-bold transition-transform active:scale-95 text-center disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSubmitting ? "Saving..." : submitLabel}
+          {isSubmitting ? t('saving') : finalSubmitLabel}
         </button>
       </div>
 

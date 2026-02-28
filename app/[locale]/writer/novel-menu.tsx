@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect, useTransition } from 'react'; // useTransition ထပ်ထည့်ထားတယ်
-import { Link } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
 
 // Props မှာ novelId ထပ်ဖြည့်လိုက်ပါတယ်
 export default function NovelMenu({ slug, novelId }: { slug: string, novelId: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition(); // Loading ပြဖို့
+  const router = useRouter();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -30,7 +31,11 @@ export default function NovelMenu({ slug, novelId }: { slug: string, novelId: st
             body: JSON.stringify({ novelId }),
           });
           const res = await response.json() as { success: boolean; error?: string };
-          if (!res.success) alert(res.error || "Failed to delete novel");
+          if (!res.success) {
+            alert(res.error || "Failed to delete novel");
+          } else {
+            router.refresh();
+          }
         } catch (error) {
           alert("Failed to delete novel");
         } finally {

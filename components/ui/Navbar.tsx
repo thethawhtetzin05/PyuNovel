@@ -3,7 +3,7 @@ import { Link } from "@/i18n/routing";
 import { useState, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import { useSession, signOut } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import ThemeSwitcher from "./theme-switcher";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ReportModal from "@/components/modals/ReportModal";
@@ -21,6 +21,7 @@ export default function Navbar() {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pathname = usePathname();
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -56,6 +57,8 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
+
+  if (pathname?.includes('/admin')) return null;
 
   return (
     <>

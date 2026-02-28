@@ -1,7 +1,8 @@
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { redirect, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import { redirect } from '@/i18n/routing';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from "@/db/schema";
 import { getVolumesByNovelId } from '@/lib/resources/volumes/queries';
@@ -12,7 +13,7 @@ import ChapterForm from '../../create/chapter-form';
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-export default async function EditChapterPage({ params }: { params: Promise<{ slug: string, chapterId: string }> }) {
+export default async function EditChapterPage({ params }: { params: Promise<{ slug: string, chapterId: string, locale: string }> }) {
   const { slug, chapterId } = await params;
   const { env } = getRequestContext();
   const db = drizzle(env.DB, { schema });
@@ -29,10 +30,7 @@ export default async function EditChapterPage({ params }: { params: Promise<{ sl
 
   if (!novel) notFound();
 
-  // ပိုင်ရှင်ဖြစ်ကြောင်း စစ်ဆေးမယ်
-  if (!session || session.user.id !== novel.ownerId) {
-    redirect('/sign-in');
-  }
+  redirect({ href: '/sign-in', locale: (await params).locale });
 
   const chapter = await db.select().from(chapters).where(
     and(

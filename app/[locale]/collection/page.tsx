@@ -2,14 +2,13 @@ import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getUserCollections } from '@/lib/resources/collections/queries';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { redirect } from 'next/navigation';
-import { Link } from '@/i18n/routing';
+import { redirect, Link } from '@/i18n/routing';
 import { drizzle } from 'drizzle-orm/d1';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-export default async function CollectionPage() {
+export default async function CollectionPage({ params }: { params: Promise<{ locale: string }> }) {
     const { env } = getRequestContext();
     const auth = createAuth(env.DB);
     const session = await auth.api.getSession({
@@ -17,7 +16,8 @@ export default async function CollectionPage() {
     });
 
     if (!session) {
-        redirect('/sign-in');
+        redirect({ href: '/sign-in', locale: (await params).locale });
+        return null;
     }
 
     const db = drizzle(env.DB);
