@@ -69,7 +69,7 @@
     "NovelForm": {
         "coverImage": "Cover Image",
         "uploadCover": "Upload cover",
-        "formats": "PNG, JPG",
+        "formats": "PNG, JPG (600 x 900)",
         "novelTitle": "Novel Title",
         "novelTitlePlaceholder": "Your Novel Title",
         "englishTitle": "English Title (URL Slug)",
@@ -88,5 +88,19 @@
         "createDesc": "Create a new novel and share your imagination.",
         "editTitle": "Edit Your Novel ✏️",
         "editDesc": "Update details, cover image, and more."
+    },
+    "Modal": {
+        "deleteNovelTitle": "Delete Novel?",
+        "deleteNovelDesc": "Are you sure you want to delete this novel? This cannot be undone.",
+        "deleteText": "Confirm",
+        "cancel": "Cancel",
+        "errorTitle": "Error",
+        "deleteErrorDesc": "Failed to delete novel"
+    },
+    "NovelMenu": {
+        "addChapter": "✍️ Add Chapter",
+        "editNovel": "✏️ Edit Novel",
+        "delete": "🗑️ Delete",
+        "deleting": "Deleting..."
     }
 }

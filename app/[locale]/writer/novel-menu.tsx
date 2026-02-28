@@ -3,13 +3,16 @@
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { Link, useRouter } from '@/i18n/routing';
 import { useModalStore } from "@/lib/store/use-modal-store";
+import { useTranslations } from 'next-intl';
 
 export default function NovelMenu({ slug, novelId }: { slug: string, novelId: string }) {
+  const tModal = useTranslations('Modal');
+  const tMenu = useTranslations('NovelMenu');
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
-  const openModal = useModalStore((state) => state.openModal);
+  const openModal = useModalStore((state: any) => state.openModal);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -24,8 +27,10 @@ export default function NovelMenu({ slug, novelId }: { slug: string, novelId: st
   const handleDelete = () => {
     // Custom Confirm Modal နဲ့ အစားထိုးလိုက်ပါတယ်
     openModal("confirm", {
-      title: "Delete Novel?",
-      message: "Are you sure you want to delete this novel? This cannot be undone.",
+      title: tModal("deleteNovelTitle"),
+      message: tModal("deleteNovelDesc"),
+      confirmText: tModal("deleteText"),
+      cancelText: tModal("cancel"),
       isDestructive: true,
       onConfirm: async () => {
         try {
@@ -37,17 +42,17 @@ export default function NovelMenu({ slug, novelId }: { slug: string, novelId: st
           const res = await response.json() as { success: boolean; error?: string };
           if (!res.success) {
             openModal("alert", {
-                title: "Error",
-                message: res.error || "Failed to delete novel",
-                type: "error"
+              title: tModal("errorTitle"),
+              message: res.error || tModal("deleteErrorDesc"),
+              type: "error"
             });
           } else {
             router.refresh();
           }
         } catch (error) {
           openModal("alert", {
-            title: "Error",
-            message: "Failed to delete novel",
+            title: tModal("errorTitle"),
+            message: tModal("deleteErrorDesc"),
             type: "error"
           });
         }
@@ -70,11 +75,11 @@ export default function NovelMenu({ slug, novelId }: { slug: string, novelId: st
         <div className="absolute right-0 mt-2 w-48 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl z-[999] overflow-hidden py-1 ring-1 ring-black/5">
 
           <Link href={`/novel/${slug}/create`} className="block px-4 py-2.5 text-sm text-[var(--foreground)] hover:bg-[var(--surface-2)] hover:text-[var(--action)] transition-colors">
-            ✍️ Add Chapter
+            {tMenu("addChapter")}
           </Link>
 
           <Link href={`/novel/${slug}/edit`} className="block px-4 py-2.5 text-sm text-[var(--foreground)] hover:bg-[var(--surface-2)] hover:text-[var(--action)] transition-colors">
-            ✏️ Edit Novel
+            {tMenu("editNovel")}
           </Link>
 
           <div className="h-px bg-[var(--border)] my-1"></div>
@@ -84,7 +89,7 @@ export default function NovelMenu({ slug, novelId }: { slug: string, novelId: st
             onClick={handleDelete}
             disabled={isPending}
           >
-            {isPending ? "Deleting..." : "🗑️ Delete"}
+            {isPending ? tMenu("deleting") : tMenu("delete")}
           </button>
         </div>
       )}

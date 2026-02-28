@@ -46,13 +46,13 @@ export function ConfirmModal({
                     </p>
                 </div>
 
-                <div className="bg-[var(--surface-2)]/50 px-6 py-4 flex flex-col sm:flex-row-reverse gap-3 border-t border-[var(--border)]">
+                <div className="bg-[var(--surface-2)]/50 px-6 py-4 flex flex-row gap-3 border-t border-[var(--border)]">
                     <button
                         onClick={onConfirm}
                         disabled={isLoading}
                         className={`flex-1 h-11 rounded-xl font-bold text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg ${isDestructive
-                                ? "bg-red-600 hover:bg-red-700 text-white shadow-red-600/20"
-                                : "bg-[var(--action)] hover:bg-[var(--action-hover)] text-white shadow-[var(--action)]/20"
+                            ? "bg-red-600 hover:bg-red-700 text-white shadow-red-600/20"
+                            : "bg-[var(--action)] hover:bg-[var(--action-hover)] text-white shadow-[var(--action)]/20"
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                         {isLoading ? <Loader2 size={18} className="animate-spin" /> : confirmText}

@@ -45,7 +45,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ loc
                     myCollections.map((item) => (
                         <Link
                             key={item.collectionId}
-                            href={item.lastReadChapterId ? `/novel/${item.novel.slug}/chapter/${item.lastReadChapterId}` : `/novel/${item.novel.slug}`}
+                            href={item.lastReadChapterId ? `/novel/${item.novel.slug}/${item.lastReadChapterId}` : `/novel/${item.novel.slug}`}
                             className="group bg-[var(--surface)] p-4 rounded-2xl border border-[var(--border)] shadow-sm hover:shadow-md transition-all flex items-center gap-5 hover:border-[var(--accent)]"
                         >
                             {/* Cover Image */}
