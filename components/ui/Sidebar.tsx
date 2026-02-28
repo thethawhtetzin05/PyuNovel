@@ -18,7 +18,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { href: "/writer", label: t('create'), icon: "M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" },
   ];
   return (
-    <div className={`fixed inset-0 z-50 md:hidden transition-all duration-300 ${isOpen ? "" : "pointer-events-none"}`}>
+    <div className={`fixed inset-0 z-[100] md:hidden transition-all duration-300 ${isOpen ? "" : "pointer-events-none"}`}>
       {/* Backdrop */}
       <div
         className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0"}`}

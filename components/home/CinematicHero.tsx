@@ -21,22 +21,31 @@ type Props = {
 export default function CinematicHero({ novels }: Props) {
     const [current, setCurrent] = useState(0);
     const [fading, setFading] = useState(false);
+    const [dragOffset, setDragOffset] = useState(0);
     const touchStartX = useRef(0);
     const isDragging = useRef(false);
 
-    const goTo = useCallback((index: number) => {
+    const goTo = useCallback((index: number, skipFade = false) => {
+        if (skipFade) {
+            setCurrent(index);
+            setDragOffset(0);
+            return;
+        }
         setFading(true);
         setTimeout(() => {
             setCurrent(index);
             setFading(false);
+            setDragOffset(0);
         }, 300);
     }, []);
 
     useEffect(() => {
         if (novels.length <= 1) return;
         const timer = setInterval(() => {
-            goTo((current + 1) % novels.length);
-        }, 5000);
+            if (!isDragging.current) {
+                goTo((current + 1) % novels.length);
+            }
+        }, 6000);
         return () => clearInterval(timer);
     }, [current, novels.length, goTo]);
 
@@ -45,12 +54,27 @@ export default function CinematicHero({ novels }: Props) {
         isDragging.current = true;
     };
 
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging.current) return;
+        const currentX = e.touches[0].clientX;
+        const diff = currentX - touchStartX.current;
+        setDragOffset(diff);
+    };
+
     const handleTouchEnd = (e: React.TouchEvent) => {
         if (!isDragging.current) return;
         isDragging.current = false;
-        const diff = touchStartX.current - e.changedTouches[0].clientX;
-        if (diff > 50) goTo((current + 1) % novels.length);
-        else if (diff < -50) goTo((current - 1 + novels.length) % novels.length);
+        
+        const finalDiff = touchStartX.current - e.changedTouches[0].clientX;
+        const threshold = 70;
+
+        if (finalDiff > threshold) {
+            goTo((current + 1) % novels.length, true);
+        } else if (finalDiff < -threshold) {
+            goTo((current - 1 + novels.length) % novels.length, true);
+        } else {
+            setDragOffset(0);
+        }
     };
 
     if (novels.length === 0) return null;
@@ -59,8 +83,7 @@ export default function CinematicHero({ novels }: Props) {
 
     return (
         <div className="w-full">
-
-            {/* ─── DESKTOP: Cinematic style ──────────────────────────── */}
+            {/* DESKTOP: Cinematic style */}
             <div className="hidden md:block relative w-full h-[400px] rounded-2xl overflow-hidden bg-[var(--surface-2)] border border-[var(--border)] group">
                 <div
                     className="absolute inset-0 transition-opacity duration-300 ease-in-out"
@@ -138,48 +161,46 @@ export default function CinematicHero({ novels }: Props) {
                 )}
             </div>
 
-            {/* ─── MOBILE: Coverflow carousel ────────────────────────── */}
+            {/* MOBILE: Coverflow carousel */}
             <div
-                className="md:hidden relative w-full touch-pan-y select-none"
-                style={{ height: "320px" }}
+                className="md:hidden relative w-full touch-pan-y select-none overflow-hidden"
+                style={{ height: "340px" }}
                 onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
             >
-                <div className="absolute inset-0 flex items-center justify-center">
+                <div 
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ 
+                        transform: `translateX(${dragOffset}px)`,
+                        transition: isDragging.current ? "none" : "transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)"
+                    }}
+                >
                     {novels.map((n, index) => {
                         let dist = index - current;
                         const total = novels.length;
-
-                        // Normalise for circular wrap
                         if (dist < -Math.floor(total / 2)) dist += total;
                         if (dist > Math.floor(total / 2)) dist -= total;
-
-                        // Only render -2 … +2 slots to keep DOM lean
                         if (Math.abs(dist) > 2) return null;
 
                         const isActive = dist === 0;
                         const isAdj = Math.abs(dist) === 1;
+                        const CARD_W_PX = 210; 
+                        const GAP_PX = 20;     
 
-                        const CARD_W_PX = 200; // approximate rendered width at scale=1
-                        const GAP_PX = 24;     // desired gap between card edges
-
-                        // translateX is relative to the element's own width (scale applied).
-                        // At scale=1 card is CARD_W_PX. Adjacent cards are scale 0.75 → 150px.
-                        // Offset to clear center card: (CARD_W_PX/2 + GAP_PX + 150px/2) = 100+24+75 = 199px
-                        // In % of own element width (200px): 199/200 ≈ 99.5%
                         const translateX = dist === 0 ? 0 : dist > 0
                             ? (CARD_W_PX / 2 + GAP_PX + (CARD_W_PX * 0.75) / 2) / CARD_W_PX * 100
                             : -((CARD_W_PX / 2 + GAP_PX + (CARD_W_PX * 0.75) / 2) / CARD_W_PX * 100);
 
-                        const scale = isActive ? 1 : isAdj ? 0.75 : 0.58;
-                        const opacity = isActive ? 1 : isAdj ? 0.55 : 0.25;
+                        const scale = isActive ? 1 : isAdj ? 0.8 : 0.6;
+                        const opacity = isActive ? 1 : isAdj ? 0.6 : 0.3;
                         const zIndex = isActive ? 20 : isAdj ? 10 : 3;
-                        const blurPx = isActive ? 0 : isAdj ? 1.5 : 3;
+                        const blurPx = isActive ? 0 : isAdj ? 1 : 4;
 
                         return (
                             <div
                                 key={n.slug}
-                                className="absolute transition-all duration-350 ease-in-out"
+                                className="absolute transition-all duration-500 ease-out will-change-transform"
                                 style={{
                                     width: `${CARD_W_PX}px`,
                                     aspectRatio: "2/3",
@@ -187,20 +208,18 @@ export default function CinematicHero({ novels }: Props) {
                                     opacity,
                                     zIndex,
                                     filter: blurPx ? `blur(${blurPx}px)` : "none",
-                                    borderRadius: "16px",
+                                    borderRadius: "20px",
                                     overflow: "hidden",
                                     boxShadow: isActive
-                                        ? "0 0 32px rgba(0,210,210,0.55), 0 0 64px rgba(0,180,180,0.25), 0 8px 40px rgba(0,0,0,0.5)"
-                                        : "0 4px 20px rgba(0,0,0,0.4)",
+                                        ? "0 10px 40px rgba(0,0,0,0.4), 0 0 20px rgba(79, 70, 229, 0.3)"
+                                        : "0 4px 15px rgba(0,0,0,0.3)",
                                     border: isActive
-                                        ? "2px solid rgba(0,220,220,0.7)"
-                                        : "1px solid rgba(255,255,255,0.08)",
-                                    // Pointer: non-active cards are "pass-through" click → goTo
+                                        ? "1px solid rgba(255,255,255,0.2)"
+                                        : "1px solid rgba(255,255,255,0.05)",
                                     cursor: "pointer",
                                 }}
-                                onClick={() => { if (!isActive) goTo(index); }}
+                                onClick={() => { if (!isActive) goTo(index, true); }}
                             >
-                                {/* Active card: real Link. Side cards: just decorative (click = goTo) */}
                                 {isActive ? (
                                     <Link href={`/novel/${n.slug}`} className="relative w-full h-full block">
                                         {n.coverUrl ? (
@@ -208,25 +227,17 @@ export default function CinematicHero({ novels }: Props) {
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-4xl" style={{ background: "var(--surface-2)" }}>📚</div>
                                         )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
-                                        <div className="absolute bottom-0 left-0 right-0 p-3.5 pointer-events-none">
-                                            {n.status && (
-                                                <span className="inline-block mb-1.5 text-[10px] font-bold uppercase tracking-wider text-white bg-emerald-600 px-1.5 py-0.5 rounded">
-                                                    {n.status}
-                                                </span>
-                                            )}
-                                            <h3 className="text-white font-extrabold text-base leading-snug line-clamp-2 drop-shadow-lg myan">
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent pointer-events-none" />
+                                        <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-none">
+                                            <h3 className="text-white font-extrabold text-base leading-tight line-clamp-2 myan">
                                                 {n.title}
                                             </h3>
-                                            {n.author && (
-                                                <p className="text-white/70 text-xs mt-1 truncate myan">{n.author}</p>
-                                            )}
                                         </div>
                                     </Link>
                                 ) : (
                                     <div className="relative w-full h-full">
                                         {n.coverUrl ? (
-                                            <Image src={n.coverUrl} alt={n.title} fill className="object-cover" sizes="160px" />
+                                            <Image src={n.coverUrl} alt={n.title} fill className="object-cover" sizes="180px" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-3xl" style={{ background: "var(--surface-2)" }}>📚</div>
                                         )}
