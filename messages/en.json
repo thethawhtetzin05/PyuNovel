@@ -1,0 +1,20 @@
+{
+    "Navbar": {
+        "home": "Home",
+        "ranking": "Ranking",
+        "collection": "Collection",
+        "create": "Create",
+        "signIn": "Sign In",
+        "search": "Search",
+        "profile": "Profile",
+        "reportIssue": "Report Issue",
+        "signOut": "Sign Out"
+    },
+    "Home": {
+        "announcements": "Announcements",
+        "viewAll": "View All",
+        "popularThisWeek": "Popular This Week",
+        "newReleases": "New Releases",
+        "noFeaturedNovels": "No featured novels"
+    }
+}

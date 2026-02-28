@@ -41,3 +41,11 @@ yarn-error.log*
 next-env.d.ts
 
 .wrangler/
+
+# Android (Capacitor)
+android/local.properties
+android/.gradle/
+android/app/release/
+*.jks
+*.keystore
+google-services.json

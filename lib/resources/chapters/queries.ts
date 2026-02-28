@@ -5,7 +5,26 @@ import { eq, asc, desc, and, gt, lt } from 'drizzle-orm';
 // 👇 ၁။ Function အားလုံးရဲ့ Parameter မှာ (db: DrizzleD1Database<any>) လို့ ပြောင်းထားပါတယ်
 // 👇 ၂။ Function ထဲမှာ 'const db = drizzle(...)' ဆိုတာ လုံးဝ မပါတော့ပါဘူး
 
-// ဝတ္ထုတစ်ခုလုံးရဲ့ အခန်းစာရင်းကို ယူရန်
+// Offline download အတွက် — content + novelId အပါအဝင် fields အကုန်ယူမယ်
+export async function getChaptersForDownload(db: DrizzleD1Database<any>, novelId: number) {
+  return await db
+    .select({
+      id: chapters.id,
+      novelId: chapters.novelId,
+      volumeId: chapters.volumeId,
+      title: chapters.title,
+      content: chapters.content,
+      isPaid: chapters.isPaid,
+      sortIndex: chapters.sortIndex,
+    })
+    .from(chapters)
+    .where(eq(chapters.novelId, novelId))
+    .orderBy(asc(chapters.sortIndex))
+    .all();
+}
+
+// ဝတ္ထုတစ်ခုလုံးရဲ့ အခန်းစာရင်းကို ယူရန် (content မပါ — list page အတွက် fast query)
+
 export async function getChaptersByNovelId(db: DrizzleD1Database<any>, novelId: number) {
   // ⚠️ ဒီနေရာမှာ const db = drizzle(...) မလိုတော့ပါ
   return await db

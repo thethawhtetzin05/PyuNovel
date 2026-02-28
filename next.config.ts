@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 import { setupDevPlatform } from '@cloudflare/next-on-pages/next-dev';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./i18n.ts');
 
 const nextConfig: NextConfig = {
   images: {
@@ -26,4 +29,4 @@ if (process.env.NODE_ENV === 'development') {
   }).catch((e) => console.error(e));
 }
 
-export default nextConfig;
+export default withNextIntl(nextConfig);
