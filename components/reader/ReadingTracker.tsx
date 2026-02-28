@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { saveReadingProgress } from "./ContinueReading";
+import { saveReadingProgress } from "@/components/home/ContinueReading";
 
 type Props = {
     slug: string;

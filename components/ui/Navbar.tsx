@@ -6,8 +6,8 @@ import { useSession, signOut } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import ThemeSwitcher from "./theme-switcher";
 import LanguageSwitcher from "./LanguageSwitcher";
-import ReportModal from "./ReportModal";
-import SearchModal from "./SearchModal";
+import ReportModal from "@/components/modals/ReportModal";
+import SearchModal from "@/components/modals/SearchModal";
 import { useTranslations } from 'next-intl';
 
 export default function Navbar() {
