@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation';
 import AdminLoginForm from './AdminLoginForm';
 
 export const runtime = 'edge';
-
 export default async function AdminLoginPage() {
     const cookieStore = await cookies();
     const isAdmin = cookieStore.get('admin_session')?.value === 'authenticated';
