@@ -3,9 +3,11 @@ import { Link } from '@/i18n/routing';
 import Image from 'next/image';
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getNovels, getTotalNovelsCount, getTopNovelsByViews } from '@/lib/resources/novels/queries';
+import { getLatestChapters } from '@/lib/resources/chapters/queries';
 import { drizzle } from 'drizzle-orm/d1';
 import { novels } from "@/db/schema";
 import CinematicHero from '@/components/home/CinematicHero';
+import LatestChapters from '@/components/home/LatestChapters';
 import ContinueReadingBanner from '@/components/home/ContinueReading';
 import { getTranslations } from 'next-intl/server';
 
@@ -34,12 +36,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   let allNovels: Novel[] = [];
   let totalNovels = 0;
   let spotlightNovels: Novel[] = [];
+  let latestChapterList: any[] = [];
 
   try {
-    [allNovels, totalNovels, spotlightNovels] = await Promise.all([
+    [allNovels, totalNovels, spotlightNovels, latestChapterList] = await Promise.all([
       getNovels(db, currentPage, limits),
       getTotalNovelsCount(db),
       getTopNovelsByViews(db, 6),
+      getLatestChapters(db, 10),
     ]);
   } catch (error) {
     console.error("Database Connection Error:", error);
@@ -161,6 +165,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
               ))}
             </div>
           </section>
+        )}
+
+        {/* ─── LATEST CHAPTERS ───────────────── */}
+        {latestChapterList.length > 0 && (
+          <LatestChapters chapters={latestChapterList} />
         )}
 
         {/* ─── NEW RELEASES ───────────────── */}

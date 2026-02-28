@@ -9,6 +9,7 @@ import LanguageSwitcher from "./LanguageSwitcher";
 import ReportModal from "@/components/modals/ReportModal";
 import SearchModal from "@/components/modals/SearchModal";
 import { useTranslations } from 'next-intl';
+import Image from "next/image";
 
 export default function Navbar() {
   const t = useTranslations('Navbar');
@@ -126,7 +127,7 @@ export default function Navbar() {
               </button>
 
               {/* Switches */}
-              <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2">
                 <ThemeSwitcher />
               </div>
 
@@ -141,11 +142,21 @@ export default function Navbar() {
                 >
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white ring-2 ring-[var(--border)] hover:ring-[var(--accent)] transition-all"
+                    className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white ring-2 ring-[var(--border)] hover:ring-[var(--accent)] transition-all overflow-hidden"
                     style={{ background: "var(--gradient-primary)" }}
                     aria-label="User menu"
                   >
-                    {session.user.name?.charAt(0).toUpperCase() || "U"}
+                    {session.user.image ? (
+                      <Image
+                        src={session.user.image}
+                        alt={session.user.name ?? "User"}
+                        width={32}
+                        height={32}
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      session.user.name?.charAt(0).toUpperCase() || "U"
+                    )}
                   </button>
 
                   {/* Dropdown */}

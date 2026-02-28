@@ -124,3 +124,24 @@ export async function getChapterForReader(db: DrizzleD1Database<any>, slug: stri
     next: nextChapter
   };
 }
+
+// နောက်ဆုံး update လုပ်ထားသော Chapter စာရင်းများကို ယူရန် (Latest Chapters Section အတွက်)
+export async function getLatestChapters(db: DrizzleD1Database<any>, limitCount: number = 10) {
+  return await db
+    .select({
+      id: chapters.id,
+      title: chapters.title,
+      sortIndex: chapters.sortIndex,
+      createdAt: chapters.createdAt,
+      novelSlug: novels.slug,
+      novelTitle: novels.title,
+      novelCoverUrl: novels.coverUrl,
+      novelAuthor: novels.author,
+      novelStatus: novels.status,
+    })
+    .from(chapters)
+    .innerJoin(novels, eq(chapters.novelId, novels.id))
+    .orderBy(desc(chapters.createdAt))
+    .limit(limitCount)
+    .all();
+}

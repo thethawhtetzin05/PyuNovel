@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { signUp } from "@/lib/auth-client"; // Client function ကို ခေါ်သုံးမယ်
-import { useRouter } from "next/navigation";
+import { useRouter, Link } from "@/i18n/routing";
 export const runtime = 'edge';
-import Link from "next/link";
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
