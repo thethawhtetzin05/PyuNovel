@@ -45,7 +45,14 @@ jobs:
           # App-specific env vars (GitHub Secrets ကနေ ယူမယ်)
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
 
-      # 7. Capacitor sync (web assets → Android project)
+      # 7. Create missing out directory for Capacitor
+      - name: Prepare web assets
+        run: |
+          mkdir -p out
+          echo "<!DOCTYPE html><html><head><meta http-equiv=\"refresh\" content=\"0;url=https://pyunovel.com/\" /></head><body>Loading...</body></html>" > out/index.html
+          echo "Created out/ folder to bypass Capacitor sync requirements."
+
+      # 8. Capacitor sync (web assets → Android project)
       - name: Capacitor sync
         run: npx cap sync android
 
