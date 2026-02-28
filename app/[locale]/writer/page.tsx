@@ -2,8 +2,7 @@ import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getNovelsByUserId } from '@/lib/resources/novels/queries';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { redirect } from 'next/navigation';
-import { Link } from '@/i18n/routing';
+import { redirect, Link } from '@/i18n/routing';
 import NovelMenu from './novel-menu'; // ခုနက Client Component
 import { drizzle } from 'drizzle-orm/d1';
 
@@ -11,7 +10,7 @@ export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
   const { env } = getRequestContext();
   const auth = createAuth(env.DB);
   const session = await auth.api.getSession({
@@ -19,7 +18,8 @@ export default async function DashboardPage() {
   });
 
   if (!session) {
-    redirect('/sign-in');
+    redirect({ href: '/sign-in', locale: (await params).locale });
+    return null;
   }
 
   const db = drizzle(env.DB);

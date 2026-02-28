@@ -1,7 +1,7 @@
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/routing';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from "@/db/schema";
 import { getNovelsByUserId } from '@/lib/resources/novels/queries';
@@ -9,7 +9,7 @@ import ProfileClient from './profile-client';
 
 export const runtime = 'edge';
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ params }: { params: Promise<{ locale: string }> }) {
     const { env } = getRequestContext();
     const db = drizzle(env.DB, { schema });
     const auth = createAuth(env.DB);
@@ -17,8 +17,9 @@ export default async function ProfilePage() {
     // 1. Get Session
     const session = await auth.api.getSession({ headers: await headers() });
 
-    if (!session || !session.user) {
-        redirect('/sign-in');
+    if (!session) {
+        redirect({ href: '/sign-in', locale: (await params).locale });
+        return null;
     }
 
     const userId = session.user.id;
@@ -28,7 +29,10 @@ export default async function ProfilePage() {
         where: (user, { eq }) => eq(user.id, userId)
     });
 
-    if (!user) redirect('/sign-in');
+    if (!user) {
+        redirect({ href: '/sign-in', locale: (await params).locale });
+        return null;
+    }
 
     // 2. Get User's Novels
     const userNovels = await getNovelsByUserId(db, user.id);

@@ -3,7 +3,7 @@ import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getLastChapterIndex } from '@/lib/resources/chapters/queries';
 import { getVolumesByNovelId } from '@/lib/resources/volumes/queries';
 import { getNovelBySlug } from '@/lib/resources/novels/queries';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/routing';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { drizzle } from 'drizzle-orm/d1';
@@ -15,7 +15,7 @@ export const runtime = 'edge';
 export default async function CreateChapterPage({
   params
 }: {
-  params: Promise<{ slug: string }>
+  params: Promise<{ slug: string; locale: string }>
 }) {
   const { env } = getRequestContext();
   const { slug } = await params;
@@ -36,7 +36,8 @@ export default async function CreateChapterPage({
   });
 
   if (!session) {
-    redirect('/sign-in');
+    redirect({ href: '/sign-in', locale: (await params).locale });
+    return null;
   }
 
   // ၃။ ဝတ္ထုပိုင်ရှင် ဟုတ်/မဟုတ် စစ်မယ်

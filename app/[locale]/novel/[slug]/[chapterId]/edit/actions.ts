@@ -3,7 +3,8 @@
 import { getServerContext } from '@/lib/server-context';
 import { updateChapter } from '@/lib/resources/chapters/mutations';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/routing';
+import { getLocale } from 'next-intl/server';
 import { z } from 'zod';
 
 const UpdateChapterSchema = z.object({
@@ -16,7 +17,10 @@ const UpdateChapterSchema = z.object({
 export async function updateChapterAction(formData: FormData) {
   const { db, auth } = getServerContext();
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect('/sign-in');
+  if (!session) {
+    redirect({ href: '/sign-in', locale: await getLocale() });
+    return;
+  }
 
   const validatedFields = UpdateChapterSchema.safeParse({
     chapterId: formData.get('chapterId'),
@@ -36,11 +40,11 @@ export async function updateChapterAction(formData: FormData) {
       title,
       content,
       updatedAt: new Date()
-    }, session.user.id); // ✅ userId ထည့်ပြီ
+    }, session!.user.id); // ✅ userId ထည့်ပြီ
   } catch (error) {
     console.error("Update chapter failed:", String(error));
     throw new Error("Failed to update chapter", { cause: error });
   }
 
-  redirect(`/novel/${novelSlug}`);
+  redirect({ href: `/novel/${novelSlug}` as any, locale: await getLocale() });
 }

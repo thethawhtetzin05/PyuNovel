@@ -153,9 +153,12 @@ export default async function NovelDetailsPage({ params }: Props) {
           {/* Author */}
           <p className="text-lg text-[var(--text-muted)] font-medium mb-6 flex items-center justify-center md:justify-start gap-2">
             <span className="opacity-70">By</span>
-            <span className="text-[var(--action)] font-bold hover:underline transition-all cursor-pointer">
+            <Link
+              href={`/author/${novel.ownerId}`}
+              className="text-[var(--action)] font-bold hover:underline transition-all cursor-pointer"
+            >
               {novel.author}
-            </span>
+            </Link>
           </p>
 
           {/* Tags & Status Badges */}

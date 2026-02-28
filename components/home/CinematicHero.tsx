@@ -140,7 +140,7 @@ export default function CinematicHero({ novels }: Props) {
 
             {/* ─── MOBILE: Coverflow carousel ────────────────────────── */}
             <div
-                className="md:hidden relative w-full"
+                className="md:hidden relative w-full touch-pan-y select-none"
                 style={{ height: "320px" }}
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}

@@ -4,12 +4,16 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from '@/i18n/routing';
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Crown, Sparkles, Save, Folder, Edit2, Trash2, MoreVertical, ChevronDown } from "lucide-react";
+import { ChevronLeft, Crown, Sparkles, Save, Folder, Edit2, Trash2, MoreVertical, ChevronDown, UploadCloud } from "lucide-react";
+import { useTranslations } from 'next-intl';
+
+// Bulk Upload Import
+const BulkUploadModal = dynamic(() => import('../bulk-upload-modal'), { ssr: false });
 
 // Editor Import
 const Editor = dynamic(() => import("@/components/editor/Editor"), {
   ssr: false,
-  loading: () => <div className="h-[70vh] animate-pulse bg-gray-50 rounded-lg"></div>
+  loading: () => <div className="h-[70vh] animate-pulse bg-[var(--surface-2)] rounded-lg"></div>
 });
 
 interface Volume {
@@ -38,7 +42,10 @@ interface ChapterFormProps {
 
 export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [], lastVolumeId, initialData }: ChapterFormProps) {
   const router = useRouter();
+  const t = useTranslations('ChapterForm');
+  const tNav = useTranslations('Navbar');
   const [loading, setLoading] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
 
   const [localVolumes, setLocalVolumes] = useState<Volume[]>(volumes);
   const [selectedVolume, setSelectedVolume] = useState<string>(
@@ -214,7 +221,7 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
   return (
     <form
       onSubmit={handleSubmit}
-      className="min-h-screen bg-white"
+      className="min-h-screen bg-[var(--surface)]"
     >
 
       {/* ✅ Edit Mode ဆိုရင် ID ကို Hidden Input အနေနဲ့ ထည့်ပေးပေးရမယ် */}
@@ -224,17 +231,17 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
       {/* ========================
           1. Top Navigation Bar 
          ======================== */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex-wrap">
+      <div className="sticky top-0 z-30 bg-[var(--surface)]/80 backdrop-blur-md border-b border-[var(--border)] px-6 py-4 flex-wrap">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
 
           {/* Left: Back & Chapter Info */}
           <div className="flex flex-wrap items-center gap-4">
             <Link
               href={`/novel/${slug}`}
-              className="group flex items-center gap-1 text-gray-400 hover:text-gray-900 transition-colors"
+              className="group flex items-center gap-1 text-gray-400 hover:text-[var(--foreground)] transition-colors"
             >
               <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-              <span className="font-medium text-sm">Back</span>
+              <span className="font-medium text-sm">{t('back')}</span>
             </Link>
 
             <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
@@ -243,19 +250,19 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 text-sm bg-gray-50 hover:bg-gray-100 border border-transparent focus:border-gray-300 rounded px-3 py-1.5 transition-all text-gray-900 font-semibold"
+                className="flex items-center gap-2 text-sm bg-[var(--surface-2)] hover:bg-gray-100 border border-transparent focus:border-gray-300 rounded px-3 py-1.5 transition-all text-[var(--foreground)] font-semibold"
               >
                 <Folder size={16} className="text-gray-400" />
                 <span className="truncate max-w-[120px]">
                   {selectedVolume
-                    ? localVolumes.find(v => v.id.toString() === selectedVolume)?.name || "Unknown Volume"
-                    : "No Volume"}
+                    ? localVolumes.find(v => v.id.toString() === selectedVolume)?.name || t('unknownVolume')
+                    : t('noVolume')}
                 </span>
                 <ChevronDown size={14} className={`text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute top-full left-0 mt-1 w-56 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="p-1.5 flex flex-col gap-0.5 rounded-t-xl">
                     {/* No Volume Option */}
                     {localVolumes.length === 0 && (
@@ -265,22 +272,22 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
                           setSelectedVolume("");
                           setIsDropdownOpen(false);
                         }}
-                        className={`flex items-center px-3 py-2 text-sm rounded-lg hover:bg-gray-50 transition-colors text-left ${selectedVolume === "" ? "bg-blue-50/50 text-blue-600 font-bold" : "text-gray-600 font-medium"}`}
+                        className={`flex items-center px-3 py-2 text-sm rounded-lg hover:bg-[var(--surface-2)] transition-colors text-left ${selectedVolume === "" ? "bg-[var(--action)]/10 text-[var(--action)] font-bold" : "text-gray-600 font-medium"}`}
                       >
-                        No Volume
+                        {t('noVolume')}
                       </button>
                     )}
 
                     {/* Volumes List */}
                     {localVolumes.map((v) => (
-                      <div key={v.id} className={`group flex items-center justify-between px-2 py-1.5 text-sm rounded-lg hover:bg-gray-50 transition-colors ${selectedVolume === v.id.toString() ? "bg-blue-50/50" : ""}`}>
+                      <div key={v.id} className={`group flex items-center justify-between px-2 py-1.5 text-sm rounded-lg hover:bg-[var(--surface-2)] transition-colors ${selectedVolume === v.id.toString() ? "bg-[var(--action)]/10" : ""}`}>
                         <button
                           type="button"
                           onClick={() => {
                             setSelectedVolume(v.id.toString());
                             setIsDropdownOpen(false);
                           }}
-                          className={`flex-1 text-left truncate pr-2 ${selectedVolume === v.id.toString() ? "text-blue-600 font-bold" : "text-gray-600 font-medium"}`}
+                          className={`flex-1 text-left truncate pr-2 ${selectedVolume === v.id.toString() ? "text-[var(--action)] font-bold" : "text-gray-600 font-medium"}`}
                         >
                           {v.name}
                         </button>
@@ -296,12 +303,12 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
                             {/* Actions Dropdown */}
                             {/* Inner wrapper uses pl-1 to create an invisible hover bridge, preventing instant menu close */}
                             <div className="absolute left-full top-0 pl-1 hidden group-hover/menu:block hover:block z-[60] min-w-[124px]">
-                              <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-                                <button type="button" onClick={() => { setEditingVolume({ id: v.id.toString(), name: v.name }); setShowEditModal(true); setIsDropdownOpen(false); }} className="w-full text-left px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 flex items-center gap-2">
-                                  <Edit2 size={12} /> Edit Name
+                              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg overflow-hidden">
+                                <button type="button" onClick={() => { setEditingVolume({ id: v.id.toString(), name: v.name }); setShowEditModal(true); setIsDropdownOpen(false); }} className="w-full text-left px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-[var(--surface-2)] flex items-center gap-2">
+                                  <Edit2 size={12} /> {t('editName')}
                                 </button>
                                 <button type="button" onClick={() => handleDeleteVolume(v.id.toString())} className="w-full text-left px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 flex items-center gap-2">
-                                  <Trash2 size={12} /> Delete
+                                  <Trash2 size={12} /> {t('delete')}
                                 </button>
                               </div>
                             </div>
@@ -311,7 +318,7 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
                     ))}
                   </div>
 
-                  <div className="p-1.5 border-t border-gray-100 bg-gray-50/50 rounded-b-xl">
+                  <div className="p-1.5 border-t border-[var(--border)] bg-[var(--surface-2)]/50 rounded-b-xl">
                     <button
                       type="button"
                       onClick={() => {
@@ -320,7 +327,7 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
                       }}
                       className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-bold text-blue-600 hover:bg-blue-100/50 rounded-lg transition-colors"
                     >
-                      + Add New Volume
+                      + {t('addNewVolume')}
                     </button>
                   </div>
                 </div>
@@ -330,14 +337,14 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
             <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
 
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-500 font-medium uppercase tracking-wide text-xs">Order.No</span>
+              <span className="text-[var(--text-muted)] font-medium uppercase tracking-wide text-xs">{t('orderNo')}</span>
               <input
                 name="sortIndex"
                 type="number"
                 // ✅ Edit ဆိုရင် အဟောင်းပြမယ်၊ New ဆိုရင် အသစ်ပြမယ်
                 defaultValue={initialData?.sortIndex ?? suggestedIndex}
                 step="0.1"
-                className="w-16 bg-gray-50 hover:bg-gray-100 focus:bg-white border border-transparent focus:border-gray-300 rounded px-2 py-1 font-bold text-gray-900 outline-none text-center transition-all"
+                className="w-16 bg-[var(--surface-2)] hover:bg-gray-100 focus:bg-[var(--surface)] border border-transparent focus:border-gray-300 rounded px-2 py-1 font-bold text-[var(--foreground)] outline-none text-center transition-all"
                 required
               />
             </div>
@@ -348,9 +355,9 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
 
             {/* ✨ Premium Toggle Switch ✨ */}
             <label className="cursor-pointer flex items-center gap-2 sm:gap-3 group select-none">
-              <div className="flex items-center gap-1.5 text-gray-500 group-hover:text-yellow-600 transition-colors">
+              <div className="flex items-center gap-1.5 text-[var(--text-muted)] group-hover:text-yellow-600 transition-colors">
                 <Crown size={16} />
-                <span className="text-sm font-medium hidden sm:block">Premium</span>
+                <span className="text-sm font-medium hidden sm:block">{t('premium')}</span>
               </div>
 
               <div className="relative inline-flex items-center">
@@ -361,9 +368,21 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
                   // ✅ Edit Mode အတွက် defaultChecked ထည့်ပေးရမယ်
                   defaultChecked={initialData?.isPaid || false}
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500 shadow-inner"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--surface)] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500 shadow-inner"></div>
               </div>
             </label>
+
+            {/* 🚀 Bulk Upload Button (Visible only in Create mode for now, or always if desired) */}
+            {!initialData && (
+              <button
+                type="button"
+                onClick={() => setShowBulkUpload(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold bg-[var(--surface-2)] text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--action)] hover:text-[var(--action)] transition-all active:scale-95 shadow-sm"
+              >
+                <UploadCloud size={16} />
+                <span>{tNav('bulkUpload')}</span>
+              </button>
+            )}
 
             {/* 🚀 Publish / Save Button */}
             <button
@@ -372,11 +391,11 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
               className="bg-slate-900 hover:bg-black text-white font-medium py-2.5 px-8 rounded-full shadow-lg shadow-gray-200 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {loading ? (
-                <>Saving...</>
+                <>{t('saving')}</>
               ) : (
                 <>
                   {/* Edit Mode ဆို Save, New ဆို Publish ပြမယ် */}
-                  <span>{initialData ? "Save Changes" : "Publish"}</span>
+                  <span>{initialData ? t('saveChanges') : t('publish')}</span>
                   {initialData ? (
                     <Save size={16} className="text-gray-300" />
                   ) : (
@@ -400,8 +419,8 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
           type="text"
           // ✅ Edit Mode အတွက် defaultValue
           defaultValue={initialData?.title}
-          placeholder="Chapter Title"
-          className="w-full text-3xl font-extrabold placeholder-gray-200 border-none outline-none focus:ring-0 p-0 bg-transparent leading-tight font-serif tracking-tight text-gray-900"
+          placeholder={t('chapterTitlePlaceholder')}
+          className="w-full text-3xl font-extrabold placeholder-gray-200 border-none outline-none focus:ring-0 p-0 bg-transparent leading-tight font-serif tracking-tight text-[var(--foreground)]"
           autoFocus
           required
           autoComplete="off"
@@ -422,16 +441,16 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
       {/* Volume Creation Modal */}
       {showVolumeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[var(--surface)] rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Create Volume</h3>
-              <p className="text-sm text-gray-500 mb-5">Enter a clear name for the new volume.</p>
+              <h3 className="text-xl font-bold text-[var(--foreground)] mb-1">{t('createVolume')}</h3>
+              <p className="text-sm text-[var(--text-muted)] mb-5">{t('createVolumeDesc')}</p>
               <input
                 type="text"
                 value={newVolumeName}
                 onChange={(e) => setNewVolumeName(e.target.value)}
-                placeholder="e.g., Volume 1: the start"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                placeholder={t('volumeNamePlaceholder')}
+                className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--foreground)] outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -441,7 +460,7 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
                 }}
               />
             </div>
-            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+            <div className="bg-[var(--surface-2)] px-6 py-4 flex justify-end gap-3 border-t border-[var(--border)]">
               <button
                 type="button"
                 onClick={() => {
@@ -451,7 +470,7 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
                 className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors"
                 disabled={isCreatingVolume}
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 type="button"
@@ -460,7 +479,7 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
                 className="px-5 py-2.5 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-xl transition-all disabled:opacity-50 flex items-center gap-2 shadow-md active:scale-95"
               >
                 {isCreatingVolume && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                Save Volume
+                {t('saveVolume')}
               </button>
             </div>
           </div>
@@ -470,15 +489,15 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
       {/* Edit Volume Modal */}
       {showEditModal && editingVolume && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[var(--surface)] rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Edit Volume Name</h3>
-              <p className="text-sm text-gray-500 mb-5">Change the name of your volume.</p>
+              <h3 className="text-xl font-bold text-[var(--foreground)] mb-1">{t('editVolumeName')}</h3>
+              <p className="text-sm text-[var(--text-muted)] mb-5">{t('editVolumeDesc')}</p>
               <input
                 type="text"
                 value={editingVolume.name}
                 onChange={(e) => setEditingVolume({ ...editingVolume, name: e.target.value })}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--foreground)] outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -488,14 +507,14 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
                 }}
               />
             </div>
-            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+            <div className="bg-[var(--surface-2)] px-6 py-4 flex justify-end gap-3 border-t border-[var(--border)]">
               <button
                 type="button"
                 onClick={() => { setShowEditModal(false); setEditingVolume(null); }}
                 className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors"
                 disabled={isCreatingVolume}
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 type="button"
@@ -504,7 +523,7 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
                 className="px-5 py-2.5 text-sm font-bold text-white bg-slate-900 hover:bg-black rounded-xl transition-all disabled:opacity-50 flex items-center gap-2 shadow-md active:scale-95"
               >
                 {isCreatingVolume && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                Save Changes
+                {t('saveChanges')}
               </button>
             </div>
           </div>
@@ -514,34 +533,43 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
       {/* Delete Volume Confirmation Modal */}
       {deletingVolumeId && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[var(--surface)] rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
                 <Trash2 className="text-red-600" size={24} />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Volume?</h3>
-              <p className="text-sm text-gray-500">
-                Are you sure you want to delete this volume? All chapters inside it will be moved to <strong>"No Volume"</strong>. This action cannot be undone.
+              <h3 className="text-xl font-bold text-[var(--foreground)] mb-2">{t('deleteVolumeTitle')}</h3>
+              <p className="text-sm text-[var(--text-muted)]">
+                {t('deleteVolumeWarn1')} <strong>"{t('noVolume')}"</strong>. {t('deleteVolumeWarn2')}
               </p>
             </div>
-            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+            <div className="bg-[var(--surface-2)] px-6 py-4 flex justify-end gap-3 border-t border-[var(--border)]">
               <button
                 type="button"
                 onClick={() => setDeletingVolumeId(null)}
                 className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 type="button"
                 onClick={confirmDeleteVolume}
                 className="px-5 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all shadow-md active:scale-95"
               >
-                Delete
+                {t('deleteButton')}
               </button>
             </div>
           </div>
         </div>
+      )}
+      {/* Bulk Upload Modal */}
+      {showBulkUpload && (
+        <BulkUploadModal
+          novelId={novelId}
+          novelSlug={slug}
+          volumes={localVolumes}
+          onClose={() => setShowBulkUpload(false)}
+        />
       )}
     </form>
   );

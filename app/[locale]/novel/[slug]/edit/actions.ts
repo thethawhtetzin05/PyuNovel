@@ -4,7 +4,8 @@ import { getRequestContext } from '@cloudflare/next-on-pages';
 import { updateNovel } from '@/lib/resources/novels/mutations';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/routing';
+import { getLocale } from 'next-intl/server';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from "@/db/schema";
 import { z } from 'zod';
@@ -26,7 +27,10 @@ export async function updateNovelAction(formData: FormData) {
   // Auth Check
   const auth = createAuth(env.DB);
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect('/sign-in');
+  if (!session) {
+    redirect({ href: '/sign-in', locale: await getLocale() });
+    return;
+  }
 
   // Form Data Validation
   const validatedFields = UpdateNovelSchema.safeParse({
@@ -81,8 +85,8 @@ export async function updateNovelAction(formData: FormData) {
     tags: processedTags,
     slug: englishTitle // Slug ကိုပါ ပြောင်းပေးလိုက်မယ် (သတိထားပါ: Link တွေပြောင်းသွားနိုင်ပါတယ်)
   },
-    session.user.id);
+    session!.user.id);
 
   // ပြီးရင် ပြင်လိုက်တဲ့ Novel ဆီ ပြန်ပို့မယ်
-  redirect(`/novel/${updatedNovel.slug}`);
+  redirect({ href: `/novel/${updatedNovel.slug}` as any, locale: await getLocale() });
 }

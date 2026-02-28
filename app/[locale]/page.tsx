@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getNovels, getTotalNovelsCount, getTopNovelsByViews } from '@/lib/resources/novels/queries';
 import { getLatestChapters } from '@/lib/resources/chapters/queries';
+import { getLatestAnnouncements } from '@/lib/resources/announcements/queries';
 import { drizzle } from 'drizzle-orm/d1';
 import { novels } from "@/db/schema";
 import CinematicHero from '@/components/home/CinematicHero';
@@ -37,13 +38,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   let totalNovels = 0;
   let spotlightNovels: Novel[] = [];
   let latestChapterList: any[] = [];
+  let announcementList: any[] = [];
 
   try {
-    [allNovels, totalNovels, spotlightNovels, latestChapterList] = await Promise.all([
+    [allNovels, totalNovels, spotlightNovels, latestChapterList, announcementList] = await Promise.all([
       getNovels(db, currentPage, limits),
       getTotalNovelsCount(db),
       getTopNovelsByViews(db, 6),
       getLatestChapters(db, 10),
+      getLatestAnnouncements(db, 3),
     ]);
   } catch (error) {
     console.error("Database Connection Error:", error);
@@ -81,42 +84,32 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
             </div>
 
             <div className="flex-1 bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 flex flex-col gap-5">
-              {/* Dummy announcement for WuxiaWorld exact look */}
-              <div className="flex gap-3 group cursor-pointer">
-                <div className="w-10 h-10 bg-[var(--surface-2)] border border-[var(--border)] rounded flex items-center justify-center shrink-0 shadow-sm">
-                  <span className="text-lg">📢</span>
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-[var(--foreground)] leading-snug group-hover:text-[var(--action)] transition-colors line-clamp-2">
-                    Welcome to the redesigned PyuNovel platform!
-                  </h3>
-                  <p className="text-[11px] text-[var(--text-muted)] mt-1 font-medium">Just now</p>
-                </div>
-              </div>
 
-              <div className="flex gap-3 group cursor-pointer">
-                <div className="w-10 h-10 bg-[var(--surface-2)] border border-[var(--border)] rounded flex items-center justify-center shrink-0 shadow-sm">
-                  <span className="text-lg">🏆</span>
+              {announcementList.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-[var(--text-muted)] text-sm py-8">
+                  No announcements yet.
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-[var(--foreground)] leading-snug group-hover:text-[var(--action)] transition-colors line-clamp-2">
-                    Monthly Writing Contest winners announced.
-                  </h3>
-                  <p className="text-[11px] text-[var(--text-muted)] mt-1 font-medium">2 days ago</p>
-                </div>
-              </div>
+              ) : (
+                announcementList.map((announcement) => (
+                  <div key={announcement.id} className="flex gap-3 group cursor-pointer">
+                    <div className="w-10 h-10 bg-[var(--surface-2)] border border-[var(--border)] rounded flex items-center justify-center shrink-0 shadow-sm">
+                      <span className="text-lg">{announcement.icon || '📢'}</span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-[var(--foreground)] leading-snug group-hover:text-[var(--action)] transition-colors line-clamp-2">
+                        {announcement.title}
+                      </h3>
+                      {announcement.content && (
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5 line-clamp-1">{announcement.content}</p>
+                      )}
+                      <p className="text-[11px] text-[var(--text-muted)] mt-1 font-medium">
+                        {new Date(announcement.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
 
-              <div className="flex gap-3 group cursor-pointer">
-                <div className="w-10 h-10 bg-[var(--surface-2)] border border-[var(--border)] rounded flex items-center justify-center shrink-0 shadow-sm">
-                  <span className="text-lg">🔥</span>
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-[var(--foreground)] leading-snug group-hover:text-[var(--action)] transition-colors line-clamp-2">
-                    New VIP tiers are now available. Support your favorite authors!
-                  </h3>
-                  <p className="text-[11px] text-[var(--text-muted)] mt-1 font-medium">1 week ago</p>
-                </div>
-              </div>
             </div>
           </aside>
         </section>

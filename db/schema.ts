@@ -166,3 +166,22 @@ export const collections = sqliteTable('collections', {
   userIdx: index('collection_user_idx').on(table.userId),
   novelIdx: index('collection_novel_idx').on(table.novelId),
 }));
+
+// ==========================================
+// 5. Global Content (Announcements)
+// ==========================================
+
+export const announcements = sqliteTable('announcements', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  content: text('content'),
+  icon: text('icon'), // e.g. emojis "📢", "🏆"
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
+}, (table) => ({
+  activeIdx: index('announcement_active_idx').on(table.isActive),
+  createdAtIdx: index('announcement_created_at_idx').on(table.createdAt),
+}));
