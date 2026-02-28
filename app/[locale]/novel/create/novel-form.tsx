@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { useRouter } from 'next/navigation';
 
 // ✅ Props လက်ခံနိုင်အောင် Interface ဆောက်လိုက်ပါတယ်

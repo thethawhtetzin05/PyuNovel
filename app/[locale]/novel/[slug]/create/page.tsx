@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { drizzle } from 'drizzle-orm/d1';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import ChapterForm from './chapter-form';
 
 export const runtime = 'edge';

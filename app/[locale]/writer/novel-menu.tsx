@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useTransition } from 'react'; // useTransition ထပ်ထည့်ထားတယ်
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 
 // Props မှာ novelId ထပ်ဖြည့်လိုက်ပါတယ်
 export default function NovelMenu({ slug, novelId }: { slug: string, novelId: string }) {

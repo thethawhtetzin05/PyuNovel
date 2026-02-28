@@ -3,7 +3,7 @@ import { getNovelsByUserId } from '@/lib/resources/novels/queries';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import NovelMenu from './novel-menu'; // ခုနက Client Component
 import { drizzle } from 'drizzle-orm/d1';
 

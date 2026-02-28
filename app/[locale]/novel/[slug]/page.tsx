@@ -11,7 +11,7 @@ import NovelTabs from './novel-tabs';
 import CollectButton from './collect-button';
 import ReviewSection from '@/components/novel/review-section';
 import DownloadButton from '@/components/offline/DownloadButton';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import Image from 'next/image';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from "@/db/schema"; // 👈 Schema import လုပ်ထားရမယ်

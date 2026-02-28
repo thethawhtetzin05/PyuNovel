@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
+import { Link } from '@/i18n/routing';
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Crown, Sparkles, Save, Folder, Edit2, Trash2, MoreVertical, ChevronDown } from "lucide-react";

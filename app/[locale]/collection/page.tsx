@@ -3,7 +3,7 @@ import { getUserCollections } from '@/lib/resources/collections/queries';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { drizzle } from 'drizzle-orm/d1';
 
 export const runtime = 'edge';

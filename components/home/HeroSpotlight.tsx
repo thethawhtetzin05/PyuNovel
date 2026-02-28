@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
+import { Link } from '@/i18n/routing';
 import Image from "next/image";
 
 type SpotlightNovel = {

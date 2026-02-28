@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { Calendar, Crown, Folder, Pencil, Trash2, ChevronRight, UploadCloud, ChevronDown, ChevronUp } from "lucide-react";
 import dynamic from 'next/dynamic';
 

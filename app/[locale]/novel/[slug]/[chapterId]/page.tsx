@@ -1,7 +1,7 @@
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getChapterForReader } from '@/lib/resources/chapters/queries';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { drizzle } from 'drizzle-orm/d1';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";

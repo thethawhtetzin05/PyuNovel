@@ -4,7 +4,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { getTopNovelsByViews, getLatestNovels, getRecentlyUpdatedNovels } from '@/lib/resources/novels/queries';
 import RankingSpotlight from '@/components/novel/RankingSpotlight';
 import RankingRow from '@/components/novel/RankingRow';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 
 export const runtime = 'edge';
 
