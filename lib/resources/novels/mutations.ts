@@ -1,5 +1,5 @@
 import { DrizzleD1Database } from "drizzle-orm/d1";
-import { novels, chapters } from '@/db/schema';
+import { novels, chapters, volumes, collections, reviews } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import * as schema from "@/db/schema";
 import { generateSlug } from '@/lib/utils'; // ဒါရှိတယ်လို့ ယူဆပါတယ်
@@ -98,11 +98,11 @@ export async function deleteNovel(db: DrizzleD1Database<typeof schema>, novelId:
     throw new Error("Novel not found or unauthorized");
   }
 
-  // ❗ Foreign Key Constraint Error မတက်အောင် Chapters တွေကို အရင်ဖျက်ပါမယ်
-  await db
-    .delete(chapters)
-    .where(eq(chapters.novelId, id))
-    .execute();
+  // ❗ Foreign Key Constraint Error မတက်အောင် ဆက်စပ်နေတဲ့ အချက်အလက်တွေကို အရင်ဖျက်ပါမယ်
+  await db.delete(reviews).where(eq(reviews.novelId, id)).execute();
+  await db.delete(collections).where(eq(collections.novelId, id)).execute();
+  await db.delete(chapters).where(eq(chapters.novelId, id)).execute();
+  await db.delete(volumes).where(eq(volumes.novelId, id)).execute();
 
   // ၂။ ဝတ္ထုကို ဖျက်ပါမည်
   await db

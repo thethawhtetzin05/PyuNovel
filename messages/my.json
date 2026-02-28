@@ -68,7 +68,7 @@
     "NovelForm": {
         "coverImage": "မျက်နှာဖုံးပုံ",
         "uploadCover": "ပုံတင်မယ်",
-        "formats": "PNG, JPG",
+        "formats": "PNG, JPG (600 x 900)",
         "novelTitle": "ဝတ္ထုခေါင်းစဉ်",
         "novelTitlePlaceholder": "သင့်ဝတ္ထုခေါင်းစဉ်",
         "englishTitle": "အင်္ဂလိပ်ခေါင်းစဉ် (URL Slug)",
@@ -87,5 +87,19 @@
         "createDesc": "ဝတ္ထုများရေးသားပြီး သင့်စိတ်ကူးများကို မျှဝေလိုက်ပါ။",
         "editTitle": "ဝတ္ထုကို ပြင်မယ် ✏️",
         "editDesc": "အချက်အလက်များ ဒါမှမဟုတ် မျက်နှာဖုံးကို ပြင်မယ်။"
+    },
+    "Modal": {
+        "deleteNovelTitle": "ဝတ္ထုကို ဖျက်မှာလား?",
+        "deleteNovelDesc": "ဝတ္ထုကို ဖျက်မှာ သေချာပြီလား? ဖျက်ပြီးရင် ပြန်ယူလို့ မရပါဘူး။",
+        "deleteText": "ဖျက်မယ်",
+        "cancel": "မလုပ်တော့ပါ",
+        "errorTitle": "အမှားအယွင်း",
+        "deleteErrorDesc": "ဝတ္ထုကို ဖျက်၍မရပါ"
+    },
+    "NovelMenu": {
+        "addChapter": "✍️ အခန်းသစ် ထည့်မယ်",
+        "editNovel": "✏️ ဝတ္ထုကို ပြင်မယ်",
+        "delete": "🗑️ ဖျက်မယ်",
+        "deleting": "ဖျက်နေသည်..."
     }
 }

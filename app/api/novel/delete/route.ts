@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
         await deleteNovel(db, novelId, session.user.id);
 
-        revalidatePath('/writer');
+        revalidatePath('/[locale]/writer', 'page');
         return NextResponse.json({ success: true });
 
     } catch (error) {

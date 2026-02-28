@@ -29,7 +29,10 @@ export const ModalProvider = () => {
           if (data.onConfirm) {
             await data.onConfirm();
           }
-          closeModal();
+          // Only close if it's still specifically the 'confirm' modal
+          if (useModalStore.getState().modalType === "confirm") {
+            closeModal();
+          }
         }}
         onClose={closeModal}
       />
