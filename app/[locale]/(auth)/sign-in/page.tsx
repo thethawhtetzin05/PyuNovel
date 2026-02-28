@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "@/lib/auth-client"; // auth-client က function ကိုသုံးမယ်
+import { signIn } from "@/lib/auth-client";
 import { useTranslations } from 'next-intl';
+import { useModalStore } from "@/lib/store/use-modal-store";
 export const runtime = 'edge';
 import { useRouter, Link } from "@/i18n/routing";
 
 export default function SignInPage() {
+  const openModal = useModalStore((state) => state.openModal);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -19,7 +21,7 @@ export default function SignInPage() {
     await signIn.email({
       email,
       password,
-      callbackURL: "/", // Login ဝင်ပြီးရင် Home ကို ပြန်ပို့မယ်
+      callbackURL: "/",
     }, {
       onSuccess: () => {
         setLoading(false);
@@ -27,7 +29,11 @@ export default function SignInPage() {
       },
       onError: (ctx) => {
         setLoading(false);
-        alert(ctx.error.message); // Password မှားရင် Error ပြမယ်
+        openModal("alert", {
+          title: t('loginFailed') || "Login Failed",
+          message: ctx.error.message || "Please check your credentials.",
+          type: "error"
+        });
       },
     });
   };
@@ -42,7 +48,6 @@ export default function SignInPage() {
         </div>
 
         <div className="space-y-4">
-          {/* Email Input */}
           <div>
             <label className="block text-sm font-medium text-[var(--foreground)] mb-1">{t('email')}</label>
             <input
@@ -54,7 +59,6 @@ export default function SignInPage() {
             />
           </div>
 
-          {/* Password Input */}
           <div>
             <label className="block text-sm font-medium text-[var(--foreground)] mb-1">{t('password')}</label>
             <input
@@ -66,7 +70,6 @@ export default function SignInPage() {
             />
           </div>
 
-          {/* Show Password Toggle */}
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -80,7 +83,6 @@ export default function SignInPage() {
             </label>
           </div>
 
-          {/* Sign In Button */}
           <button
             onClick={handleSignIn}
             disabled={loading}

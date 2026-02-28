@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "../globals.css";
 import Navbar from "@/components/ui/Navbar";
 import { ThemeProvider } from "@/components/ui/theme-provider";
+import { ModalProvider } from "@/components/providers/modal-provider"; // 👈 Provider အသစ်
 import Script from "next/script";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -49,6 +50,7 @@ export default async function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="light" themes={['light', 'dark']}>
             <div className="min-h-screen flex flex-col">
               <Navbar />
+              <ModalProvider /> {/* 👈 ModalUI နေရာ */}
               <main className="flex-1">
                 {children}
               </main>

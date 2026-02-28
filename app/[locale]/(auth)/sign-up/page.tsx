@@ -1,12 +1,14 @@
-"use client"; // Client Component ဖြစ်ရပါမယ်
+"use client";
 
 import { useState } from "react";
-import { signUp } from "@/lib/auth-client"; // Client function ကို ခေါ်သုံးမယ်
+import { signUp } from "@/lib/auth-client";
 import { useRouter, Link } from "@/i18n/routing";
 import { useTranslations } from 'next-intl';
+import { useModalStore } from "@/lib/store/use-modal-store";
 export const runtime = 'edge';
 
 export default function SignUpPage() {
+  const openModal = useModalStore((state) => state.openModal);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -18,7 +20,11 @@ export default function SignUpPage() {
 
   const handleSignUp = async () => {
     if (password !== confirmPassword) {
-      alert(t('passwordMismatch') || "Passwords do not match");
+      openModal("alert", {
+        title: "Error",
+        message: t('passwordMismatch') || "Passwords do not match",
+        type: "error"
+      });
       return;
     }
 
@@ -27,18 +33,19 @@ export default function SignUpPage() {
       email,
       password,
       name,
-      callbackURL: "/", // အကောင့်ဖွင့်ပြီးရင် Home ကို ပြန်ပို့မယ်
+      callbackURL: "/",
     }, {
-      onRequest: () => {
-        // စတင်လုပ်ဆောင်နေပြီ (Loading state...)
-      },
       onSuccess: () => {
         setLoading(false);
-        router.push("/"); // Success
+        router.push("/");
       },
       onError: (ctx) => {
         setLoading(false);
-        alert(ctx.error.message); // Error တက်ရင် Alert ပြမယ်
+        openModal("alert", {
+          title: t('registrationFailed') || "Registration Failed",
+          message: ctx.error.message || "Something went wrong. Please try again.",
+          type: "error"
+        });
       },
     });
   };
@@ -53,7 +60,6 @@ export default function SignUpPage() {
         </div>
 
         <div className="space-y-4">
-          {/* Name Input */}
           <div>
             <label className="block text-sm font-medium text-[var(--foreground)] mb-1">{t('name')}</label>
             <input
@@ -65,7 +71,6 @@ export default function SignUpPage() {
             />
           </div>
 
-          {/* Email Input */}
           <div>
             <label className="block text-sm font-medium text-[var(--foreground)] mb-1">{t('email')}</label>
             <input
@@ -77,7 +82,6 @@ export default function SignUpPage() {
             />
           </div>
 
-          {/* Password Input */}
           <div>
             <label className="block text-sm font-medium text-[var(--foreground)] mb-1">{t('password')}</label>
             <input
@@ -89,7 +93,6 @@ export default function SignUpPage() {
             />
           </div>
 
-          {/* Confirm Password Input */}
           <div>
             <label className="block text-sm font-medium text-[var(--foreground)] mb-1">{t('confirmPassword') || "Confirm Password"}</label>
             <input
@@ -101,7 +104,6 @@ export default function SignUpPage() {
             />
           </div>
 
-          {/* Show Password Toggle */}
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -115,7 +117,6 @@ export default function SignUpPage() {
             </label>
           </div>
 
-          {/* Sign Up Button */}
           <button
             onClick={handleSignUp}
             disabled={loading}
