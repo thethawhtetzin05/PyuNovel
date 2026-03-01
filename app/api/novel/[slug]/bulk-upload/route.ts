@@ -51,8 +51,9 @@ export async function POST(
             title: ch.title,
             content: ch.content,
             sortIndex: startIndex + i,
-            isPaid: false,
+            isPaid: 0, // Boolean error ကင်းအောင် 0/1 သုံးပါမယ်
             createdAt: new Date(),
+            updatedAt: new Date(),
         }));
 
         const chunkSize = 50;
