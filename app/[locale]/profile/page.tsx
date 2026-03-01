@@ -34,6 +34,16 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
         return null;
     }
 
+    // 🔥 D1 DB ထဲကနေ ဆွဲထုတ်လာတဲ့ အချိန်မှာ telegramId က null မဟုတ်ဘဲ စာသား အဖြစ် ဝင်နေခဲ့ရင် သန့်ရှင်းပေးမယ်
+    const safeTelegramId = user.telegramId && typeof user.telegramId === 'string' && user.telegramId.trim() !== "" && user.telegramId.trim() !== "null" && user.telegramId.trim() !== "undefined"
+        ? user.telegramId
+        : null;
+
+    const safeUser = {
+        ...user,
+        telegramId: safeTelegramId
+    };
+
     // 2. Get User's Novels
     const userNovels = await getNovelsByUserId(db, user.id);
 
@@ -45,7 +55,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
 
     return (
         <ProfileClient
-            user={user}
+            user={safeUser}
             userNovels={userNovels}
             joinedDate={joinedDate}
         />
