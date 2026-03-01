@@ -7,9 +7,11 @@ import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export const runtime = 'edge';
 
-const getToken = () => {
+const getToken = (reqEnv?: any) => {
     // Attempt to get token from Edge environment first, fallback to standard process.env
     try {
+        if (reqEnv && reqEnv.TELEGRAM_BOT_TOKEN) return reqEnv.TELEGRAM_BOT_TOKEN;
+        
         const env = getRequestContext().env;
         if (env && env.TELEGRAM_BOT_TOKEN) return env.TELEGRAM_BOT_TOKEN;
     } catch (e) {
@@ -18,11 +20,13 @@ const getToken = () => {
     return process.env.TELEGRAM_BOT_TOKEN;
 };
 
-async function sendTelegramMsg(chatId: string, text: string, replyMarkup?: any) {
-    const token = getToken();
-    if (!token) return;
+async function sendTelegramMsg(token: string, chatId: string, text: string, replyMarkup?: any) {
+    if (!token) {
+        console.error("[TELEGRAM] No bot token found to send message");
+        return;
+    }
     try {
-        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -32,11 +36,12 @@ async function sendTelegramMsg(chatId: string, text: string, replyMarkup?: any) 
                 reply_markup: replyMarkup
             }),
         });
-    } catch (e) { console.error(e) }
+        const data = await res.json() as any;
+        if (!data.ok) console.error("[TELEGRAM SEND ERROR]", data);
+    } catch (e) { console.error("[TELEGRAM FETCH ERROR]", e) }
 }
 
-async function editTelegramMsgText(chatId: string, messageId: number, text: string, replyMarkup?: any) {
-    const token = getToken();
+async function editTelegramMsgText(token: string, chatId: string, messageId: number, text: string, replyMarkup?: any) {
     if (!token) return;
     try {
         await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
@@ -53,8 +58,7 @@ async function editTelegramMsgText(chatId: string, messageId: number, text: stri
     } catch (e) { console.error(e) }
 }
 
-async function getTelegramFileText(fileId: string): Promise<string | null> {
-    const token = getToken();
+async function getTelegramFileText(token: string, fileId: string): Promise<string | null> {
     if (!token) return null;
     try {
         const res = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
@@ -70,8 +74,11 @@ async function getTelegramFileText(fileId: string): Promise<string | null> {
 }
 
 export async function POST(req: NextRequest) {
+    let botToken = "";
     try {
-        const db = getDb(getRequestContext().env.DB);
+        const reqEnv = getRequestContext().env;
+        botToken = getToken(reqEnv) || "";
+        const db = getDb(reqEnv.DB);
         const body = await req.json() as any;
 
         // ==========================================
@@ -85,7 +92,7 @@ export async function POST(req: NextRequest) {
 
             // --- ACTION: LINK ACCOUNT ---
             if (data === "action_link_req") {
-                await editTelegramMsgText(chatId, messageId,
+                await editTelegramMsgText(botToken, chatId, messageId,
                     "🔗 <b>အကောင့်ချိတ်ဆက်ရန်</b>\n\nPyuNovel ဝဘ်ဆိုက်၏ Settings > Telegram Integration မှ <b>Generate Connection Link</b> ကိုနှိပ်ပြီး ရရှိလာသော Code ကို ဤနေရာတွင် ရိုက်ထည့်ပေးပါ။\n\n<i>(ဥပမာ - ABCDEF သို့မဟုတ် /start ABCDEF)</i>"
                 );
                 return NextResponse.json({ ok: true });
@@ -96,14 +103,14 @@ export async function POST(req: NextRequest) {
                 const dbUser = await db.query.user.findFirst({ where: eq(user.telegramId, chatId) });
 
                 if (!dbUser) {
-                    await editTelegramMsgText(chatId, messageId, "⚠️ <b>အကောင့်ချိတ်ဆက်ထားခြင်း မရှိသေးပါ။</b>\nကျေးဇူးပြု၍ <b>အကောင့်ချိတ်မယ်</b> ကို အရင်ရွေးချယ်ပါ။", {
+                    await editTelegramMsgText(botToken, chatId, messageId, "⚠️ <b>အကောင့်ချိတ်ဆက်ထားခြင်း မရှိသေးပါ။</b>\nကျေးဇူးပြု၍ <b>အကောင့်ချိတ်မယ်</b> ကို အရင်ရွေးချယ်ပါ။", {
                         inline_keyboard: [[{ text: "🔗 အကောင့်ချိတ်မယ်", callback_data: "action_link_req" }]]
                     });
                     return NextResponse.json({ ok: true });
                 }
 
                 if (dbUser.role !== 'admin' && dbUser.role !== 'writer') {
-                    await editTelegramMsgText(chatId, messageId, "⚠️ စာတင်ရန်အတွက် သင်သည် Writer သို့မဟုတ် Admin ဖြစ်ရန် လိုအပ်ပါသည်။");
+                    await editTelegramMsgText(botToken, chatId, messageId, "⚠️ စာတင်ရန်အတွက် သင်သည် Writer သို့မဟုတ် Admin ဖြစ်ရန် လိုအပ်ပါသည်။");
                     return NextResponse.json({ ok: true });
                 }
 
@@ -114,7 +121,7 @@ export async function POST(req: NextRequest) {
                 });
 
                 if (authorNovels.length === 0) {
-                    await editTelegramMsgText(chatId, messageId, "❌ သင့်တွင် ဝတ္ထုတစ်အုပ်မှ မရှိသေးပါ။ ကျေးဇူးပြု၍ ဝဘ်ဆိုက်တွင် ဝတ္ထုအရင် ဖန်တီးပါ။");
+                    await editTelegramMsgText(botToken, chatId, messageId, "❌ သင့်တွင် ဝတ္ထုတစ်အုပ်မှ မရှိသေးပါ။ ကျေးဇူးပြု၍ ဝဘ်ဆိုက်တွင် ဝတ္ထုအရင် ဖန်တီးပါ။");
                     return NextResponse.json({ ok: true });
                 }
 
@@ -128,7 +135,7 @@ export async function POST(req: NextRequest) {
                     inlineKeyboard.push(row);
                 }
 
-                await editTelegramMsgText(chatId, messageId, "📖 <b>စာတင်မည့် ဝတ္ထုကို ရွေးချယ်ပါ -</b>", { inline_keyboard: inlineKeyboard });
+                await editTelegramMsgText(botToken, chatId, messageId, "📖 <b>စာတင်မည့် ဝတ္ထုကို ရွေးချယ်ပါ -</b>", { inline_keyboard: inlineKeyboard });
                 return NextResponse.json({ ok: true });
             }
 
@@ -143,7 +150,7 @@ export async function POST(req: NextRequest) {
                 });
 
                 if (!novel) {
-                    await editTelegramMsgText(chatId, messageId, "❌ ဤဝတ္ထုကို သင်ပိုင်ဆိုင်ခြင်း မရှိပါ။");
+                    await editTelegramMsgText(botToken, chatId, messageId, "❌ ဤဝတ္ထုကို သင်ပိုင်ဆိုင်ခြင်း မရှိပါ။");
                     return NextResponse.json({ ok: true });
                 }
 
@@ -163,7 +170,7 @@ export async function POST(req: NextRequest) {
                     createdAt: new Date(),
                 });
 
-                await editTelegramMsgText(chatId, messageId,
+                await editTelegramMsgText(botToken, chatId, messageId,
                     `✅ <b>"${novel.title}"</b> ဝတ္ထုကို ရွေးချယ်ပြီးပါပြီ။\n\n✍️ ယခု သင်တင်မည့် စာသား (သို့) <b>.txt</b> ဖိုင်ကို ဤနေရာသို့ တိုက်ရိုက် ပို့ပေးပါ။\n<i>(ခေါင်းစဉ်များကို "အပိုင်း (၁)" သို့မဟုတ် "အခန်း ၁" ဟု တပ်ပေးရန် မမေ့ပါနှင့်)</i>`
                 );
                 return NextResponse.json({ ok: true });
@@ -177,7 +184,7 @@ export async function POST(req: NextRequest) {
 
                 const draft = await db.query.telegramDrafts.findFirst({ where: eq(telegramDrafts.id, draftId) });
                 if (!draft) {
-                    await editTelegramMsgText(chatId, messageId, "❌ <b>လုပ်ဆောင်ချက် သက်တမ်းကုန်သွားပါပြီ။</b> ကျေးဇူးပြု၍ အစကနေ ပြန်လုပ်ပါ။");
+                    await editTelegramMsgText(botToken, chatId, messageId, "❌ <b>လုပ်ဆောင်ချက် သက်တမ်းကုန်သွားပါပြီ။</b> ကျေးဇူးပြု၍ အစကနေ ပြန်လုပ်ပါ။");
                     return NextResponse.json({ ok: true });
                 }
 
@@ -205,7 +212,7 @@ export async function POST(req: NextRequest) {
                 await db.insert(chapters).values(chaptersToInsert);
                 await db.delete(telegramDrafts).where(eq(telegramDrafts.id, draftId));
 
-                await editTelegramMsgText(chatId, messageId, `✅ <b>"${parsedState.novelTitle}" သို့ အခန်းပေါင်း (${chaptersToInsert.length}) ခန်း အောင်မြင်စွာ တင်ပြီးပါပြီ!</b> 🎉`);
+                await editTelegramMsgText(botToken, chatId, messageId, `✅ <b>"${parsedState.novelTitle}" သို့ အခန်းပေါင်း (${chaptersToInsert.length}) ခန်း အောင်မြင်စွာ တင်ပြီးပါပြီ!</b> 🎉`);
                 return NextResponse.json({ ok: true });
             }
 
@@ -213,7 +220,7 @@ export async function POST(req: NextRequest) {
             if (data.startsWith("cancel_draft_")) {
                 const draftId = data.replace("cancel_draft_", "");
                 await db.delete(telegramDrafts).where(eq(telegramDrafts.id, draftId));
-                await editTelegramMsgText(chatId, messageId, "❌ <b>စာတင်ခြင်းကို ပယ်ဖျက်လိုက်ပါသည်။</b>");
+                await editTelegramMsgText(botToken, chatId, messageId, "❌ <b>စာတင်ခြင်းကို ပယ်ဖျက်လိုက်ပါသည်။</b>");
                 return NextResponse.json({ ok: true });
             }
 
@@ -234,14 +241,14 @@ export async function POST(req: NextRequest) {
             } else if (body.message.document) {
                 const doc = body.message.document;
                 if (doc.mime_type === "text/plain") {
-                    const extracted = await getTelegramFileText(doc.file_id);
+                    const extracted = await getTelegramFileText(botToken, doc.file_id);
                     if (extracted) textToProcess = extracted.trim();
                     else {
-                        await sendTelegramMsg(chatId, "❌ ဖိုင်ဖတ်ရာတွင် အမှားအယွင်းဖြစ်ပွားခဲ့ပါသည်။");
+                        await sendTelegramMsg(botToken, chatId, "❌ ဖိုင်ဖတ်ရာတွင် အမှားအယွင်းဖြစ်ပွားခဲ့ပါသည်။");
                         return NextResponse.json({ ok: true });
                     }
                 } else {
-                    await sendTelegramMsg(chatId, "⚠️ လောလောဆယ် <b>.txt</b> ဖိုင် သို့မဟုတ် စာသား တိုက်ရိုက်ပို့ခြင်းကိုသာ လက်ခံပေးနိုင်ပါသေးသည်။ ကျေးဇူးပြု၍ .txt ပြောင်းပြီး ပြန်ပို့ပေးပါ။");
+                    await sendTelegramMsg(botToken, chatId, "⚠️ လောလောဆယ် <b>.txt</b> ဖိုင် သို့မဟုတ် စာသား တိုက်ရိုက်ပို့ခြင်းကိုသာ လက်ခံပေးနိုင်ပါသေးသည်။ ကျေးဇူးပြု၍ .txt ပြောင်းပြီး ပြန်ပို့ပေးပါ။");
                     return NextResponse.json({ ok: true });
                 }
             }
@@ -254,7 +261,7 @@ export async function POST(req: NextRequest) {
                     [{ text: "🔗 အကောင့်ချိတ်မယ်", callback_data: "action_link_req" }],
                     [{ text: "📝 စာတင်မယ်", callback_data: "action_publish_req" }]
                 ];
-                await sendTelegramMsg(chatId, "👋 <b>PyuNovel Bot မှ ကြိုဆိုပါတယ်!</b>\n\nအောက်ပါ လုပ်ဆောင်ချက်များမှ တစ်ခုကို ရွေးချယ်ပါ -", {
+                await sendTelegramMsg(botToken, chatId, "👋 <b>PyuNovel Bot မှ ကြိုဆိုပါတယ်!</b>\n\nအောက်ပါ လုပ်ဆောင်ချက်များမှ တစ်ခုကို ရွေးချယ်ပါ -", {
                     inline_keyboard: inlineKeyboard
                 });
                 return NextResponse.json({ ok: true });
@@ -269,7 +276,7 @@ export async function POST(req: NextRequest) {
             if (verif) {
                 if (new Date() > new Date(verif.expiresAt)) {
                     await db.delete(verification).where(eq(verification.id, potentialToken));
-                    await sendTelegramMsg(chatId, "❌ <b>Code သက်တမ်းကုန်သွားပါပြီ။</b>\nဝဘ်ဆိုက်မှ Code အသစ်တစ်ခု ထပ်မံရယူပါ။");
+                    await sendTelegramMsg(botToken, chatId, "❌ <b>Code သက်တမ်းကုန်သွားပါပြီ။</b>\nဝဘ်ဆိုက်မှ Code အသစ်တစ်ခု ထပ်မံရယူပါ။");
                     return NextResponse.json({ ok: true });
                 }
 
@@ -282,7 +289,7 @@ export async function POST(req: NextRequest) {
                 await db.update(user).set({ telegramId: chatId, telegramUsername: tgUsername, telegramName: tgName }).where(eq(user.id, userId));
                 await db.delete(verification).where(eq(verification.id, potentialToken));
 
-                await sendTelegramMsg(chatId, `✅ <b>အကောင့် ချိတ်ဆက်ခြင်း အောင်မြင်ပါသည်!</b> 🚀\n\nConnected as: <b>${tgName}</b>\n\nယခု "စာတင်မယ်" ခလုတ်ကို နှိပ်၍ စတင် အသုံးပြုနိုင်ပါပြီ။`);
+                await sendTelegramMsg(botToken, chatId, `✅ <b>အကောင့် ချိတ်ဆက်ခြင်း အောင်မြင်ပါသည်!</b> 🚀\n\nConnected as: <b>${tgName}</b>\n\nယခု "စာတင်မယ်" ခလုတ်ကို နှိပ်၍ စတင် အသုံးပြုနိုင်ပါပြီ။`);
                 return NextResponse.json({ ok: true });
             }
 
@@ -297,7 +304,7 @@ export async function POST(req: NextRequest) {
                     const parsedChapters = parseChaptersFromText(textToProcess);
 
                     if (parsedChapters.length === 0) {
-                        await sendTelegramMsg(chatId, "❌ <b>အခန်းခေါင်းစဉ်များ ရှာမတွေ့ပါ။</b>\nကျေးဇူးပြု၍ ခေါင်းစဉ်များကို 'အပိုင်း (၁)' သို့မဟုတ် 'အခန်း ၁' ဟု ထည့်သွင်းပေးပါ။");
+                        await sendTelegramMsg(botToken, chatId, "❌ <b>အခန်းခေါင်းစဉ်များ ရှာမတွေ့ပါ။</b>\nကျေးဇူးပြု၍ ခေါင်းစဉ်များကို 'အပိုင်း (၁)' သို့မဟုတ် 'အခန်း ၁' ဟု ထည့်သွင်းပေးပါ။");
                         return NextResponse.json({ ok: true });
                     }
 
@@ -325,7 +332,7 @@ export async function POST(req: NextRequest) {
                         [{ text: "❌ မတင်တော့ပါ (Cancel)", callback_data: `cancel_draft_${pendingDraft.id}` }]
                     ];
 
-                    await sendTelegramMsg(chatId, previewMsg, { inline_keyboard: inlineKeyboard });
+                    await sendTelegramMsg(botToken, chatId, previewMsg, { inline_keyboard: inlineKeyboard });
                     return NextResponse.json({ ok: true });
                 }
             }
@@ -335,7 +342,7 @@ export async function POST(req: NextRequest) {
                 [{ text: "🔗 အကောင့်ချိတ်မယ်", callback_data: "action_link_req" }],
                 [{ text: "📝 စာတင်မယ်", callback_data: "action_publish_req" }]
             ];
-            await sendTelegramMsg(chatId, "🤖 <b>လုပ်ဆောင်ချက် မရှင်းလင်းပါ။</b>\nကျေးဇူးပြု၍ အောက်ပါ Menu မှ ရွေးချယ်ပေးပါ -", { inline_keyboard: inlineKeyboard });
+            await sendTelegramMsg(botToken, chatId, "🤖 <b>လုပ်ဆောင်ချက် မရှင်းလင်းပါ။</b>\nကျေးဇူးပြု၍ အောက်ပါ Menu မှ ရွေးချယ်ပေးပါ -", { inline_keyboard: inlineKeyboard });
         }
 
         return NextResponse.json({ ok: true });
