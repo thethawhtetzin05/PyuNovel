@@ -61,7 +61,21 @@ export async function POST(
 
         const chunkSize = 50;
         for (let i = 0; i < rows.length; i += chunkSize) {
-            await db.insert(chapters).values(rows.slice(i, i + chunkSize));
+            const chunk = rows.slice(i, i + chunkSize);
+            // Ensure all fields are explicitly mapped and null values are handled correctly for Drizzle
+            await db.insert(chapters).values(
+                chunk.map((row) => ({
+                    id: row.id,
+                    novelId: row.novelId,
+                    volumeId: row.volumeId || null,
+                    title: row.title,
+                    content: row.content,
+                    isPaid: false,
+                    sortIndex: row.sortIndex,
+                    createdAt: row.createdAt,
+                    updatedAt: row.updatedAt,
+                }))
+            );
         }
 
         revalidatePath(`/novel/${slug}`);
