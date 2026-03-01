@@ -7,9 +7,10 @@ import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export const runtime = 'edge';
 
-// Basic helper to send direct message to telegram (we don't import the lib one to keep it simple here)
+const getToken = () => process.env.TELEGRAM_BOT_TOKEN;
+
 async function sendTelegramMsg(chatId: string, text: string, replyMarkup?: any) {
-    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const token = getToken();
     if (!token) return;
     try {
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -26,7 +27,7 @@ async function sendTelegramMsg(chatId: string, text: string, replyMarkup?: any) 
 }
 
 async function editTelegramMsgText(chatId: string, messageId: number, text: string, replyMarkup?: any) {
-    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const token = getToken();
     if (!token) return;
     try {
         await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
@@ -43,61 +44,146 @@ async function editTelegramMsgText(chatId: string, messageId: number, text: stri
     } catch (e) { console.error(e) }
 }
 
+async function getTelegramFileText(fileId: string): Promise<string | null> {
+    const token = getToken();
+    if (!token) return null;
+    try {
+        const res = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
+        const data = await res.json() as any;
+        if (!data.ok) return null;
+        const filePath = data.result.file_path;
+        const fileRes = await fetch(`https://api.telegram.org/file/bot${token}/${filePath}`);
+        return await fileRes.text();
+    } catch (e) {
+        console.error(e);
+        return null;
+    }
+}
+
 export async function POST(req: NextRequest) {
     try {
         const db = getDb(getRequestContext().env.DB);
         const body = await req.json() as any;
 
-        // --- 1. HANDLE CALLBACK QUERIES (Button Taps) ---
+        // ==========================================
+        // 1. CALLBACK QUERIES (Button Clicks)
+        // ==========================================
         if (body.callback_query) {
             const callback = body.callback_query;
             const chatId = callback.message.chat.id.toString();
             const messageId = callback.message.message_id;
-            const data = callback.data as string; // format: "upload_novelId_draftId" OR "cancel_draftId"
+            const data = callback.data as string;
 
-            if (data.startsWith("cancel_")) {
-                const draftId = data.split("_")[1];
-                await db.delete(telegramDrafts).where(eq(telegramDrafts.id, draftId));
-                await editTelegramMsgText(chatId, messageId, "❌ <i>Upload cancelled. Draft discarded.</i>");
+            // --- ACTION: LINK ACCOUNT ---
+            if (data === "action_link_req") {
+                await editTelegramMsgText(chatId, messageId,
+                    "🔗 <b>အကောင့်ချိတ်ဆက်ရန်</b>\n\nPyuNovel ဝဘ်ဆိုက်၏ Settings > Telegram Integration မှ <b>Generate Connection Link</b> ကိုနှိပ်ပြီး ရရှိလာသော Code ကို ဤနေရာတွင် ရိုက်ထည့်ပေးပါ။\n\n<i>(ဥပမာ - ABCDEF သို့မဟုတ် /start ABCDEF)</i>"
+                );
                 return NextResponse.json({ ok: true });
             }
 
-            if (data.startsWith("upload_")) {
-                const parts = data.split("_");
-                const novelId = parseInt(parts[1]);
-                const draftId = parts[2];
+            // --- ACTION: PUBLISH CHAPTERS ---
+            if (data === "action_publish_req") {
+                const dbUser = await db.query.user.findFirst({ where: eq(user.telegramId, chatId) });
 
-                // Ensure user exists
+                if (!dbUser) {
+                    await editTelegramMsgText(chatId, messageId, "⚠️ <b>အကောင့်ချိတ်ဆက်ထားခြင်း မရှိသေးပါ။</b>\nကျေးဇူးပြု၍ <b>အကောင့်ချိတ်မယ်</b> ကို အရင်ရွေးချယ်ပါ။", {
+                        inline_keyboard: [[{ text: "🔗 အကောင့်ချိတ်မယ်", callback_data: "action_link_req" }]]
+                    });
+                    return NextResponse.json({ ok: true });
+                }
+
+                if (dbUser.role !== 'admin' && dbUser.role !== 'writer') {
+                    await editTelegramMsgText(chatId, messageId, "⚠️ စာတင်ရန်အတွက် သင်သည် Writer သို့မဟုတ် Admin ဖြစ်ရန် လိုအပ်ပါသည်။");
+                    return NextResponse.json({ ok: true });
+                }
+
+                const authorNovels = await db.query.novels.findMany({
+                    where: eq(novels.ownerId, dbUser.id),
+                    orderBy: [desc(novels.updatedAt)],
+                    limit: 10
+                });
+
+                if (authorNovels.length === 0) {
+                    await editTelegramMsgText(chatId, messageId, "❌ သင့်တွင် ဝတ္ထုတစ်အုပ်မှ မရှိသေးပါ။ ကျေးဇူးပြု၍ ဝဘ်ဆိုက်တွင် ဝတ္ထုအရင် ဖန်တီးပါ။");
+                    return NextResponse.json({ ok: true });
+                }
+
+                const inlineKeyboard: any[][] = [];
+                for (let i = 0; i < authorNovels.length; i += 2) {
+                    const row = [];
+                    row.push({ text: `📚 ${authorNovels[i].title}`, callback_data: `select_novel_${authorNovels[i].id}` });
+                    if (authorNovels[i + 1]) {
+                        row.push({ text: `📚 ${authorNovels[i + 1].title}`, callback_data: `select_novel_${authorNovels[i + 1].id}` });
+                    }
+                    inlineKeyboard.push(row);
+                }
+
+                await editTelegramMsgText(chatId, messageId, "📖 <b>စာတင်မည့် ဝတ္ထုကို ရွေးချယ်ပါ -</b>", { inline_keyboard: inlineKeyboard });
+                return NextResponse.json({ ok: true });
+            }
+
+            // --- ACTION: SELECT NOVEL ---
+            if (data.startsWith("select_novel_")) {
+                const novelId = parseInt(data.replace("select_novel_", ""));
                 const dbUser = await db.query.user.findFirst({ where: eq(user.telegramId, chatId) });
                 if (!dbUser) return NextResponse.json({ ok: true });
 
-                // Ensure they own the novel
                 const novel = await db.query.novels.findFirst({
                     where: and(eq(novels.id, novelId), eq(novels.ownerId, dbUser.id))
                 });
 
                 if (!novel) {
-                    await editTelegramMsgText(chatId, messageId, "❌ <i>Error: You do not have permission to publish to this novel.</i>");
+                    await editTelegramMsgText(chatId, messageId, "❌ ဤဝတ္ထုကို သင်ပိုင်ဆိုင်ခြင်း မရှိပါ။");
                     return NextResponse.json({ ok: true });
                 }
 
-                // Load Draft
+                // Delete old drafts for this user to start fresh
+                const userDrafts = await db.query.telegramDrafts.findMany({ where: eq(telegramDrafts.authorId, dbUser.id) });
+                for (const d of userDrafts) {
+                    await db.delete(telegramDrafts).where(eq(telegramDrafts.id, d.id));
+                }
+
+                // Create a "WAITING_CONTENT" state draft
+                const draftId = globalThis.crypto.randomUUID();
+                const draftState = { state: "WAITING_CONTENT", novelId: novel.id, novelTitle: novel.title };
+                await db.insert(telegramDrafts).values({
+                    id: draftId,
+                    authorId: dbUser.id,
+                    chaptersJson: JSON.stringify(draftState),
+                    createdAt: new Date(),
+                });
+
+                await editTelegramMsgText(chatId, messageId,
+                    `✅ <b>"${novel.title}"</b> ဝတ္ထုကို ရွေးချယ်ပြီးပါပြီ။\n\n✍️ ယခု သင်တင်မည့် စာသား (သို့) <b>.txt</b> ဖိုင်ကို ဤနေရာသို့ တိုက်ရိုက် ပို့ပေးပါ။\n<i>(ခေါင်းစဉ်များကို "အပိုင်း (၁)" သို့မဟုတ် "အခန်း ၁" ဟု တပ်ပေးရန် မမေ့ပါနှင့်)</i>`
+                );
+                return NextResponse.json({ ok: true });
+            }
+
+            // --- ACTION: CONFIRM UPLOAD ---
+            if (data.startsWith("confirm_draft_")) {
+                const draftId = data.replace("confirm_draft_", "");
+                const dbUser = await db.query.user.findFirst({ where: eq(user.telegramId, chatId) });
+                if (!dbUser) return NextResponse.json({ ok: true });
+
                 const draft = await db.query.telegramDrafts.findFirst({ where: eq(telegramDrafts.id, draftId) });
                 if (!draft) {
-                    await editTelegramMsgText(chatId, messageId, "❌ <i>Error: Draft expired or already published. Please send the chapters again.</i>");
+                    await editTelegramMsgText(chatId, messageId, "❌ <b>လုပ်ဆောင်ချက် သက်တမ်းကုန်သွားပါပြီ။</b> ကျေးဇူးပြု၍ အစကနေ ပြန်လုပ်ပါ။");
                     return NextResponse.json({ ok: true });
                 }
 
-                const parsedChapters = JSON.parse(draft.chaptersJson);
+                const parsedState = JSON.parse(draft.chaptersJson);
+                if (parsedState.state !== "WAITING_CONFIRM") return NextResponse.json({ ok: true });
 
-                // Find Max Index
+                const novelId = parsedState.novelId;
+                const parsedChapters = parsedState.chapters;
+
                 const lastChapter = await db.query.chapters.findFirst({
                     where: eq(chapters.novelId, novelId),
                     orderBy: [desc(chapters.sortIndex)],
                 });
                 let currentStartIndex = lastChapter ? Math.floor(lastChapter.sortIndex) + 1 : 1;
 
-                // Insert Chapters
                 const chaptersToInsert = parsedChapters.map((ch: any, i: number) => ({
                     novelId: novelId,
                     title: ch.title,
@@ -110,148 +196,137 @@ export async function POST(req: NextRequest) {
                 await db.insert(chapters).values(chaptersToInsert);
                 await db.delete(telegramDrafts).where(eq(telegramDrafts.id, draftId));
 
-                await editTelegramMsgText(chatId, messageId, `✅ <b>Successfully published ${chaptersToInsert.length} chapters to "${novel.title}"!</b> 🎉`);
-
-                // Ideally Revalidate Next.js cache here
-
+                await editTelegramMsgText(chatId, messageId, `✅ <b>"${parsedState.novelTitle}" သို့ အခန်းပေါင်း (${chaptersToInsert.length}) ခန်း အောင်မြင်စွာ တင်ပြီးပါပြီ!</b> 🎉`);
                 return NextResponse.json({ ok: true });
             }
+
+            // --- ACTION: CANCEL UPLOAD ---
+            if (data.startsWith("cancel_draft_")) {
+                const draftId = data.replace("cancel_draft_", "");
+                await db.delete(telegramDrafts).where(eq(telegramDrafts.id, draftId));
+                await editTelegramMsgText(chatId, messageId, "❌ <b>စာတင်ခြင်းကို ပယ်ဖျက်လိုက်ပါသည်။</b>");
+                return NextResponse.json({ ok: true });
+            }
+
             return NextResponse.json({ ok: true });
         }
 
 
-        // --- 2. HANDLE TEXT MESSAGES ---
-        if (body.message && body.message.text) {
+        // ==========================================
+        // 2. TEXT MESSAGES & DOCUMENTS
+        // ==========================================
+        if (body.message) {
             const chatId = body.message.chat.id.toString();
-            const text = body.message.text.trim();
+            let textToProcess = "";
 
-            // PHASE 1: Secure Linking Command `/start LINK-XXX`
-            if (text.startsWith("/start")) {
-                const parts = text.split(" ");
-
-                if (parts.length === 1) {
-                    await sendTelegramMsg(chatId, "👋 <b>Hello!</b>\n\nTo link your PyuNovel account, please use the linking command from your dashboard.\nExample: <code>/start ABCDEF</code>");
+            // --- Extract Text from Message or Document ---
+            if (body.message.text) {
+                textToProcess = body.message.text.trim();
+            } else if (body.message.document) {
+                const doc = body.message.document;
+                if (doc.mime_type === "text/plain") {
+                    const extracted = await getTelegramFileText(doc.file_id);
+                    if (extracted) textToProcess = extracted.trim();
+                    else {
+                        await sendTelegramMsg(chatId, "❌ ဖိုင်ဖတ်ရာတွင် အမှားအယွင်းဖြစ်ပွားခဲ့ပါသည်။");
+                        return NextResponse.json({ ok: true });
+                    }
+                } else {
+                    await sendTelegramMsg(chatId, "⚠️ လောလောဆယ် <b>.txt</b> ဖိုင် သို့မဟုတ် စာသား တိုက်ရိုက်ပို့ခြင်းကိုသာ လက်ခံပေးနိုင်ပါသေးသည်။ ကျေးဇူးပြု၍ .txt ပြောင်းပြီး ပြန်ပို့ပေးပါ။");
                     return NextResponse.json({ ok: true });
                 }
+            }
 
-                const token = parts[1];
+            if (!textToProcess) return NextResponse.json({ ok: true });
 
-                // Lookup token
-                const verif = await db.query.verification.findFirst({
-                    where: (v, { eq, and }) => and(
-                        eq(v.id, token),
-                        eq(v.identifier, "telegram")
-                    )
+            // --- MENU TRIGGER (/start) ---
+            if (textToProcess === "/start") {
+                const inlineKeyboard = [
+                    [{ text: "🔗 အကောင့်ချိတ်မယ်", callback_data: "action_link_req" }],
+                    [{ text: "📝 စာတင်မယ်", callback_data: "action_publish_req" }]
+                ];
+                await sendTelegramMsg(chatId, "👋 <b>PyuNovel Bot မှ ကြိုဆိုပါတယ်!</b>\n\nအောက်ပါ လုပ်ဆောင်ချက်များမှ တစ်ခုကို ရွေးချယ်ပါ -", {
+                    inline_keyboard: inlineKeyboard
                 });
+                return NextResponse.json({ ok: true });
+            }
 
-                if (!verif) {
-                    await sendTelegramMsg(chatId, "❌ <b>Invalid or expired connection token.</b>\nPlease go to your PyuNovel account and generate a new one.");
-                    return NextResponse.json({ ok: true });
-                }
+            // --- HANDLE CONNECTION CODE ---
+            const potentialToken = textToProcess.startsWith("/start ") ? textToProcess.replace("/start ", "") : textToProcess;
+            const verif = await db.query.verification.findFirst({
+                where: (v, { eq, and }) => and(eq(v.id, potentialToken), eq(v.identifier, "telegram"))
+            });
 
+            if (verif) {
                 if (new Date() > new Date(verif.expiresAt)) {
-                    await db.delete(verification).where(eq(verification.id, token));
-                    await sendTelegramMsg(chatId, "❌ <b>Token expired.</b>\nConnection tokens expire in 5 minutes. Please generate a new one.");
+                    await db.delete(verification).where(eq(verification.id, potentialToken));
+                    await sendTelegramMsg(chatId, "❌ <b>Code သက်တမ်းကုန်သွားပါပြီ။</b>\nဝဘ်ဆိုက်မှ Code အသစ်တစ်ခု ထပ်မံရယူပါ။");
                     return NextResponse.json({ ok: true });
                 }
 
-                const userId = verif.value; // Recall we stored userId in the `value` column
+                const userId = verif.value;
                 const from = body.message.from;
                 const tgName = [from.first_name, from.last_name].filter(Boolean).join(" ");
                 const tgUsername = from.username ? `@${from.username}` : null;
 
-                // Unlink any other user who might have this Telegram ID (edge case)
-                await db.update(user).set({
-                    telegramId: null,
-                    telegramUsername: null,
-                    telegramName: null
-                }).where(eq(user.telegramId, chatId));
+                await db.update(user).set({ telegramId: null, telegramUsername: null, telegramName: null }).where(eq(user.telegramId, chatId));
+                await db.update(user).set({ telegramId: chatId, telegramUsername: tgUsername, telegramName: tgName }).where(eq(user.id, userId));
+                await db.delete(verification).where(eq(verification.id, potentialToken));
 
-                // Link new user
-                await db.update(user).set({
-                    telegramId: chatId,
-                    telegramUsername: tgUsername,
-                    telegramName: tgName
-                }).where(eq(user.id, userId));
-                await db.delete(verification).where(eq(verification.id, token));
-
-                await sendTelegramMsg(chatId, `✅ <b>Account successfully connected!</b> 🚀\n\nConnected as: <b>${tgName}</b> ${tgUsername ? `(${tgUsername})` : ""}\n\nYou can now post chapters by simply sending your story text here directly.`);
+                await sendTelegramMsg(chatId, `✅ <b>အကောင့် ချိတ်ဆက်ခြင်း အောင်မြင်ပါသည်!</b> 🚀\n\nConnected as: <b>${tgName}</b>\n\nယခု "စာတင်မယ်" ခလုတ်ကို နှိပ်၍ စတင် အသုံးပြုနိုင်ပါပြီ။`);
                 return NextResponse.json({ ok: true });
             }
 
-            // PHASE 2: Chapter Draft Submission
-            // We only respond to normal text if it's not a command.
-            if (!text.startsWith("/")) {
-                const dbUser = await db.query.user.findFirst({ where: eq(user.telegramId, chatId) });
+            // --- HANDLE CHAPTER CONTENT (WAITING_CONTENT STATE) ---
+            const dbUser = await db.query.user.findFirst({ where: eq(user.telegramId, chatId) });
+            if (dbUser) {
+                const userDrafts = await db.query.telegramDrafts.findMany({ where: eq(telegramDrafts.authorId, dbUser.id) });
+                const pendingDraft = userDrafts.find(d => d.chaptersJson.includes('"WAITING_CONTENT"'));
 
-                if (!dbUser) {
-                    await sendTelegramMsg(chatId, "⚠️ <b>Your account is not connected.</b>\nPlease go to PyuNovel Dashboard > Settings to connect your Telegram account first.");
-                    return NextResponse.json({ ok: true });
-                }
+                if (pendingDraft) {
+                    const parsedState = JSON.parse(pendingDraft.chaptersJson);
+                    const parsedChapters = parseChaptersFromText(textToProcess);
 
-                // Check roles if you only want writers... Handled implicitly by whether they own novels, but let's check
-                if (dbUser.role !== 'admin' && dbUser.role !== 'writer') {
-                    await sendTelegramMsg(chatId, "⚠️ You must be a Writer or Admin to publish chapters.");
-                    return NextResponse.json({ ok: true });
-                }
-
-                const parsed = parseChaptersFromText(text);
-
-                if (parsed.length === 0) {
-                    await sendTelegramMsg(chatId, "❌ No chapters detected.\nMake sure your headings start with 'အပိုင်း (၁)' or 'အခန်း ၁'.");
-                    return NextResponse.json({ ok: true });
-                }
-
-                // Get author's novels
-                const authorNovels = await db.query.novels.findMany({
-                    where: eq(novels.ownerId, dbUser.id),
-                    orderBy: [desc(novels.updatedAt)],
-                    limit: 10 // Max 10 buttons so it doesn't crowd UI
-                });
-
-                if (authorNovels.length === 0) {
-                    await sendTelegramMsg(chatId, "❌ You don't have any novels yet! Please create one on the website first.");
-                    return NextResponse.json({ ok: true });
-                }
-
-                // Save draft
-                const draftId = globalThis.crypto.randomUUID();
-                await db.insert(telegramDrafts).values({
-                    id: draftId,
-                    authorId: dbUser.id,
-                    chaptersJson: JSON.stringify(parsed),
-                    createdAt: new Date(),
-                });
-
-                // Construct preview text
-                let previewMsg = `📖 <b>Preview: ${parsed.length} Chapter(s) Detected!</b>\n\n`;
-                parsed.slice(0, 5).forEach((p: any, i: number) => {
-                    const wordCount = p.content.trim().split(/\s+/).length;
-                    previewMsg += `${i + 1}. ${p.title} <i>(${wordCount} words)</i>\n`;
-                });
-                if (parsed.length > 5) previewMsg += `... and ${parsed.length - 5} more.\n`;
-                previewMsg += `\n<b>Which novel do you want to publish these to? 👇</b>`;
-
-                // Construct Inline Keyboard
-                const inlineKeyboard: any[][] = [];
-                // Group buttons in pairs
-                for (let i = 0; i < authorNovels.length; i += 2) {
-                    const row = [];
-                    row.push({ text: authorNovels[i].title, callback_data: `upload_${authorNovels[i].id}_${draftId}` });
-                    if (authorNovels[i + 1]) {
-                        row.push({ text: authorNovels[i + 1].title, callback_data: `upload_${authorNovels[i + 1].id}_${draftId}` });
+                    if (parsedChapters.length === 0) {
+                        await sendTelegramMsg(chatId, "❌ <b>အခန်းခေါင်းစဉ်များ ရှာမတွေ့ပါ။</b>\nကျေးဇူးပြု၍ ခေါင်းစဉ်များကို 'အပိုင်း (၁)' သို့မဟုတ် 'အခန်း ၁' ဟု ထည့်သွင်းပေးပါ။");
+                        return NextResponse.json({ ok: true });
                     }
-                    inlineKeyboard.push(row);
-                }
-                // Add cancel button
-                inlineKeyboard.push([{ text: "❌ Cancel", callback_data: `cancel_${draftId}` }]);
 
-                await sendTelegramMsg(chatId, previewMsg, { inline_keyboard: inlineKeyboard });
-                return NextResponse.json({ ok: true });
+                    const updatedState = {
+                        state: "WAITING_CONFIRM",
+                        novelId: parsedState.novelId,
+                        novelTitle: parsedState.novelTitle,
+                        chapters: parsedChapters
+                    };
+
+                    await db.update(telegramDrafts)
+                        .set({ chaptersJson: JSON.stringify(updatedState) })
+                        .where(eq(telegramDrafts.id, pendingDraft.id));
+
+                    let previewMsg = `📖 <b>စာမူစစ်ဆေးခြင်း (Preview)</b>\n\n✅ <b>ဝတ္ထု:</b> ${parsedState.novelTitle}\n✅ <b>အခန်းပေါင်း:</b> ${parsedChapters.length} ခန်း\n\n`;
+                    parsedChapters.slice(0, 5).forEach((p: any, i: number) => {
+                        const wordCount = p.content.trim().split(/\s+/).length;
+                        previewMsg += `• ${p.title} <i>(${wordCount} words)</i>\n`;
+                    });
+                    if (parsedChapters.length > 5) previewMsg += `<i>... နောက်ထပ် ${parsedChapters.length - 5} ခန်း</i>\n`;
+                    previewMsg += `\n<b>အတည်ပြုပြီး တင်မှာ သေချာပါသလား? 👇</b>`;
+
+                    const inlineKeyboard = [
+                        [{ text: "✅ အတည်ပြုပြီး တင်မည် (Upload)", callback_data: `confirm_draft_${pendingDraft.id}` }],
+                        [{ text: "❌ မတင်တော့ပါ (Cancel)", callback_data: `cancel_draft_${pendingDraft.id}` }]
+                    ];
+
+                    await sendTelegramMsg(chatId, previewMsg, { inline_keyboard: inlineKeyboard });
+                    return NextResponse.json({ ok: true });
+                }
             }
 
-            // Unknown Commands
-            await sendTelegramMsg(chatId, "🤖 Unrecognized command.");
+            // --- UNKNOWN INPUT ---
+            const inlineKeyboard = [
+                [{ text: "🔗 အကောင့်ချိတ်မယ်", callback_data: "action_link_req" }],
+                [{ text: "📝 စာတင်မယ်", callback_data: "action_publish_req" }]
+            ];
+            await sendTelegramMsg(chatId, "🤖 <b>လုပ်ဆောင်ချက် မရှင်းလင်းပါ။</b>\nကျေးဇူးပြု၍ အောက်ပါ Menu မှ ရွေးချယ်ပေးပါ -", { inline_keyboard: inlineKeyboard });
         }
 
         return NextResponse.json({ ok: true });
