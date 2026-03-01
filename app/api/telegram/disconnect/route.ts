@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
                 telegramUsername: null, 
                 updatedAt: new Date() 
             })
-            .where(eq(user.id, session.user.id));
+            .where(eq(user.id, session.user.id))
+            .run();
 
         revalidatePath('/', 'layout'); // Clear the Next.js cache so the profile updates instantly!
 
