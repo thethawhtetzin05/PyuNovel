@@ -56,18 +56,22 @@ export async function POST(
             updatedAt: new Date(),
         }));
 
-        const chunkSize = 20; // Reduce chunk size for reliability
+        const chunkSize = 50;
         for (let i = 0; i < rows.length; i += chunkSize) {
             const chunk = rows.slice(i, i + chunkSize);
-            // Use db.run with raw SQL for complete control over columns (avoiding 'id' null issue)
-            for (const row of chunk) {
-                await db.run(sql`
-                    INSERT INTO chapters 
-                    (novel_id, volume_id, title, content, is_paid, sort_index, created_at, updated_at)
-                    VALUES 
-                    (${row.novelId}, ${row.volumeId ?? null}, ${row.title}, ${row.content}, ${row.isPaid}, ${row.sortIndex}, ${row.createdAt}, ${row.updatedAt})
-                `);
-            }
+            // Drizzle query builder နဲ့ပဲ id မပါအောင် သေချာ ပြန်ရေးပါမယ်
+            await db.insert(chapters).values(
+                chunk.map((row) => ({
+                    novelId: row.novelId,
+                    volumeId: row.volumeId ?? null,
+                    title: row.title,
+                    content: row.content,
+                    isPaid: row.isPaid ? true : false,
+                    sortIndex: row.sortIndex,
+                    createdAt: row.createdAt,
+                    updatedAt: row.updatedAt,
+                }))
+            );
         }
 
         revalidatePath(`/novel/${slug}`);
