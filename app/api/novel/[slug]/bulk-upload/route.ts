@@ -59,17 +59,17 @@ export async function POST(
         const chunkSize = 50;
         for (let i = 0; i < rows.length; i += chunkSize) {
             const chunk = rows.slice(i, i + chunkSize);
-            // Drizzle query builder နဲ့ပဲ id မပါအောင် သေချာ ပြန်ရေးပါမယ်
+            // Explicit destructuring to ensure 'id' is NOT present in the final object sent to Drizzle
             await db.insert(chapters).values(
-                chunk.map((row) => ({
-                    novelId: row.novelId,
-                    volumeId: row.volumeId ?? null,
-                    title: row.title,
-                    content: row.content,
-                    isPaid: row.isPaid ? true : false,
-                    sortIndex: row.sortIndex,
-                    createdAt: row.createdAt,
-                    updatedAt: row.updatedAt,
+                chunk.map(({ novelId, volumeId, title, content, isPaid, sortIndex, createdAt, updatedAt }) => ({
+                    novelId,
+                    volumeId: volumeId ?? null,
+                    title,
+                    content,
+                    isPaid: isPaid ? true : false,
+                    sortIndex,
+                    createdAt,
+                    updatedAt,
                 }))
             );
         }
