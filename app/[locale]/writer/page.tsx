@@ -43,12 +43,12 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
       </div>
 
       {/* Novel List */}
-      <div className="grid gap-4">
+      <div className="flex flex-col gap-4 w-full max-w-full overflow-hidden">
         {myNovels.length > 0 ? (
           myNovels.map((novel) => (
             <div
               key={novel.id}
-              className="group bg-[var(--surface)] p-4 rounded-2xl border border-[var(--border)] shadow-sm hover:shadow-md transition-all flex items-center gap-5 hover:border-[var(--accent)]"
+              className="group bg-[var(--surface)] p-4 rounded-2xl border border-[var(--border)] shadow-sm hover:shadow-md transition-all flex flex-row items-center gap-4 hover:border-[var(--accent)] w-full overflow-hidden"
             >
               {/* Cover Image (Thumbnail) */}
               <div className="w-16 h-24 shrink-0 bg-[var(--surface-2)] rounded-lg overflow-hidden border border-[var(--border)] relative">
@@ -63,29 +63,33 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
               </div>
 
               {/* Content */}
-              <div className="flex-1 min-w-0 flex flex-col justify-center overflow-hidden">
-                <div className="flex items-center gap-2 mb-1 w-full overflow-hidden">
-                  <Link href={`/novel/${novel.slug}`} className="text-lg font-bold text-[var(--foreground)] truncate hover:text-[var(--action)] transition-colors flex-1 min-w-0">
+              <div className="flex-1 min-w-0 flex flex-col gap-1 overflow-hidden">
+                
+                {/* Title & Badge Row */}
+                <div className="flex flex-row items-center gap-2 min-w-0">
+                  <Link href={`/novel/${novel.slug}`} className="text-base sm:text-lg font-bold text-[var(--foreground)] truncate hover:text-[var(--action)] transition-colors min-w-0 flex-shrink">
                     {novel.title}
                   </Link>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide shrink-0 ${novel.status === 'ongoing' ? 'bg-green-100/10 text-green-600' : 'bg-blue-100/10 text-[var(--action)]'
+                  <span className={`px-2 py-0.5 rounded text-[8px] sm:text-[10px] font-bold uppercase tracking-wide shrink-0 ${novel.status === 'ongoing' ? 'bg-green-100/10 text-green-600' : 'bg-blue-100/10 text-[var(--action)]'
                     }`}>
                     {novel.status}
                   </span>
                 </div>
 
-                <p className="text-sm text-[var(--text-muted)] line-clamp-1 mb-2">
+                {/* Description */}
+                <p className="text-xs sm:text-sm text-[var(--text-muted)] truncate min-w-0">
                   {novel.description || "No description provided."}
                 </p>
 
-                <div className="flex items-center gap-4 text-xs text-[var(--text-muted)] font-medium">
+                {/* Stats */}
+                <div className="flex flex-row items-center gap-4 text-xs text-[var(--text-muted)] font-medium min-w-0 truncate">
                   <span>📅 {new Date(novel.createdAt || Date.now()).toLocaleDateString()}</span>
                   <span>👁️ 0 Views</span>
                 </div>
               </div>
 
               {/* Action Menu (3 Dots) */}
-              <div className="shrink-0">
+              <div className="shrink-0 flex items-center justify-center">
                 <NovelMenu slug={novel.slug} novelId={novel.id.toString()} />
               </div>
             </div>
