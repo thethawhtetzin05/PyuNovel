@@ -39,7 +39,7 @@ export default function TelegramConnectForm({
 
     const copyToClipboard = () => {
         if (!token) return;
-        navigator.clipboard.writeText(`/start ${token}`);
+        navigator.clipboard.writeText(token); // 👈 Changed to copy only the token
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
@@ -118,12 +118,12 @@ export default function TelegramConnectForm({
                                 1. Open our Telegram Bot: <a href="https://t.me/PyuNovel_Bot" target="_blank" className="text-[#0088cc] font-bold hover:underline">@PyuNovel_Bot</a>
                             </p>
                             <p className="text-sm text-[var(--foreground)]">
-                                2. Send the following command to link your account. This code expires in 5 minutes:
+                                2. Copy the code below and send it to the bot. This code expires in 5 minutes:
                             </p>
 
                             <div className="flex items-center gap-2">
-                                <code className="flex-1 bg-[var(--surface-3)] px-4 py-3 rounded-lg text-[var(--action)] font-mono text-sm border border-[var(--border)] select-all overflow-x-auto">
-                                    /start {token}
+                                <code className="flex-1 bg-[var(--surface-3)] px-4 py-3 rounded-lg text-[var(--action)] font-mono text-sm border border-[var(--border)] select-all overflow-x-auto text-center tracking-widest font-black text-lg">
+                                    {token}
                                 </code>
                                 <button
                                     onClick={copyToClipboard}

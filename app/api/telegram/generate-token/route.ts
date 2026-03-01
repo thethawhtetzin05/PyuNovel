@@ -24,8 +24,12 @@ export async function POST(req: NextRequest) {
 
         const userId = session.user.id;
 
-        // Generate a simple 6 character uppercase token
-        const token = Math.random().toString(36).substring(2, 8).toUpperCase();
+        // Generate an 8-character token (uppercase, lowercase, numbers)
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let token = "";
+        for (let i = 0; i < 8; i++) {
+            token += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
 
         // Expires in 5 minutes
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
