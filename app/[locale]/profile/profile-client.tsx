@@ -164,7 +164,7 @@ export default function ProfileClient({ user, userNovels, joinedDate }: ProfileC
                     Integrations & Settings
                 </h2>
                 <TelegramConnectForm
-                    isLinked={Boolean(user.telegramId && String(user.telegramId).trim() !== "" && String(user.telegramId).trim() !== "null")}
+                    isLinked={Boolean(user.telegramId && String(user.telegramId).trim() !== "" && String(user.telegramId).trim() !== "null" && String(user.telegramId).trim() !== "undefined")}
                     tgName={user.telegramName}
                     tgUsername={user.telegramUsername}
                 />
