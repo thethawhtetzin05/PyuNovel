@@ -63,10 +63,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
               </div>
 
               {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1 w-full">
-                  <h3 className="text-lg font-bold text-[var(--foreground)] truncate min-w-0 group-hover:text-[var(--action)] transition-colors">
-                    <Link href={`/novel/${novel.slug}`} className="block truncate">{novel.title}</Link>
+              <div className="flex-1 min-w-0 w-full overflow-hidden">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-lg font-bold text-[var(--foreground)] truncate group-hover:text-[var(--action)] transition-colors flex-1 min-w-0">
+                    <Link href={`/novel/${novel.slug}`} className="block truncate w-full">{novel.title}</Link>
                   </h3>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide shrink-0 ${novel.status === 'ongoing' ? 'bg-green-100/10 text-green-600' : 'bg-blue-100/10 text-[var(--action)]'
                     }`}>
