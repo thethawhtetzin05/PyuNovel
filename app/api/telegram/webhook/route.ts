@@ -7,7 +7,16 @@ import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export const runtime = 'edge';
 
-const getToken = () => process.env.TELEGRAM_BOT_TOKEN;
+const getToken = () => {
+    // Attempt to get token from Edge environment first, fallback to standard process.env
+    try {
+        const env = getRequestContext().env;
+        if (env && env.TELEGRAM_BOT_TOKEN) return env.TELEGRAM_BOT_TOKEN;
+    } catch (e) {
+        // Ignored
+    }
+    return process.env.TELEGRAM_BOT_TOKEN;
+};
 
 async function sendTelegramMsg(chatId: string, text: string, replyMarkup?: any) {
     const token = getToken();
