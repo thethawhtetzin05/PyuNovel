@@ -88,11 +88,13 @@ export async function POST(req: NextRequest) {
         
         if (!botToken) {
             console.error("[TELEGRAM_WEBHOOK] CRITICAL ERROR: TELEGRAM_BOT_TOKEN is missing!");
-            return new NextResponse("Missing Token", { status: 500 });
+            // return new NextResponse("Missing Token", { status: 500 });
         }
 
         const db = getDb(reqEnv.DB);
         const body = await req.json() as any;
+        
+        console.log("[TELEGRAM_WEBHOOK] Received body:", JSON.stringify(body));
 
         // ==========================================
         // 1. CALLBACK QUERIES (Button Clicks)
