@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { getServerContext } from "@/lib/server-context";
 import { chapters } from "@/db/schema";
-import { eq, max } from "drizzle-orm";
+import { eq, max, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export const runtime = 'edge';
