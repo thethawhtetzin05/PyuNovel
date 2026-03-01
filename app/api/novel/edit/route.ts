@@ -49,9 +49,9 @@ export async function POST(request: NextRequest) {
             title,
             englishTitle,
             description,
-            imageUrl,
+            coverUrl: imageUrl, // ✅ Fix: mapping imageUrl to correct schema field 'coverUrl'
             tags: processTags(tags),
-            slug: generateSlug(englishTitle), // ✅ Bug fix: was using raw englishTitle
+            slug: generateSlug(englishTitle), 
         }, session.user.id);
 
         revalidatePath(`/novel/${updatedNovel.slug}`);
