@@ -22,9 +22,14 @@ export async function POST(req: NextRequest) {
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
-        // Remove telegramId linking for the currently logged in user
+        // Remove all telegram data for the currently logged in user
         await db.update(user)
-            .set({ telegramId: null, updatedAt: new Date() })
+            .set({ 
+                telegramId: null, 
+                telegramName: null, 
+                telegramUsername: null, 
+                updatedAt: new Date() 
+            })
             .where(eq(user.id, session.user.id));
 
         return new NextResponse("Successfully disconnected", { status: 200 });
