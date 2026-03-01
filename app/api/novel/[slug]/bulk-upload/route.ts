@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
 import { getServerContext } from "@/lib/server-context";
-import { chapters } from "@/db/schema";
-import { eq, max, sql, desc } from "drizzle-orm";
+import { chapters, novels } from "@/db/schema";
+import { eq, desc, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export const runtime = 'edge';
@@ -49,9 +48,9 @@ export async function POST(
         let currentMaxId = lastIdRow?.id ?? 0;
 
         const rows = parsedChapters.map((ch, i) => ({
-            id: currentMaxId + i + 1, // 👈 Manually assigning ID to avoid D1 null issues
+            id: currentMaxId + i + 1, 
             novelId,
-            volumeId: volumeId ?? null,
+            volumeId: volumeId || null, // 👈 Using OR operator
             title: ch.title,
             content: ch.content,
             isPaid: false,
