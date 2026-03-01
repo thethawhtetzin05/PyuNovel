@@ -78,23 +78,12 @@ export async function POST(req: NextRequest) {
     try {
         const reqEnv = getRequestContext()?.env || {};
         
-        // Safely access process.env to avoid ReferenceError in Edge runtime
-        let processToken = "";
-        if (typeof process !== 'undefined' && process.env) {
-            processToken = process.env.TELEGRAM_BOT_TOKEN || "";
-        }
+        botToken = reqEnv.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || "7594943916:AAEXG0Xn0GZ4y7_V9sWj-118-2OexYtM6Lw";
         
-        botToken = reqEnv.TELEGRAM_BOT_TOKEN || processToken;
-        
-        if (!botToken) {
-            console.error("[TELEGRAM_WEBHOOK] CRITICAL ERROR: TELEGRAM_BOT_TOKEN is missing!");
-            // return new NextResponse("Missing Token", { status: 500 });
-        }
-
         const db = getDb(reqEnv.DB);
         const body = await req.json() as any;
         
-        console.log("[TELEGRAM_WEBHOOK] Received body:", JSON.stringify(body));
+        console.log("[TELEGRAM_WEBHOOK] Incoming with token logic fixed", botToken.substring(0, 10));
 
         // ==========================================
         // 1. CALLBACK QUERIES (Button Clicks)
