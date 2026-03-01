@@ -5,6 +5,7 @@ import { getDb } from "@/db";
 import { user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getRequestContext } from "@cloudflare/next-on-pages";
+import { revalidatePath } from "next/cache";
 
 export const runtime = 'edge';
 
@@ -31,6 +32,8 @@ export async function POST(req: NextRequest) {
                 updatedAt: new Date() 
             })
             .where(eq(user.id, session.user.id));
+
+        revalidatePath('/', 'layout'); // Clear the Next.js cache so the profile updates instantly!
 
         return new NextResponse("Successfully disconnected", { status: 200 });
     } catch (error) {

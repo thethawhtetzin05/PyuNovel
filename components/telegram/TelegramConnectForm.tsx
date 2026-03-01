@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, Check, X, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface TelegramConnectFormProps {
     isLinked: boolean;
@@ -16,6 +17,7 @@ export default function TelegramConnectForm({
     tgName,
     tgUsername
 }: TelegramConnectFormProps) {
+    const router = useRouter();
     const [token, setToken] = useState<string | null>(initialToken || null);
     const [isLoading, setIsLoading] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -49,7 +51,8 @@ export default function TelegramConnectForm({
         setIsLoading(true);
         try {
             await fetch(`${window.location.origin}/api/telegram/disconnect`, { method: 'POST' });
-            window.location.reload();
+            router.refresh(); // Refresh Next.js server component tree properly
+            setTimeout(() => window.location.reload(), 300); // Fallback reload just in case
         } catch (error) {
             console.error(error);
         } finally {

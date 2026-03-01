@@ -163,6 +163,12 @@ export default function ProfileClient({ user, userNovels, joinedDate }: ProfileC
                 <h2 className="text-2xl font-black text-[var(--foreground)] mb-2">
                     Integrations & Settings
                 </h2>
+                
+                {/* 🐛 Temporary Debug Data (will remove later) */}
+                <div className="mb-4 bg-red-100 p-2 text-xs text-red-700 font-mono rounded overflow-x-auto">
+                   [DEBUG] raw telegramId: {JSON.stringify(user.telegramId)} | type: {typeof user.telegramId}
+                </div>
+
                 <TelegramConnectForm
                     isLinked={Boolean(user.telegramId && typeof user.telegramId === 'string' && user.telegramId.trim() !== "" && user.telegramId.trim() !== "null" && user.telegramId.trim() !== "undefined")}
                     tgName={user.telegramName}
