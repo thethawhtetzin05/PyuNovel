@@ -77,7 +77,13 @@ export async function POST(req: NextRequest) {
     let botToken = "";
     try {
         const reqEnv = getRequestContext().env;
-        botToken = getToken(reqEnv) || "";
+        botToken = reqEnv.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || "";
+        
+        if (!botToken) {
+            console.error("[TELEGRAM_WEBHOOK] CRITICAL ERROR: TELEGRAM_BOT_TOKEN is missing!");
+            return new NextResponse("Missing Token", { status: 500 });
+        }
+
         const db = getDb(reqEnv.DB);
         const body = await req.json() as any;
 
