@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
         await updateChapter(db, chapterId, {
             title,
             content,
-            isPaid,
+            isPaid: !!isPaid, // Ensure proper boolean for Drizzle mapping
             sortIndex,
-            volumeId,
+            volumeId: volumeId || null,
             updatedAt: new Date()
         }, session.user.id);
 

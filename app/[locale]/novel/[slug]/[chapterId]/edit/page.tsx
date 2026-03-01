@@ -22,6 +22,10 @@ export default async function EditChapterPage({ params }: { params: Promise<{ sl
   const auth = createAuth(env.DB);
   const session = await auth.api.getSession({ headers: await headers() });
 
+  if (!session) {
+    redirect({ href: '/sign-in', locale: (await params).locale });
+  }
+
   // Chapter Data ဆွဲထုတ်မယ် (Sort Index နဲ့ Novel ID ကို သုံးပြီး ရှာမယ်)
   const novel = await db.select({
     id: novels.id,
@@ -29,8 +33,6 @@ export default async function EditChapterPage({ params }: { params: Promise<{ sl
   }).from(novels).where(eq(novels.slug, slug)).get();
 
   if (!novel) notFound();
-
-  redirect({ href: '/sign-in', locale: (await params).locale });
 
   const chapter = await db.select().from(chapters).where(
     and(
