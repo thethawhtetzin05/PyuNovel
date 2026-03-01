@@ -56,9 +56,18 @@ export async function POST(
             updatedAt: new Date(),
         }));
 
-        const chunkSize = 50;
+        const chunkSize = 20; // Reduce chunk size for reliability
         for (let i = 0; i < rows.length; i += chunkSize) {
-            await db.insert(chapters).values(rows.slice(i, i + chunkSize));
+            const chunk = rows.slice(i, i + chunkSize);
+            // Use db.run with raw SQL for complete control over columns (avoiding 'id' null issue)
+            for (const row of chunk) {
+                await db.run(sql`
+                    INSERT INTO chapters 
+                    (novel_id, volume_id, title, content, is_paid, sort_index, created_at, updated_at)
+                    VALUES 
+                    (${row.novelId}, ${row.volumeId}, ${row.title}, ${row.content}, ${row.isPaid}, ${row.sortIndex}, ${row.createdAt}, ${row.updatedAt})
+                `);
+            }
         }
 
         revalidatePath(`/novel/${slug}`);
