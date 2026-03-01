@@ -38,40 +38,31 @@ export async function POST(
             return NextResponse.json({ success: false, error: "Novel not found or unauthorized" }, { status: 404 });
         }
 
-        const lastIndexRow = await db
-            .select({ val: max(chapters.sortIndex) })
-            .from(chapters)
-            .where(eq(chapters.novelId, novelId))
-            .get();
-        const startIndex = (lastIndexRow?.val ?? 0) + 1;
+        const lastChapter = await db.query.chapters.findFirst({
+            where: eq(chapters.novelId, novelId),
+            orderBy: [desc(chapters.sortIndex)],
+        });
+        const startIndex = (lastChapter?.sortIndex ?? 0) + 1;
+
+        // Get the absolute last ID to increment manually
+        const lastIdRow = await db.select({ id: chapters.id }).from(chapters).orderBy(desc(chapters.id)).limit(1).get();
+        let currentMaxId = lastIdRow?.id ?? 0;
 
         const rows = parsedChapters.map((ch, i) => ({
+            id: currentMaxId + i + 1, // 👈 Manually assigning ID to avoid D1 null issues
             novelId,
-            volumeId: volumeId || null,
+            volumeId: volumeId ?? null,
             title: ch.title,
             content: ch.content,
+            isPaid: false,
             sortIndex: startIndex + i,
-            isPaid: 0, // Boolean error ကင်းအောင် 0/1 သုံးပါမယ်
             createdAt: new Date(),
             updatedAt: new Date(),
         }));
 
         const chunkSize = 50;
         for (let i = 0; i < rows.length; i += chunkSize) {
-            const chunk = rows.slice(i, i + chunkSize);
-            // Explicit destructuring to ensure 'id' is NOT present in the final object sent to Drizzle
-            await db.insert(chapters).values(
-                chunk.map(({ novelId, volumeId, title, content, isPaid, sortIndex, createdAt, updatedAt }) => ({
-                    novelId,
-                    volumeId: volumeId ?? null,
-                    title,
-                    content,
-                    isPaid: isPaid ? true : false,
-                    sortIndex,
-                    createdAt,
-                    updatedAt,
-                }))
-            );
+            await db.insert(chapters).values(rows.slice(i, i + chunkSize));
         }
 
         revalidatePath(`/novel/${slug}`);
