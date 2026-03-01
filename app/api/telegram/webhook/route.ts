@@ -76,8 +76,15 @@ async function getTelegramFileText(token: string, fileId: string): Promise<strin
 export async function POST(req: NextRequest) {
     let botToken = "";
     try {
-        const reqEnv = getRequestContext().env;
-        botToken = reqEnv.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || "";
+        const reqEnv = getRequestContext()?.env || {};
+        
+        // Safely access process.env to avoid ReferenceError in Edge runtime
+        let processToken = "";
+        if (typeof process !== 'undefined' && process.env) {
+            processToken = process.env.TELEGRAM_BOT_TOKEN || "";
+        }
+        
+        botToken = reqEnv.TELEGRAM_BOT_TOKEN || processToken;
         
         if (!botToken) {
             console.error("[TELEGRAM_WEBHOOK] CRITICAL ERROR: TELEGRAM_BOT_TOKEN is missing!");
