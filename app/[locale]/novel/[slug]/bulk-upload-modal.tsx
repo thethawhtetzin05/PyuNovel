@@ -182,8 +182,11 @@ export default function BulkUploadModal({ novelId, novelSlug, volumes = [], onCl
         startTransition(async () => {
             let successCount = 0;
             try {
-                // Cloudflare Request Limit ကို ကျော်လွှားရန် တစ်ခန်းချင်းစီ ခွဲပို့ပါမယ်
-                for (const chapter of preview) {
+                // Cloudflare Request Limit ကို ကျော်လွှားရန် ၁၀ ခန်းစီ အစုလိုက်ခွဲပို့ပါမယ်
+                const chunkSize = 10;
+                for (let i = 0; i < preview.length; i += chunkSize) {
+                    const chunk = preview.slice(i, i + chunkSize);
+                    
                     const response = await fetch(`/api/novel/${novelSlug}/bulk-upload`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -191,15 +194,15 @@ export default function BulkUploadModal({ novelId, novelSlug, volumes = [], onCl
                             novelId,
                             novelSlug,
                             volumeId: selectedVolumeId ? Number(selectedVolumeId) : null,
-                            chapters: [chapter] // 👈 တစ်ခန်းချင်းစီ ပို့ခြင်း
+                            chapters: chunk
                         }),
                     });
 
-                    const res = await response.json() as { success: boolean; error?: string };
+                    const res = await response.json() as { success: boolean; count?: number; error?: string };
                     if (res.success) {
-                        successCount++;
+                        successCount += (res.count || chunk.length);
                     } else {
-                        throw new Error(res.error || `Failed to upload chapter: ${chapter.title}`);
+                        throw new Error(res.error || `Failed to upload chapters at offset ${i}`);
                     }
                 }
 
@@ -210,7 +213,7 @@ export default function BulkUploadModal({ novelId, novelSlug, volumes = [], onCl
                 router.refresh();
 
             } catch (err: any) {
-                setResult({ success: false, error: `Upload stopped at ${successCount} chapters: ${err.message}` });
+                setResult({ success: false, error: `Upload stopped: ${err.message}` });
             }
         });
     };
