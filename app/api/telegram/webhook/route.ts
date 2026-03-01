@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     try {
         const reqEnv = getRequestContext()?.env || {};
         
-        botToken = reqEnv.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || "7594943916:AAEXG0Xn0GZ4y7_V9sWj-118-2OexYtM6Lw";
+        botToken = reqEnv.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || "";
         
         const db = getDb(reqEnv.DB);
         const body = await req.json() as any;
