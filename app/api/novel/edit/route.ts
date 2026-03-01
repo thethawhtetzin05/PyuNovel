@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
         if (coverFile && coverFile.size > 0 && coverFile.name !== "undefined") {
             try {
-                const fileName = `${crypto.randomUUID()}-${coverFile.name}`;
+                const fileName = `${globalThis.crypto.randomUUID()}-${coverFile.name}`;
                 await env.R2_BUCKET.put(fileName, await coverFile.arrayBuffer(), {
                     httpMetadata: { contentType: coverFile.type },
                 });

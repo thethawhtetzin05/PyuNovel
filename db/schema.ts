@@ -18,6 +18,9 @@ export const user = sqliteTable("user", {
   // Custom Fields
   role: text('role', { enum: ['admin', 'writer', 'reader'] }).default('reader').notNull(),
   coins: integer('coins').default(0),
+  telegramId: text('telegram_id'), // To store connected Telegram Chat ID
+  telegramUsername: text('telegram_username'), // e.g. @username
+  telegramName: text('telegram_name'), // e.g. John Doe
 });
 
 export const session = sqliteTable("session", {
@@ -185,3 +188,14 @@ export const announcements = sqliteTable('announcements', {
   activeIdx: index('announcement_active_idx').on(table.isActive),
   createdAtIdx: index('announcement_created_at_idx').on(table.createdAt),
 }));
+
+// ==========================================
+// 6. Telegram Integration
+// ==========================================
+
+export const telegramDrafts = sqliteTable('telegram_drafts', {
+  id: text('id').primaryKey(),
+  authorId: text('author_id').references(() => user.id).notNull(),
+  chaptersJson: text('chapters_json').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+});

@@ -241,23 +241,15 @@ export default function BulkUploadModal({ novelId, novelSlug, volumes = [], onCl
                             </button>
                             {showGuide && (
                                 <div className="px-4 pb-4 pt-1 text-sm text-[var(--text-muted)] space-y-2 bg-[var(--surface-2)]">
-                                    <p className="font-semibold text-[var(--foreground)]">Method 1 — Burmese/English Heading (Auto-detected)</p>
+                                    <p className="font-semibold text-[var(--foreground)]">Auto-detected Headings</p>
                                     <pre className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-3 text-xs overflow-x-auto leading-relaxed">
                                         {`အခန်း (၁) စတင်ခြင်း
 ဒီတစ်ကလေး ပထမဆုံးအကြောင်းအရာ...
 
-အခန်း (၂) ပြောင်းလဲမှု
+အပိုင်း (၂) ပြောင်းလဲမှု
 ဒုတိယ အကြောင်းအရာ...`}
                                     </pre>
-                                    <p className="font-semibold text-[var(--foreground)]">Method 2 — Delimiter (---, ***, ====)</p>
-                                    <pre className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-3 text-xs overflow-x-auto leading-relaxed">
-                                        {`ခေါင်းစဉ်
-ပထမ အကြောင်းအရာ...
----
-ခေါင်းစဉ်
-ဒုတိယ အကြောင်းအရာ...`}
-                                    </pre>
-                                    <p className="text-xs opacity-70">Burmese digits (၀-၉) and English digits (0-9) are both supported.</p>
+                                    <p className="text-xs opacity-70">Keywords: အခန်း, အပိုင်း, Chapter. Burmese digits (၀-၉) and English digits (0-9) are supported.</p>
                                 </div>
                             )}
                         </div>

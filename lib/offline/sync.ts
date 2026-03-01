@@ -106,9 +106,9 @@ export async function downloadNovel(
             await db.commitTransaction();
         } catch (txErr) {
             await db.rollbackTransaction();
-            throw txErr;
+            console.error('[Sync] txErr:', txErr);
+            return { success: false, error: 'Failed to save to local database' };
         }
-
 
         onProgress?.('Done!');
         return { success: true };

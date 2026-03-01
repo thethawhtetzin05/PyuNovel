@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Link } from '@/i18n/routing';
-import { useRouter } from 'next/navigation';
+import { Link, useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 
 // ✅ Props လက်ခံနိုင်အောင် Interface ဆောက်လိုက်ပါတယ်
@@ -71,6 +70,7 @@ export default function NovelForm({
     <form
       onSubmit={handleSubmit}
       method="POST"
+      encType="multipart/form-data"
       className="space-y-6 bg-[var(--surface)] p-8 rounded-2xl shadow-sm border border-[var(--border)]"
     >
 

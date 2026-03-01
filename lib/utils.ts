@@ -40,10 +40,9 @@ export function processTags(raw: string): string {
 // ==========================================
 
 // Regex တွေကို module-level တွင် တစ်ကြိမ်သာ compile လုပ်သည် (performance)
-// ၁။ အခန်း (သို့) Chapter + (English or Burmese digits)
+// ၁။ အခန်း (သို့) Chapter (သို့) အပိုင်း + (English or Burmese digits)
 // ၂။ Markdown style (# Heading)
-const TITLE_REGEX = /^(အခန်း\s*[\(\（]?[0-9၀-၉]+[\)\）]?|Chapter\s+[0-9၀-၉]+|^#\s+)/i;
-const DELIMITER_REGEX = /^(---+|\*\*\*+|={3,})\s*$/;
+const TITLE_REGEX = /^((?:အခန်း|အပိုင်း)\s*[\(\（]?[0-9၀-၉]+[\)\）]?|Chapter\s+[0-9၀-၉]+|^#\s+)/i;
 
 
 export interface ParsedChapter {
@@ -54,8 +53,7 @@ export interface ParsedChapter {
 /**
  * Splits raw text into an array of chapters.
  * Detection priority:
- *  1. Lines starting with "အခန်း (digits)" or "Chapter digits" → treated as chapter title.
- *  2. Lines matching ---, ***, ==== as explicit delimiters (next meaningful line is title).
+ *  1. Lines starting with "အခန်း (digits)" or "အပိုင်း (digits)" or "Chapter digits" → treated as chapter title.
  */
 export function parseChaptersFromText(raw: string, asHtml: boolean = true): ParsedChapter[] {
   // Input guard — null/empty string ဆိုရင် empty array ပြန်ပေးမည်
@@ -65,12 +63,11 @@ export function parseChaptersFromText(raw: string, asHtml: boolean = true): Pars
   const text = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   const lines = text.split('\n');
 
-  // Module-level ကြေငြာထားသော TITLE_REGEX / DELIMITER_REGEX ကို အသုံးပြုသည်
+  // Module-level ကြေငြာထားသော TITLE_REGEX ကို အသုံးပြုသည်
 
   const chapters: ParsedChapter[] = [];
   let currentTitle = '';
   let currentLines: string[] = [];
-  let awaitingTitleAfterDelimiter = false;
 
   const flush = () => {
     let content = currentLines.join('\n').trim();
@@ -96,25 +93,10 @@ export function parseChaptersFromText(raw: string, asHtml: boolean = true): Pars
   for (const line of lines) {
     const trimmed = line.trim();
 
-    // ---- Delimiter line ----
-    if (DELIMITER_REGEX.test(trimmed)) {
-      flush();
-      awaitingTitleAfterDelimiter = true;
-      continue;
-    }
-
     // ---- Burmese/English chapter heading ----
     if (TITLE_REGEX.test(trimmed)) {
       flush();
-      awaitingTitleAfterDelimiter = false;
       currentTitle = trimmed;
-      continue;
-    }
-
-    // ---- Line after delimiter becomes the title ----
-    if (awaitingTitleAfterDelimiter && trimmed.length > 0) {
-      currentTitle = trimmed;
-      awaitingTitleAfterDelimiter = false;
       continue;
     }
 

@@ -10,6 +10,18 @@ export default function Error({
     reset: () => void;
 }) {
     useEffect(() => {
+        const isChunkLoadError = error.name === 'ChunkLoadError' || error.message.includes('Loading chunk');
+
+        if (isChunkLoadError) {
+            const hasReloaded = sessionStorage.getItem('chunk_load_error_reloaded');
+            if (!hasReloaded) {
+                // First time encountering a ChunkLoadError during this session, try to hard reload.
+                sessionStorage.setItem('chunk_load_error_reloaded', 'true');
+                window.location.reload();
+                return; // Do not report to Telegram yet
+            }
+        }
+
         // Automatically report the error to Telegram
         const reportError = async () => {
             try {

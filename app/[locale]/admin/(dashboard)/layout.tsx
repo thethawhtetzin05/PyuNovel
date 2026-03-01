@@ -38,6 +38,10 @@ export default async function AdminLayout({
                             <Home size={18} />
                             <span className="font-medium">Main Site</span>
                         </Link>
+                        <Link href="/admin/users" className="flex items-center gap-3 px-4 py-3 text-[var(--text-muted)] hover:bg-[var(--surface-2)] rounded-xl transition">
+                            <Users size={18} />
+                            <span className="font-medium">Users Stats</span>
+                        </Link>
                         <Link href="/admin/announcements" className="flex items-center gap-3 px-4 py-3 bg-[var(--action)]/10 text-[var(--action)] rounded-xl transition">
                             <Megaphone size={18} />
                             <span className="font-bold">Announcements</span>

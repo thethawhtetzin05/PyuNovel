@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Link } from '@/i18n/routing';
 import ProfileEditModal from "@/components/modals/ProfileEditModal";
+import TelegramConnectForm from "@/components/telegram/TelegramConnectForm";
 
 interface ProfileClientProps {
     user: any;
@@ -156,6 +157,18 @@ export default function ProfileClient({ user, userNovels, joinedDate }: ProfileC
                 onClose={() => setIsEditModalOpen(false)}
                 initialData={{ name: user.name, image: user.image }}
             />
+
+            {/* 3. Settings Section */}
+            <div className="border-t border-[var(--border)] pt-12 mt-4">
+                <h2 className="text-2xl font-black text-[var(--foreground)] mb-2">
+                    Integrations & Settings
+                </h2>
+                <TelegramConnectForm
+                    isLinked={!!user.telegramId}
+                    tgName={user.telegramName}
+                    tgUsername={user.telegramUsername}
+                />
+            </div>
         </div>
     );
 }
