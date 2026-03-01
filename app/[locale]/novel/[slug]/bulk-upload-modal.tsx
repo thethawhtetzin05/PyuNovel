@@ -180,33 +180,37 @@ export default function BulkUploadModal({ novelId, novelSlug, volumes = [], onCl
         if (!preview || preview.length === 0) return;
 
         startTransition(async () => {
+            let successCount = 0;
             try {
-                const response = await fetch(`/api/novel/${novelSlug}/bulk-upload`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        novelId,
-                        novelSlug,
-                        volumeId: selectedVolumeId ? Number(selectedVolumeId) : null,
-                        chapters: preview
-                    }),
-                });
+                // Cloudflare Request Limit ကို ကျော်လွှားရန် တစ်ခန်းချင်းစီ ခွဲပို့ပါမယ်
+                for (const chapter of preview) {
+                    const response = await fetch(`/api/novel/${novelSlug}/bulk-upload`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            novelId,
+                            novelSlug,
+                            volumeId: selectedVolumeId ? Number(selectedVolumeId) : null,
+                            chapters: [chapter] // 👈 တစ်ခန်းချင်းစီ ပို့ခြင်း
+                        }),
+                    });
 
-                const res = await response.json() as { success: boolean; count?: number; error?: string };
-
-                setResult(res.success
-                    ? { success: true, count: res.count || 0 }
-                    : { success: false, error: res.error || 'Unknown error' }
-                );
-
-                if (res.success) {
-                    setPreview(null);
-                    setFileName('');
-                    if (fileRef.current) fileRef.current.value = '';
-                    router.refresh(); // Data အသစ်တွေ ပေါ်လာအောင် refresh လုပ်မယ်
+                    const res = await response.json() as { success: boolean; error?: string };
+                    if (res.success) {
+                        successCount++;
+                    } else {
+                        throw new Error(res.error || `Failed to upload chapter: ${chapter.title}`);
+                    }
                 }
+
+                setResult({ success: true, count: successCount });
+                setPreview(null);
+                setFileName('');
+                if (fileRef.current) fileRef.current.value = '';
+                router.refresh();
+
             } catch (err: any) {
-                setResult({ success: false, error: `Upload failed: ${err.message}` });
+                setResult({ success: false, error: `Upload stopped at ${successCount} chapters: ${err.message}` });
             }
         });
     };
