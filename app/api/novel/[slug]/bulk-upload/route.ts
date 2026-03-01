@@ -65,7 +65,7 @@ export async function POST(
                     INSERT INTO chapters 
                     (novel_id, volume_id, title, content, is_paid, sort_index, created_at, updated_at)
                     VALUES 
-                    (${row.novelId}, ${row.volumeId}, ${row.title}, ${row.content}, ${row.isPaid}, ${row.sortIndex}, ${row.createdAt}, ${row.updatedAt})
+                    (${row.novelId}, ${row.volumeId || null}, ${row.title}, ${row.content}, ${row.isPaid}, ${row.sortIndex}, ${row.createdAt}, ${row.updatedAt})
                 `);
             }
         }
