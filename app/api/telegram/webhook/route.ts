@@ -23,7 +23,21 @@ export async function GET(req: NextRequest) {
         const getMeRes = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
         const getMe = await getMeRes.json() as any;
 
-        // Test 2: if ?chatId=xxx is provided, send a test message
+        // Test 2: actual DB query test
+        let dbQueryTest: string;
+        if (env?.DB) {
+            try {
+                const db = drizzle(env.DB as any);
+                const rows = await db.select({ id: user.id, telegramId: user.telegramId }).from(user).limit(1);
+                dbQueryTest = `✅ DB query works (user table has ${rows.length >= 0 ? 'telegramId column' : '?'})`;
+            } catch (dbErr: any) {
+                dbQueryTest = `❌ DB query failed: ${dbErr?.message}`;
+            }
+        } else {
+            dbQueryTest = "❌ DB not bound";
+        }
+
+        // Test 3: if ?chatId=xxx is provided, send a test message
         const url = new URL(req.url);
         const chatId = url.searchParams.get("chatId");
         let sendResult = null;
@@ -40,6 +54,7 @@ export async function GET(req: NextRequest) {
             status: "ok",
             botToken: "✅ SET",
             db: db_ok ? "✅ SET" : "❌ MISSING",
+            dbQueryTest,
             botInfo: getMe?.result ?? getMe,
             sendTest: sendResult,
             timestamp: new Date().toISOString(),
@@ -152,8 +167,16 @@ export async function POST(req: NextRequest) {
             const text = (body.message.text as string).trim();
 
             if (text === "/start") {
-                const rows = await db.select().from(user).where(eq(user.telegramId, chatId)).limit(1);
-                const dbUser = rows[0];
+                let dbUser: typeof user.$inferSelect | undefined;
+                try {
+                    const rows = await db.select().from(user).where(eq(user.telegramId, chatId)).limit(1);
+                    dbUser = rows[0];
+                } catch (dbErr: any) {
+                    console.error("[/start] DB query failed:", dbErr?.message);
+                    // DB failed — still respond so user isn't left waiting
+                    await sendTelegramMsg(botToken, chatId, "👋 PyuNovel မှ ကြိုဆိုပါတယ်! (DB error: " + dbErr?.message + ")");
+                    return NextResponse.json({ ok: true });
+                }
                 const kb = {
                     inline_keyboard: dbUser
                         ? [

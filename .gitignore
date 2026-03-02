@@ -49,4 +49,5 @@ android/app/release/
 *.jks
 *.keystore
 google-services.json
+error-record.md
 
