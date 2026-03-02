@@ -82,9 +82,20 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
                 </p>
 
                 {/* Stats */}
-                <div className="flex flex-row items-center gap-4 text-xs text-[var(--text-muted)] font-medium min-w-0 truncate">
+                {/* Date & Views Row */}
+                <div className="flex flex-row items-center gap-4 text-xs text-[var(--text-muted)] font-medium min-w-0 truncate mb-2">
                   <span>📅 {new Date(novel.createdAt || Date.now()).toLocaleDateString()}</span>
                   <span>👁️ 0 Views</span>
+                </div>
+                
+                {/* Action Buttons Row */}
+                <div className="flex flex-row items-center gap-3">
+                  <Link 
+                    href={`/novel/${novel.slug}/create`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--action)]/10 text-[var(--action)] hover:bg-[var(--action)] hover:text-white transition-colors rounded-lg text-xs font-bold whitespace-nowrap shrink-0"
+                  >
+                    ✍️ Add Chapter
+                  </Link>
                 </div>
               </div>
 
