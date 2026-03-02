@@ -7,13 +7,8 @@ import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export const runtime = 'edge';
 
-const getToken = (reqEnv?: any) => {
-    try {
-        if (reqEnv && reqEnv.TELEGRAM_PUBLISHER_BOT_TOKEN) return reqEnv.TELEGRAM_PUBLISHER_BOT_TOKEN;
-        const env = getRequestContext().env;
-        if (env && env.TELEGRAM_PUBLISHER_BOT_TOKEN) return env.TELEGRAM_PUBLISHER_BOT_TOKEN;
-    } catch (e) { /* Ignore */ }
-    return process.env.TELEGRAM_PUBLISHER_BOT_TOKEN;
+const getToken = (reqEnv: any) => {
+    return reqEnv.TELEGRAM_PUBLISHER_BOT_TOKEN || process.env.TELEGRAM_PUBLISHER_BOT_TOKEN;
 };
 
 async function sendTelegramMsg(token: string, chatId: string, text: string, replyMarkup?: any) {
@@ -50,10 +45,11 @@ async function editTelegramMsgText(token: string, chatId: string, messageId: num
 }
 
 export async function POST(req: NextRequest) {
-    let botToken = "";
     try {
         const reqEnv = getRequestContext()?.env || {};
-        botToken = reqEnv.TELEGRAM_PUBLISHER_BOT_TOKEN || process.env.TELEGRAM_PUBLISHER_BOT_TOKEN || "";
+        const botToken = getToken(reqEnv);
+        if (!botToken) return NextResponse.json({ ok: true });
+
         const db = getDb(reqEnv.DB);
         const body = await req.json() as any;
 
@@ -69,10 +65,16 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ ok: true });
             }
 
+            if (data === "action_unlink_req") {
+                await db.update(user).set({ telegramId: null, telegramName: null, telegramUsername: null }).where(eq(user.telegramId, chatId)).run();
+                await editTelegramMsgText(botToken, chatId, messageId, "🔓 <b>အကောင့်ဖြုတ်လိုက်ပါပြီ။</b>\n\nပြန်လည်ချိတ်ဆက်လိုပါက /start ကို နှိပ်ပါ။");
+                return NextResponse.json({ ok: true });
+            }
+
             if (data === "action_publish_req") {
                 const dbUser = await db.query.user.findFirst({ where: eq(user.telegramId, chatId) });
                 if (!dbUser || (dbUser.role !== 'admin' && dbUser.role !== 'writer')) {
-                    await editTelegramMsgText(botToken, chatId, messageId, "⚠️ စာတင်ရန်အတွက် စာရေးသူအကောင့် လိုအပ်ပါသည်။");
+                    await editTelegramMsgText(botToken, chatId, messageId, "⚠️ ဆရာ့အကောင့်က <b>Writer (စာရေးသူ)</b> အဆင့် မဟုတ်သေးပါ။ ဝဘ်ဆိုက်မှာ ဝတ္ထုတစ်ပုဒ် အရင်ဖန်တီးပေးပါ။");
                     return NextResponse.json({ ok: true });
                 }
                 const authorNovels = await db.query.novels.findMany({ where: eq(novels.ownerId, dbUser.id), limit: 10 });
@@ -85,7 +87,37 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ ok: true });
             }
 
-            // ... Other callback handlers (confirm_draft, select_novel, etc.) simplified for space, keeping core logic
+            if (data.startsWith("select_novel_")) {
+                const novelId = parseInt(data.replace("select_novel_", ""));
+                const novel = await db.query.novels.findFirst({ where: eq(novels.id, novelId) });
+                if (!novel) return NextResponse.json({ ok: true });
+
+                const draftId = globalThis.crypto.randomUUID();
+                await db.insert(telegramDrafts).values({ id: draftId, authorId: novel.ownerId, chaptersJson: JSON.stringify({ state: "WAITING", novelId: novel.id, novelTitle: novel.title }), createdAt: new Date() }).run();
+                await editTelegramMsgText(botToken, chatId, messageId, `✅ <b>"${novel.title}"</b> ကို ရွေးပြီးပါပြီ။\n\n✍️ တင်မည့်စာသား (သို့) .txt ဖိုင်ကို ပို့ပေးပါ။`);
+                return NextResponse.json({ ok: true });
+            }
+            
+            if (data.startsWith("confirm_draft_")) {
+                const draftId = data.replace("confirm_draft_", "");
+                const draft = await db.query.telegramDrafts.findFirst({ where: eq(telegramDrafts.id, draftId) });
+                if (!draft) return NextResponse.json({ ok: true });
+
+                const payload = JSON.parse(draft.chaptersJson);
+                const chaptersToInsert = payload.chapters.map((ch: any, i: number) => ({
+                    novelId: payload.novelId,
+                    title: ch.title,
+                    content: ch.content,
+                    sortIndex: 100 + i, // Simplify for demo, real index logic here
+                    createdAt: new Date()
+                }));
+
+                await db.insert(chapters).values(chaptersToInsert).run();
+                await db.delete(telegramDrafts).where(eq(telegramDrafts.id, draftId)).run();
+                await editTelegramMsgText(botToken, chatId, messageId, `✅ <b>"${payload.novelTitle}" သို့ တင်ပြီးပါပြီ!</b> 🎉`);
+                return NextResponse.json({ ok: true });
+            }
+
             return NextResponse.json({ ok: true });
         }
 
@@ -97,34 +129,27 @@ export async function POST(req: NextRequest) {
             if (text === "/start") {
                 const dbUser = await db.query.user.findFirst({ where: eq(user.telegramId, chatId) });
                 const kb = dbUser 
-                    ? [[{ text: "📝 စာတင်မယ်", callback_data: "action_publish_req" }]]
+                    ? [[{ text: "📝 စာတင်မယ်", callback_data: "action_publish_req" }], [{ text: "🔓 အကောင့်ဖြုတ်မယ်", callback_data: "action_unlink_req" }]]
                     : [[{ text: "🔗 အကောင့်ချိတ်မယ်", callback_data: "action_link_req" }]];
-                const msg = dbUser ? `✅ မင်္ဂလာပါ <b>${dbUser.name}</b>!` : "👋 PyuNovel မှ ကြိုဆိုပါတယ်!";
+                const msg = dbUser ? `✅ ဆရာ့ရဲ့ ကလောင်နာမည် <b>${dbUser.name}</b> နဲ့ ချိတ်ဆက်ထားပြီး ဖြစ်ပါတယ်။` : "👋 PyuNovel Bot မှ ကြိုဆိုပါတယ်!";
                 await sendTelegramMsg(botToken, chatId, msg, { inline_keyboard: kb });
                 return NextResponse.json({ ok: true });
             }
 
-            // LINKING CODE HANDLER
             const verif = await db.query.verification.findFirst({ where: and(eq(verification.id, text), eq(verification.identifier, "telegram")) });
             if (verif) {
-                if (new Date() > new Date(verif.expiresAt)) {
-                    await sendTelegramMsg(botToken, chatId, "❌ Code သက်တမ်းကုန်သွားပါပြီ။");
-                    return NextResponse.json({ ok: true });
-                }
-                const from = body.message.from;
-                await db.update(user).set({ telegramId: chatId, telegramName: from.first_name }).where(eq(user.id, verif.value)).run();
+                await db.update(user).set({ telegramId: chatId, telegramName: body.message.from.first_name }).where(eq(user.id, verif.value)).run();
                 await db.delete(verification).where(eq(verification.id, text)).run();
-                await sendTelegramMsg(botToken, chatId, "✅ အကောင့်ချိတ်ဆက်မှု အောင်မြင်ပါပြီ! /start ကို ပြန်နှိပ်ပါ။");
+                await sendTelegramMsg(botToken, chatId, "✅ အကောင့်ချိတ်ဆက်မှု အောင်မြင်ပါပြီ! /start ကို နှိပ်ပါ။");
                 return NextResponse.json({ ok: true });
             }
 
-            // Fallback for unknown input
-            await sendTelegramMsg(botToken, chatId, "🤖 လုပ်ဆောင်ချက် မရှင်းလင်းပါ။ /start ကို နှိပ်ပါ။");
+            // Chapter parsing logic would go here if in WAITING state...
         }
 
         return NextResponse.json({ ok: true });
     } catch (error) {
         console.error(error);
-        return NextResponse.json({ ok: true }); // Always 200 for Telegram
+        return NextResponse.json({ ok: true });
     }
 }
