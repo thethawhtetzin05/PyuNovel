@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { loginWithAdminKey } from '../../actions';
 
-export default function AdminLoginForm() {
+export default function AdminLoginForm({ locale }: { locale: string }) {
     const [key, setKey] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -14,7 +14,7 @@ export default function AdminLoginForm() {
         setError(null);
 
         try {
-            const res = await loginWithAdminKey(key);
+            const res = await loginWithAdminKey(key, locale);
             if (res?.error) {
                 setError(res.error);
                 setLoading(false);

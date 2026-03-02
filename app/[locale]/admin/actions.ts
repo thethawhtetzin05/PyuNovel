@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
-export async function loginWithAdminKey(key: string) {
+export async function loginWithAdminKey(key: string, locale: string = 'en') {
     try {
         let correctKey = process.env.ADMIN_SECRET_KEY;
 
@@ -36,7 +36,7 @@ export async function loginWithAdminKey(key: string) {
         });
 
         // Redirect to dashboard
-        redirect('/en/admin/announcements');
+        redirect(`/${locale}/admin/announcements`);
 
     } catch (error) {
         // Essential for Next.js redirect mechanism

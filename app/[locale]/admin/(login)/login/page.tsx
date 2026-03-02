@@ -13,5 +13,5 @@ export default async function AdminLoginPage({ params }: { params: Promise<{ loc
         redirect(`/${locale}/admin/announcements`);
     }
 
-    return <AdminLoginForm />;
+    return <AdminLoginForm locale={locale} />;
 }
