@@ -6,8 +6,10 @@ import { logoutAdmin } from '../actions';
 
 export default async function AdminLayout({
     children,
+    params
 }: {
     children: React.ReactNode;
+    params: Promise<{ locale: string }>;
 }) {
     const cookieStore = await cookies();
     const isAdmin = cookieStore.get('admin_session')?.value === 'authenticated';
@@ -48,7 +50,14 @@ export default async function AdminLayout({
                         </Link>
                     </nav>
 
-                    <form action={logoutAdmin} className="mt-8 pt-8 border-t border-[var(--border)]">
+                    <form
+                        action={async () => {
+                            'use server';
+                            const { locale } = await params;
+                            await logoutAdmin(locale);
+                        }}
+                        className="mt-8 pt-8 border-t border-[var(--border)]"
+                    >
                         <button type="submit" className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-500/10 rounded-xl transition w-full text-left font-medium">
                             <LogOut size={18} />
                             Sign Out

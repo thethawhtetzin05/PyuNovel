@@ -40,7 +40,7 @@ export async function loginWithAdminKey(key: string, locale: string = 'en') {
     return { error: errorMsg };
 }
 
-export async function logoutAdmin() {
+export async function logoutAdmin(locale: string = 'en') {
     (await cookies()).delete('admin_session');
-    redirect('/en/admin/login');
+    redirect(`/${locale}/admin/login`);
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerContext } from "@/lib/server-context";
-import { user, verification, telegramDrafts, novels, chapters } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { user, verification, novels } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 
 export const runtime = 'edge';
 
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
             if (data === "action_link_req") {
                 await editTelegramMsgText(botToken, chatId, msgId, "🔗 <b>အကောင့်ချိတ်ဆက်ရန်</b>\n\nဝဘ်ဆိုက်မှရရှိသော Code ကို ရိုက်ထည့်ပေးပါ။");
-            } 
+            }
             else if (data === "action_unlink_req") {
                 await db.update(user).set({ telegramId: null, telegramName: null }).where(eq(user.telegramId, chatId)).run();
                 await editTelegramMsgText(botToken, chatId, msgId, "🔓 <b>အကောင့်ဖြုတ်လိုက်ပါပြီ။</b>");
@@ -79,6 +79,13 @@ export async function POST(req: NextRequest) {
                     }
                 }
             }
+            else if (data.startsWith("select_novel_")) {
+                const novelId = parseInt(data.replace("select_novel_", ""));
+                const selectedNovel = await db.query.novels.findFirst({ where: eq(novels.id, novelId) });
+                if (selectedNovel) {
+                    await editTelegramMsgText(botToken, chatId, msgId, `✅ <b>${selectedNovel.title}</b> ကို ရွေးချယ်လိုက်ပါပြီ။\n\nယခု စာများကို ပို့နိုင်ပါပြီ။`);
+                }
+            }
             return NextResponse.json({ ok: true });
         }
 
@@ -90,7 +97,7 @@ export async function POST(req: NextRequest) {
             if (text === "/start") {
                 const dbUser = await db.query.user.findFirst({ where: eq(user.telegramId, chatId) });
                 const kb = {
-                    inline_keyboard: dbUser 
+                    inline_keyboard: dbUser
                         ? [[{ text: "📝 စာတင်မယ်", callback_data: "action_publish_req" }], [{ text: "🔓 အကောင့်ဖြုတ်မယ်", callback_data: "action_unlink_req" }]]
                         : [[{ text: "🔗 အကောင့်ချိတ်မယ်", callback_data: "action_link_req" }]]
                 };

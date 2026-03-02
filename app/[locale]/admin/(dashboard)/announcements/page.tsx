@@ -8,12 +8,13 @@ import { Plus, Trash2, Megaphone, AlertCircle } from 'lucide-react';
 
 export const runtime = 'edge';
 
-export default async function AnnouncementsAdminPage() {
+export default async function AnnouncementsAdminPage({ params }: { params: Promise<{ locale: string }> }) {
+    const { locale } = await params;
     const cookieStore = await cookies();
     const isAdmin = cookieStore.get('admin_session')?.value === 'authenticated';
 
     if (!isAdmin) {
-        redirect('/en/admin/login');
+        redirect(`/${locale}/admin/login`);
     }
 
     const { env } = getRequestContext();
