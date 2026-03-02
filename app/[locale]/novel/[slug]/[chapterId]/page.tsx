@@ -7,7 +7,7 @@ import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { saveReadingProgressAction } from '@/app/[locale]/collection/actions';
 import ViewTracker from '../view-tracker';
-import ReaderView from '@/components/reader/reader-view';
+import OfflineReaderWrapper from '@/components/reader/OfflineReaderWrapper';
 import ReadingTracker from '@/components/reader/ReadingTracker';
 
 export const runtime = 'edge';
@@ -37,6 +37,22 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
     console.error("Failed to save progress", e);
   }
 
+  // Pre-generate HTML content for initial server render
+  const htmlContent = `
+       <div class="mb-12 px-4 md:px-0 border-b border-current opacity-70 pb-6 text-center md:text-left">
+         <h1 class="text-3xl md:text-4xl font-black mt-2 mb-3 leading-tight text-inherit">
+             ${chapter.title}
+         </h1>
+         <div class="flex items-center justify-center md:justify-start gap-2 text-inherit opacity-60 text-sm font-sans">
+             <span>${formattedDate}</span>
+         </div>
+       </div>
+       
+       <div class="chapter-content">
+         ${chapter.content}
+       </div>
+   `;
+
   return (
     // 💡 bg-white တွေ လုံးဝ မပါတော့ပါဘူး
     <div className="min-h-screen w-full flex flex-col pb-12">
@@ -59,22 +75,19 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
         </Link>
       </div>
 
-      {/* 2. READER VIEW */}
+      {/* 2. READER VIEW (With Offline Support) */}
       <div className="flex-grow w-full">
-        <ReaderView content={`
-             <div class="mb-12 px-4 md:px-0 border-b border-current opacity-70 pb-6 text-center md:text-left">
-               <h1 class="text-3xl md:text-4xl font-black mt-2 mb-3 leading-tight text-inherit">
-                   ${chapter.title}
-               </h1>
-               <div class="flex items-center justify-center md:justify-start gap-2 text-inherit opacity-60 text-sm font-sans">
-                   <span>${formattedDate}</span>
-               </div>
-             </div>
-             
-             <div class="chapter-content">
-               ${chapter.content}
-             </div>
-         `} />
+        <OfflineReaderWrapper
+          chapterId={chapter.id.toString()}
+          novelId={novel.id}
+          novelTitle={novel.title}
+          chapterTitle={chapter.title}
+          content={htmlContent}
+          rawContent={chapter.content}
+          formattedDate={formattedDate}
+          prevChapterId={prev ? prev.sortIndex.toString() : null}
+          nextChapterId={next ? next.sortIndex.toString() : null}
+        />
       </div>
 
       {/* 3. FOOTER NAVIGATION */}
