@@ -6,14 +6,42 @@ import { eq, and } from "drizzle-orm";
 
 export const runtime = 'edge';
 
-// GET: Diagnostic endpoint
-export async function GET() {
+// GET: Enhanced Diagnostic
+// Basic check: https://pyunovel.pages.dev/api/telegram/webhook
+// Test message: https://pyunovel.pages.dev/api/telegram/webhook?chatId=YOUR_CHAT_ID
+export async function GET(req: NextRequest) {
     try {
         const { env } = getRequestContext();
+        const botToken = env?.TELEGRAM_PUBLISHER_BOT_TOKEN as string | undefined;
+        const db_ok = !!env?.DB;
+
+        if (!botToken) {
+            return Response.json({ status: "error", botToken: "❌ MISSING", db: db_ok ? "✅ SET" : "❌ MISSING" });
+        }
+
+        // Test 1: getMe - is the token valid?
+        const getMeRes = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+        const getMe = await getMeRes.json() as any;
+
+        // Test 2: if ?chatId=xxx is provided, send a test message
+        const url = new URL(req.url);
+        const chatId = url.searchParams.get("chatId");
+        let sendResult = null;
+        if (chatId) {
+            const sendRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: "✅ Webhook diagnostic test message!" }),
+            });
+            sendResult = await sendRes.json();
+        }
+
         return Response.json({
             status: "ok",
-            botToken: env?.TELEGRAM_PUBLISHER_BOT_TOKEN ? "✅ SET" : "❌ MISSING",
-            db: env?.DB ? "✅ SET" : "❌ MISSING",
+            botToken: "✅ SET",
+            db: db_ok ? "✅ SET" : "❌ MISSING",
+            botInfo: getMe?.result ?? getMe,
+            sendTest: sendResult,
             timestamp: new Date().toISOString(),
         });
     } catch (e: any) {
