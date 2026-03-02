@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { user, verification, telegramDrafts, novels, chapters } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { parseChaptersFromText } from "@/lib/utils";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export const runtime = 'edge';
@@ -20,7 +19,9 @@ async function sendTelegramMsg(token: string, chatId: string, text: string, repl
                 reply_markup: replyMarkup
             }),
         });
-    } catch (e) { console.error("[TELEGRAM_SEND_ERROR]", e); }
+    } catch (e) {
+        console.error("[TELEGRAM_SEND_ERROR]", e);
+    }
 }
 
 async function editTelegramMsgText(token: string, chatId: string, messageId: number, text: string, replyMarkup?: any) {
@@ -37,20 +38,26 @@ async function editTelegramMsgText(token: string, chatId: string, messageId: num
                 reply_markup: replyMarkup
             }),
         });
-    } catch (e) { console.error("[TELEGRAM_EDIT_ERROR]", e); }
+    } catch (e) {
+        console.error("[TELEGRAM_EDIT_ERROR]", e);
+    }
 }
 
 export async function POST(req: NextRequest) {
     try {
-        const { env } = getRequestContext();
-        const botToken = env.TELEGRAM_PUBLISHER_BOT_TOKEN;
+        // Cloudflare Pages context extraction
+        const ctx = getRequestContext();
+        const env = ctx?.env || (process.env as any);
         
-        if (!botToken) {
-            console.error("Missing TELEGRAM_PUBLISHER_BOT_TOKEN");
+        const botToken = env.TELEGRAM_PUBLISHER_BOT_TOKEN;
+        const dbBinding = env.DB;
+
+        if (!botToken || !dbBinding) {
+            console.error("Missing Bot Token or DB Binding in environment");
             return NextResponse.json({ ok: true });
         }
 
-        const db = getDb(env.DB);
+        const db = getDb(dbBinding);
         const body = await req.json() as any;
 
         // 1. CALLBACK QUERIES
@@ -76,7 +83,9 @@ export async function POST(req: NextRequest) {
                     if (authorNovels.length === 0) {
                         await editTelegramMsgText(botToken, chatId, messageId, "❌ ဝတ္ထုတစ်အုပ်မှ မရှိသေးပါ။");
                     } else {
-                        const kb = { inline_keyboard: authorNovels.map(n => ([{ text: `📚 ${n.title}`, callback_data: `select_novel_${n.id}` }])) };
+                        const kb = { 
+                            inline_keyboard: authorNovels.map(n => ([{ text: `📚 ${n.title}`, callback_data: `select_novel_${n.id}` }])) 
+                        };
                         await editTelegramMsgText(botToken, chatId, messageId, "📖 <b>စာတင်မည့် ဝတ္ထုကို ရွေးပါ -</b>", kb);
                     }
                 }
@@ -86,7 +95,12 @@ export async function POST(req: NextRequest) {
                 const novel = await db.query.novels.findFirst({ where: eq(novels.id, novelId) });
                 if (novel) {
                     const draftId = globalThis.crypto.randomUUID();
-                    await db.insert(telegramDrafts).values({ id: draftId, authorId: novel.ownerId, chaptersJson: JSON.stringify({ state: "WAITING", novelId: novel.id, novelTitle: novel.title }), createdAt: new Date() }).run();
+                    await db.insert(telegramDrafts).values({ 
+                        id: draftId, 
+                        authorId: novel.ownerId, 
+                        chaptersJson: JSON.stringify({ state: "WAITING", novelId: novel.id, novelTitle: novel.title }), 
+                        createdAt: new Date() 
+                    }).run();
                     await editTelegramMsgText(botToken, chatId, messageId, `✅ <b>"${novel.title}"</b> ကို ရွေးပြီးပါပြီ။\n\n✍️ တင်မည့်စာသား (သို့) .txt ဖိုင်ကို ပို့ပေးပါ။`);
                 }
             }
