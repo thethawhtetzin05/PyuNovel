@@ -11,12 +11,13 @@ export async function incrementView(novelSlug: string) {
 
   try {
     await db.update(novels)
-      .set({ 
-        views: sql`${novels.views} + 1` 
+      .set({
+        views: sql`${novels.views} + 1`
       })
       .where(eq(novels.slug, novelSlug))
       .execute();
-      
+
+    console.log(`[VIEW] Incremented view for: ${novelSlug}`);
   } catch (error) {
     console.error("Failed to increment view:", error);
   }

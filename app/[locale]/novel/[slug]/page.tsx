@@ -11,6 +11,7 @@ import NovelTabs from './novel-tabs';
 import CollectButton from './collect-button';
 import ReviewSection from '@/components/novel/review-section';
 import DownloadButton from '@/components/novel/OfflineDownloadButton';
+import ViewTracker from './view-tracker';
 import { Link } from '@/i18n/routing';
 import Image from 'next/image';
 import { drizzle } from 'drizzle-orm/d1';
@@ -119,6 +120,7 @@ export default async function NovelDetailsPage({ params }: Props) {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8 sm:py-12 pb-24 font-sans">
+      <ViewTracker slug={slug} />
 
       {/* HEADER INFO SECTION */}
       <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start">
