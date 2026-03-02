@@ -10,7 +10,7 @@ import { headers } from "next/headers";
 import NovelTabs from './novel-tabs';
 import CollectButton from './collect-button';
 import ReviewSection from '@/components/novel/review-section';
-import DownloadButton from '@/components/offline/DownloadButton';
+import DownloadButton from '@/components/novel/OfflineDownloadButton';
 import { Link } from '@/i18n/routing';
 import Image from 'next/image';
 import { drizzle } from 'drizzle-orm/d1';
