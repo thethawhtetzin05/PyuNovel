@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/db";
+import { getServerContext } from "@/lib/server-context";
 import { user, verification, telegramDrafts, novels, chapters } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { parseChaptersFromText } from "@/lib/utils";
-import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export const runtime = 'edge';
 
@@ -20,9 +18,7 @@ async function sendTelegramMsg(token: string, chatId: string, text: string, repl
                 reply_markup: replyMarkup
             }),
         });
-    } catch (e) { 
-        console.error("Send Error", e);
-    }
+    } catch (e) { console.error("Send Error", e); }
 }
 
 async function editTelegramMsgText(token: string, chatId: string, messageId: number, text: string, replyMarkup?: any) {
@@ -39,26 +35,23 @@ async function editTelegramMsgText(token: string, chatId: string, messageId: num
                 reply_markup: replyMarkup
             }),
         });
-    } catch (e) {
-        console.error("Edit Error", e);
-    }
+    } catch (e) { console.error("Edit Error", e); }
 }
 
 export async function POST(req: NextRequest) {
     try {
-        const myEnv = getRequestContext().env;
-        const botToken = myEnv.TELEGRAM_PUBLISHER_BOT_TOKEN;
-        const dbBinding = myEnv.DB;
+        // Use the confirmed working helper for Cloudflare environment
+        const { db, env } = getServerContext();
+        const botToken = env.TELEGRAM_PUBLISHER_BOT_TOKEN;
 
-        if (!botToken || !dbBinding) {
-            console.error("Critical: Missing env variables");
-            return NextResponse.json({ ok: true });
+        if (!botToken) {
+            return NextResponse.json({ ok: true, info: "Token missing" });
         }
 
-        const db = getDb(dbBinding);
         const body = await req.json() as any;
+        if (!body) return NextResponse.json({ ok: true });
 
-        // --- 1. Callback Queries ---
+        // 1. CALLBACK QUERIES
         if (body.callback_query) {
             const cb = body.callback_query;
             const chatId = cb.message.chat.id.toString();
@@ -89,7 +82,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ ok: true });
         }
 
-        // --- 2. Text Messages ---
+        // 2. TEXT MESSAGES
         if (body.message && body.message.text) {
             const chatId = body.message.chat.id.toString();
             const text = body.message.text.trim();
@@ -106,7 +99,8 @@ export async function POST(req: NextRequest) {
             } else {
                 const verif = await db.query.verification.findFirst({ where: and(eq(verification.id, text), eq(verification.identifier, "telegram")) });
                 if (verif) {
-                    await db.update(user).set({ telegramId: chatId, telegramName: body.message.from.first_name }).where(eq(user.id, verif.value)).run();
+                    const fromName = body.message.from?.first_name || "User";
+                    await db.update(user).set({ telegramId: chatId, telegramName: fromName }).where(eq(user.id, verif.value)).run();
                     await db.delete(verification).where(eq(verification.id, text)).run();
                     await sendTelegramMsg(botToken, chatId, "✅ အကောင့်ချိတ်ဆက်မှု အောင်မြင်ပါပြီ! /start ကို ပြန်နှိပ်ပါ။");
                 }
@@ -115,7 +109,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ ok: true });
     } catch (error) {
-        console.error("Webhook Error", error);
-        return NextResponse.json({ ok: true });
+        console.error("Fatal Webhook Error", error);
+        return NextResponse.json({ ok: true }); // Always return 200 to Telegram to stop retries
     }
 }
