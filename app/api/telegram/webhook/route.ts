@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerContext } from "@/lib/server-context";
+import { getRequestContext } from "@cloudflare/next-on-pages";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "@/db/schema";
 import { user, verification, novels } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
@@ -39,15 +41,22 @@ async function editTelegramMsgText(token: string, chatId: string, messageId: num
 }
 
 export async function POST(req: NextRequest) {
+    // Always return 200 to Telegram — even on catastrophic failure — to stop retries
     try {
-        // Use the confirmed working helper for Cloudflare environment
-        const { db, env } = getServerContext();
-        const botToken = env.TELEGRAM_PUBLISHER_BOT_TOKEN;
+        const { env } = getRequestContext();
+        const botToken = env?.TELEGRAM_PUBLISHER_BOT_TOKEN;
 
         if (!botToken) {
+            console.error("[WEBHOOK] TELEGRAM_PUBLISHER_BOT_TOKEN is not set in Cloudflare environment.");
             return NextResponse.json({ ok: true, info: "Token missing" });
         }
 
+        if (!env?.DB) {
+            console.error("[WEBHOOK] D1 DB binding is not set in Cloudflare environment.");
+            return NextResponse.json({ ok: true, info: "DB missing" });
+        }
+
+        const db = drizzle(env.DB, { schema });
         const body = await req.json() as any;
         if (!body) return NextResponse.json({ ok: true });
 
@@ -74,7 +83,7 @@ export async function POST(req: NextRequest) {
                     if (myNovels.length === 0) {
                         await editTelegramMsgText(botToken, chatId, msgId, "❌ ဝတ္ထု မရှိပါ။");
                     } else {
-                        const kb = { inline_keyboard: myNovels.map(n => ([{ text: `📚 ${n.title}`, callback_data: `select_novel_${n.id}` }])) };
+                        const kb = { inline_keyboard: myNovels.map((n: typeof myNovels[0]) => ([{ text: `📚 ${n.title}`, callback_data: `select_novel_${n.id}` }])) };
                         await editTelegramMsgText(botToken, chatId, msgId, "📖 <b>ဝတ္ထုရွေးပါ -</b>", kb);
                     }
                 }
@@ -110,13 +119,15 @@ export async function POST(req: NextRequest) {
                     await db.update(user).set({ telegramId: chatId, telegramName: fromName }).where(eq(user.id, verif.value)).run();
                     await db.delete(verification).where(eq(verification.id, text)).run();
                     await sendTelegramMsg(botToken, chatId, "✅ အကောင့်ချိတ်ဆက်မှု အောင်မြင်ပါပြီ! /start ကို ပြန်နှိပ်ပါ။");
+                } else {
+                    await sendTelegramMsg(botToken, chatId, "🤖 လုပ်ဆောင်ချက် မရှင်းလင်းပါ။ /start ကို နှိပ်ပါ။");
                 }
             }
         }
 
         return NextResponse.json({ ok: true });
     } catch (error) {
-        console.error("Fatal Webhook Error", error);
-        return NextResponse.json({ ok: true }); // Always return 200 to Telegram to stop retries
+        console.error("Fatal Webhook Error:", error);
+        return NextResponse.json({ ok: true }); // Always 200 to stop Telegram retries
     }
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { loginWithAdminKey } from '../../actions';
 
 export default function AdminLoginForm({ locale }: { locale: string }) {
     const [key, setKey] = useState('');
@@ -13,14 +12,22 @@ export default function AdminLoginForm({ locale }: { locale: string }) {
         setLoading(true);
         setError(null);
 
-        const res = await loginWithAdminKey(key, locale);
-        if (res?.error) {
-            setError(res.error);
+        try {
+            const res = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, locale }),
+            });
+            const data = await res.json() as { error?: string; redirectTo?: string };
+            if (data.error) {
+                setError(data.error);
+                setLoading(false);
+            } else if (data.redirectTo) {
+                window.location.href = data.redirectTo;
+            }
+        } catch {
+            setError('Connection error. Please try again.');
             setLoading(false);
-        } else if (res?.redirectTo) {
-            // Server set the cookie; now navigate from the client side.
-            // This avoids redirect() hanging in Cloudflare Edge Runtime.
-            window.location.href = res.redirectTo;
         }
     }
 
