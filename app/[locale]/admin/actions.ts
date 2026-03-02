@@ -5,47 +5,39 @@ import { cookies } from "next/headers";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export async function loginWithAdminKey(key: string, locale: string = 'en') {
-    try {
-        let correctKey = process.env.ADMIN_SECRET_KEY;
+    let success = false;
+    let errorMsg = '';
 
-        // Cloudflare Pages Environment Variables Access
-        try {
-            const context = getRequestContext();
-            if (context?.env?.ADMIN_SECRET_KEY) {
-                correctKey = context.env.ADMIN_SECRET_KEY;
-            }
-        } catch (e) {
-            // Potential fallback for different environments
-        }
+    const context = getRequestContext();
+    const correctKey = context?.env?.ADMIN_SECRET_KEY || process.env.ADMIN_SECRET_KEY;
 
-        if (!correctKey) {
-            return { error: 'ADMIN_SECRET_KEY not found. Did you re-deploy after adding it in Cloudflare Dashboard?' };
-        }
+    if (!correctKey) {
+        return { error: 'ADMIN_SECRET_KEY is missing in Cloudflare Environment.' };
+    }
 
-        if (key.trim() !== correctKey.trim()) {
-            return { error: 'Invalid admin key. Please double check.' };
-        }
+    if (key.trim() === correctKey.trim()) {
+        success = true;
+    } else {
+        errorMsg = 'Invalid admin key. Please check again.';
+    }
 
+    if (success) {
         // Set secure HTTP-only cookie
-        (await cookies()).set('admin_session', 'authenticated', {
+        const cookieStore = await cookies();
+        cookieStore.set('admin_session', 'authenticated', {
             httpOnly: true,
-            secure: true, // Always true for production pages.dev
+            secure: true,
             sameSite: 'lax',
             path: '/',
             maxAge: 60 * 60 * 24 * 7 // 1 week
         });
 
-        // Redirect to dashboard
+        // IMPORTANT: Redirect must happen outside of try-catch in some Next.js versions
+        // but since we are in a server action, calling it here is usually fine.
         redirect(`/${locale}/admin/announcements`);
-
-    } catch (error) {
-        // Essential for Next.js redirect mechanism
-        if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
-            throw error;
-        }
-        console.error("Admin login error:", error);
-        return { error: 'An unexpected server error occurred. Please try again.' };
     }
+
+    return { error: errorMsg };
 }
 
 export async function logoutAdmin() {
