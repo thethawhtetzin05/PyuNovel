@@ -17,6 +17,10 @@ export default function AdminLoginForm({ locale }: { locale: string }) {
         if (res?.error) {
             setError(res.error);
             setLoading(false);
+        } else if (res?.redirectTo) {
+            // Server set the cookie; now navigate from the client side.
+            // This avoids redirect() hanging in Cloudflare Edge Runtime.
+            window.location.href = res.redirectTo;
         }
     }
 

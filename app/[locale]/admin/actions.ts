@@ -4,24 +4,23 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
-export async function loginWithAdminKey(key: string, locale: string = 'en') {
-    let success = false;
-    let errorMsg = '';
+export type AdminLoginResult =
+    | { error: string; redirectTo?: never }
+    | { redirectTo: string; error?: never };
 
-    const context = getRequestContext();
-    const correctKey = context?.env?.ADMIN_SECRET_KEY || process.env.ADMIN_SECRET_KEY;
+export async function loginWithAdminKey(key: string, locale: string = 'en'): Promise<AdminLoginResult> {
+    try {
+        const context = getRequestContext();
+        const correctKey = context?.env?.ADMIN_SECRET_KEY || process.env.ADMIN_SECRET_KEY;
 
-    if (!correctKey) {
-        return { error: 'ADMIN_SECRET_KEY is missing in Cloudflare Environment.' };
-    }
+        if (!correctKey) {
+            return { error: 'ADMIN_SECRET_KEY is missing in Cloudflare Environment.' };
+        }
 
-    if (key.trim() === correctKey.trim()) {
-        success = true;
-    } else {
-        errorMsg = 'Invalid admin key. Please check again.';
-    }
+        if (key.trim() !== correctKey.trim()) {
+            return { error: 'Invalid admin key. Please check again.' };
+        }
 
-    if (success) {
         // Set secure HTTP-only cookie
         const cookieStore = await cookies();
         cookieStore.set('admin_session', 'authenticated', {
@@ -32,12 +31,14 @@ export async function loginWithAdminKey(key: string, locale: string = 'en') {
             maxAge: 60 * 60 * 24 * 7 // 1 week
         });
 
-        // IMPORTANT: Redirect must happen outside of try-catch in some Next.js versions
-        // but since we are in a server action, calling it here is usually fine.
-        redirect(`/${locale}/admin/announcements`);
+        // Return the redirect URL to the client instead of calling redirect() directly.
+        // Calling redirect() inside a server action invoked directly from a client component
+        // causes the promise to hang in Cloudflare Edge Runtime.
+        return { redirectTo: `/${locale}/admin/announcements` };
+    } catch (e) {
+        console.error('[LOGIN_ADMIN]', e);
+        return { error: 'An unexpected server error occurred.' };
     }
-
-    return { error: errorMsg };
 }
 
 export async function logoutAdmin(locale: string = 'en') {
