@@ -4,23 +4,23 @@ import * as schema from '@/db/schema';
 import { getUserStatistics } from '@/lib/resources/users/queries';
 import UserStatsDashboard from '@/components/admin/UserStatsDashboard';
 import { createAuth } from '@/lib/auth';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({ params }: { params: Promise<{ locale: string }> }) {
+    const { locale } = await params;
+    const cookieStore = await cookies();
+    const isAdmin = cookieStore.get('admin_session')?.value === 'authenticated';
+
+    if (!isAdmin) {
+        redirect(`/${locale}/admin/login`);
+    }
+
     const { env } = getRequestContext();
     const db = drizzle(env.DB, { schema });
-
-    // Validate Admin Session
-    const auth = createAuth(env.DB);
-    const session = await auth.api.getSession({ headers: await headers() });
-
-    if (session?.user?.role !== 'admin') {
-        redirect('/admin/login');
-    }
 
     // Fetch the statistics
     const stats = await getUserStatistics(db);

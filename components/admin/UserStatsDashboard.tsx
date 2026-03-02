@@ -30,36 +30,36 @@ export default function UserStatsDashboard({ stats }: UserStatsDashboardProps) {
                     </div>
                 </div>
 
-                {/* DAU */}
+                {/* Daily */}
                 <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)] shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow">
                     <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl shrink-0">
                         <Activity size={24} strokeWidth={2.5} />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">DAU (24H)</p>
-                        <h2 className="text-3xl font-black text-[var(--foreground)] mt-1">{stats.dau.toLocaleString()}</h2>
+                        <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Daily Active</p>
+                        <h2 className="text-3xl font-black text-[var(--foreground)] mt-1">{stats.daily.toLocaleString()}</h2>
                     </div>
                 </div>
 
-                {/* WAU */}
+                {/* Weekly */}
                 <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)] shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow">
                     <div className="p-3 bg-fuchsia-100 text-fuchsia-600 rounded-xl shrink-0">
                         <CalendarDays size={24} strokeWidth={2.5} />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">WAU (7 Days)</p>
-                        <h2 className="text-3xl font-black text-[var(--foreground)] mt-1">{stats.wau.toLocaleString()}</h2>
+                        <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Weekly Active</p>
+                        <h2 className="text-3xl font-black text-[var(--foreground)] mt-1">{stats.weekly.toLocaleString()}</h2>
                     </div>
                 </div>
 
-                {/* MAU */}
+                {/* Monthly */}
                 <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)] shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow">
                     <div className="p-3 bg-orange-100 text-orange-600 rounded-xl shrink-0">
                         <CalendarHeart size={24} strokeWidth={2.5} />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">MAU (30 Days)</p>
-                        <h2 className="text-3xl font-black text-[var(--foreground)] mt-1">{stats.mau.toLocaleString()}</h2>
+                        <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Monthly Active</p>
+                        <h2 className="text-3xl font-black text-[var(--foreground)] mt-1">{stats.monthly.toLocaleString()}</h2>
                     </div>
                 </div>
             </div>

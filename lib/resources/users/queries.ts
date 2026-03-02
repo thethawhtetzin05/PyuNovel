@@ -4,9 +4,9 @@ import { sql, desc, eq, gt, or } from 'drizzle-orm';
 
 export interface UserStats {
     totalUsers: number;
-    dau: number;
-    wau: number;
-    mau: number;
+    daily: number;
+    weekly: number;
+    monthly: number;
     peakHours: { hour: string; count: number }[];
 }
 
@@ -24,13 +24,8 @@ export async function getUserStatistics(db: DrizzleD1Database<any>): Promise<Use
     const totalResult = await db.select({ count: sql<number>`count(*)` }).from(user);
     const totalUsers = totalResult[0]?.count || 0;
 
-    // 2. DAU (Active in last 24 hours) - Based on session createdAt or updatedAt
-    // SQLite dates are often strings or unix timestamps depending on the Drizzle mode.
-    // The schema specifies `mode: 'timestamp'`, so they are stored as numbers (ms since epoch) or Date objects passing through driver.
-    // With better-auth & Cloudflare D1 + drizzle, they are typically stored as integers (Unix epoch ms).
-
-    // Actually, `mode: 'timestamp'` means Drizzle maps Date objects to integers for SQLite.
-    const dauResult = await db.select({ count: sql<number>`count(distinct ${session.userId})` })
+    // 2. Daily (Active in last 24 hours)
+    const dailyResult = await db.select({ count: sql<number>`count(distinct ${session.userId})` })
         .from(session)
         .where(
             or(
@@ -38,10 +33,10 @@ export async function getUserStatistics(db: DrizzleD1Database<any>): Promise<Use
                 gt(session.createdAt, oneDayAgo)
             )
         );
-    const dau = dauResult[0]?.count || 0;
+    const daily = dailyResult[0]?.count || 0;
 
-    // 3. WAU (Active in last 7 days)
-    const wauResult = await db.select({ count: sql<number>`count(distinct ${session.userId})` })
+    // 3. Weekly (Active in last 7 days)
+    const weeklyResult = await db.select({ count: sql<number>`count(distinct ${session.userId})` })
         .from(session)
         .where(
             or(
@@ -49,10 +44,10 @@ export async function getUserStatistics(db: DrizzleD1Database<any>): Promise<Use
                 gt(session.createdAt, sevenDaysAgo)
             )
         );
-    const wau = wauResult[0]?.count || 0;
+    const weekly = weeklyResult[0]?.count || 0;
 
-    // 4. MAU (Active in last 30 days)
-    const mauResult = await db.select({ count: sql<number>`count(distinct ${session.userId})` })
+    // 4. Monthly (Active in last 30 days)
+    const monthlyResult = await db.select({ count: sql<number>`count(distinct ${session.userId})` })
         .from(session)
         .where(
             or(
@@ -60,7 +55,7 @@ export async function getUserStatistics(db: DrizzleD1Database<any>): Promise<Use
                 gt(session.createdAt, thirtyDaysAgo)
             )
         );
-    const mau = mauResult[0]?.count || 0;
+    const monthly = monthlyResult[0]?.count || 0;
 
     // 5. Peak Active Hours (When sessions are created most frequently across all time)
     // To do this, we format the createdAt timestamp to extract the hour component.
@@ -78,9 +73,9 @@ export async function getUserStatistics(db: DrizzleD1Database<any>): Promise<Use
 
     return {
         totalUsers,
-        dau,
-        wau,
-        mau,
+        daily,
+        weekly,
+        monthly,
         peakHours: peakHoursResult.filter(p => p.hour !== null).map(p => ({
             hour: p.hour + ':00', // e.g., "14:00"
             count: p.count
