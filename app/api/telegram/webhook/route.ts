@@ -7,6 +7,22 @@ import { eq, and } from "drizzle-orm";
 
 export const runtime = 'edge';
 
+// GET: Diagnostic endpoint - check if webhook is reachable and env vars are set
+// Visit: https://pyunovel.pages.dev/api/telegram/webhook
+export async function GET() {
+    try {
+        const { env } = getRequestContext();
+        return Response.json({
+            status: "ok",
+            botToken: env?.TELEGRAM_PUBLISHER_BOT_TOKEN ? "✅ SET" : "❌ MISSING",
+            db: env?.DB ? "✅ SET" : "❌ MISSING",
+            timestamp: new Date().toISOString(),
+        });
+    } catch (e: any) {
+        return Response.json({ status: "error", message: e?.message }, { status: 500 });
+    }
+}
+
 async function sendTelegramMsg(token: string, chatId: string, text: string, replyMarkup?: any) {
     if (!token) return;
     try {
