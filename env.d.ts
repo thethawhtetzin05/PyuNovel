@@ -6,5 +6,8 @@ declare global {
     DB: D1Database;
     R2_BUCKET: R2Bucket;
     ADMIN_SECRET_KEY?: string;
+    TELEGRAM_PUBLISHER_BOT_TOKEN?: string;
+    TELEGRAM_BOT_TOKEN?: string;
+    TELEGRAM_CHAT_ID?: string;
   }
 }

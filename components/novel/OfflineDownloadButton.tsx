@@ -19,25 +19,39 @@ export default function OfflineDownloadButton({ slug }: { slug: string }) {
             setStatus('downloading');
             setProgress(0);
 
-            // ၁။ API ကနေ အကုန်လှမ်းယူမယ်
-            const res = await fetch(`/api/novel/${slug}/full-download`);
+            // ၁။ API ကနေ အကုန်လှမ်းယူမယ် (Header မှာ Secret Key ထည့်ပို့မယ်)
+            const res = await fetch(`/api/novel/${slug}/full-download`, {
+                headers: {
+                    "X-App-Secret": "PYU_NOVEL_DEFAULT_SECRET"
+                }
+            });
             const data = await res.json() as { success: boolean, novel: any, chapters: any[] };
 
             if (!data.success) throw new Error("Failed to fetch chapters");
 
             // ၂။ SQLite ထဲ သိမ်းမယ်
             await initMobileDB();
-            
+
             const total = data.chapters.length;
             for (let i = 0; i < total; i++) {
                 const ch = data.chapters[i];
-                
-                // Linked List logic (Prev/Next) ကို ရိုးရိုးရှင်းရှင်း တွက်မယ်
-                const prev = i > 0 ? data.chapters[i-1].id : null;
-                const next = i < total - 1 ? data.chapters[i+1].id : null;
+
+                // ၃။ Content Obfuscation ကို ပြန်ဖြည်မယ် (Base64 Decode)
+                let finalContent = ch.content;
+                if ((ch as any).obfuscated) {
+                    try {
+                        finalContent = atob(ch.content);
+                    } catch (e) {
+                        console.error("Decoding error:", e);
+                    }
+                }
+
+                const prev = i > 0 ? data.chapters[i - 1].id : null;
+                const next = i < total - 1 ? data.chapters[i + 1].id : null;
 
                 await saveChapterOffline({
                     ...ch,
+                    content: finalContent,
                     prevChapterId: prev,
                     nextChapterId: next
                 }, data.novel.title);
