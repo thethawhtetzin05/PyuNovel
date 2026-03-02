@@ -72,7 +72,7 @@ export default function NovelMenu({ slug, novelId }: { slug: string, novelId: st
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl z-[999] overflow-hidden py-1 ring-1 ring-black/5">
+        <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl z-[9999] overflow-hidden py-1 ring-1 ring-black/5 origin-top-right">
 
           <Link href={`/novel/${slug}/create`} className="block px-4 py-2.5 text-sm text-[var(--foreground)] hover:bg-[var(--surface-2)] hover:text-[var(--action)] transition-colors">
             {tMenu("addChapter")}

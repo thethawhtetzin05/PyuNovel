@@ -43,12 +43,12 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
       </div>
 
       {/* Novel List */}
-      <div className="flex flex-col gap-4 w-full max-w-full overflow-hidden">
+      <div className="flex flex-col gap-4 w-full max-w-full">
         {myNovels.length > 0 ? (
           myNovels.map((novel) => (
             <div
               key={novel.id}
-              className="group bg-[var(--surface)] p-4 rounded-2xl border border-[var(--border)] shadow-sm hover:shadow-md transition-all flex flex-row items-center gap-4 hover:border-[var(--accent)] w-full overflow-hidden"
+              className="group bg-[var(--surface)] p-4 rounded-2xl border border-[var(--border)] shadow-sm hover:shadow-md transition-all flex flex-row items-center gap-4 hover:border-[var(--accent)] w-full relative"
             >
               {/* Cover Image (Thumbnail) */}
               <div className="w-16 h-24 shrink-0 bg-[var(--surface-2)] rounded-lg overflow-hidden border border-[var(--border)] relative">
@@ -63,7 +63,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
               </div>
 
               {/* Content */}
-              <div className="flex-1 min-w-0 flex flex-col gap-1 overflow-hidden">
+              <div className="flex-1 min-w-0 flex flex-col gap-1">
                 
                 {/* Title & Badge Row */}
                 <div className="flex flex-row items-center gap-2 min-w-0">
