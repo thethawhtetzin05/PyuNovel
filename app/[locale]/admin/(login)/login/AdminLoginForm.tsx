@@ -13,9 +13,19 @@ export default function AdminLoginForm() {
         setLoading(true);
         setError(null);
 
-        const res = await loginWithAdminKey(key);
-        if (res?.error) {
-            setError(res.error);
+        try {
+            const res = await loginWithAdminKey(key);
+            if (res?.error) {
+                setError(res.error);
+                setLoading(false);
+            }
+        } catch (err) {
+            // Next.js redirect errors are expected, but other crashes should be caught
+            if (err instanceof Error && err.message.includes('NEXT_REDIRECT')) {
+                return; // Let Next.js handle the redirect
+            }
+            console.error("Login client error:", err);
+            setError("Something went wrong. Please check if you have re-deployed your site after adding the secret key.");
             setLoading(false);
         }
     }
