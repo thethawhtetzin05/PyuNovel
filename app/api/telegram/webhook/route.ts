@@ -8,16 +8,15 @@ import { getRequestContext } from "@cloudflare/next-on-pages";
 export const runtime = 'edge';
 
 const getToken = (reqEnv?: any) => {
-    // Attempt to get token from Edge environment first, fallback to standard process.env
     try {
-        if (reqEnv && reqEnv.TELEGRAM_BOT_TOKEN) return reqEnv.TELEGRAM_BOT_TOKEN;
+        if (reqEnv && reqEnv.TELEGRAM_PUBLISHER_BOT_TOKEN) return reqEnv.TELEGRAM_PUBLISHER_BOT_TOKEN;
         
         const env = getRequestContext().env;
-        if (env && env.TELEGRAM_BOT_TOKEN) return env.TELEGRAM_BOT_TOKEN;
+        if (env && env.TELEGRAM_PUBLISHER_BOT_TOKEN) return env.TELEGRAM_PUBLISHER_BOT_TOKEN;
     } catch (e) {
         // Ignored
     }
-    return process.env.TELEGRAM_BOT_TOKEN;
+    return process.env.TELEGRAM_PUBLISHER_BOT_TOKEN;
 };
 
 async function sendTelegramMsg(token: string, chatId: string, text: string, replyMarkup?: any) {
@@ -78,10 +77,10 @@ export async function POST(req: NextRequest) {
     try {
         const reqEnv = getRequestContext()?.env || {};
         
-        botToken = reqEnv.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || "";
+        botToken = reqEnv.TELEGRAM_PUBLISHER_BOT_TOKEN || process.env.TELEGRAM_PUBLISHER_BOT_TOKEN || "";
         
         if (!botToken) {
-            console.error("[TELEGRAM_WEBHOOK] ERROR: Bot token is empty.");
+            console.error("[TELEGRAM_WEBHOOK] ERROR: Publisher Bot token is empty.");
         }
 
         const db = getDb(reqEnv.DB);
