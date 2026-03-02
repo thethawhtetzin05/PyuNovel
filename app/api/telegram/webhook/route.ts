@@ -80,10 +80,12 @@ export async function POST(req: NextRequest) {
         
         botToken = reqEnv.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || "";
         
+        if (!botToken) {
+            console.error("[TELEGRAM_WEBHOOK] ERROR: Bot token is empty.");
+        }
+
         const db = getDb(reqEnv.DB);
         const body = await req.json() as any;
-        
-        console.log("[TELEGRAM_WEBHOOK] Incoming with token logic fixed", botToken.substring(0, 10));
 
         // ==========================================
         // 1. CALLBACK QUERIES (Button Clicks)
