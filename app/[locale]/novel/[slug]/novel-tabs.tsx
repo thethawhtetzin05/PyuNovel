@@ -285,6 +285,30 @@ export default function NovelTabs({
           onClose={() => setShowBulkUpload(false)}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      {chapterToDelete && (
+        <ConfirmModal
+          isOpen={!!chapterToDelete}
+          onClose={() => setChapterToDelete(null)}
+          onConfirm={confirmDelete}
+          title="Delete Chapter"
+          message={`Are you sure you want to delete "${chapterToDelete.title}"? This action cannot be undone.`}
+          confirmText={isDeleting ? "Deleting..." : "Delete"}
+          isDestructive={true}
+        />
+      )}
+
+      {/* Alert Modal for Errors */}
+      {alertMsg && (
+        <AlertModal
+          isOpen={!!alertMsg}
+          onClose={() => setAlertMsg('')}
+          title="Error"
+          message={alertMsg}
+          type="error"
+        />
+      )}
     </>
   );
 }
