@@ -173,13 +173,16 @@ export async function POST(req: NextRequest) {
                 await editTelegramMsgText(botToken, chatId, msgId,
                     "🔓 <b>အကောင့်ဖြုတ်လိုက်ပါပြီ။</b>");
             }
-            else if (data === "action_publish_req") {
+            if (data === "action_publish_req") {
                 const rows = await db.select().from(user).where(eq(user.telegramId, chatId)).limit(1);
                 const dbUser = rows[0];
                 if (!dbUser || (dbUser.role !== 'admin' && dbUser.role !== 'writer')) {
                     await editTelegramMsgText(botToken, chatId, msgId, "⚠️ စာရေးသူ အကောင့် မဟုတ်ပါ။");
                 } else {
-                    const myNovels = await db.select().from(novels).where(eq(novels.ownerId, dbUser.id)).limit(10);
+                    // Clean up any old selection or draft when starting a new publish request
+                    await db.delete(verification).where(eq(verification.id, `select_${chatId}`));
+                    
+                    const myNovels = await db.select().from(novels).where(eq(novels.ownerId, dbUser.id)).limit(15);
                     if (myNovels.length === 0) {
                         await editTelegramMsgText(botToken, chatId, msgId, "❌ ဝတ္ထု မရှိပါ။");
                     } else {
@@ -189,17 +192,17 @@ export async function POST(req: NextRequest) {
                 }
             }
             else if (data.startsWith("select_novel_")) {
+                // Rate limit/Anti-spam: change text to show processing
+                try {
+                    await editTelegramMsgText(botToken, chatId, msgId, "⌛ ဝတ္ထုကို ရွေးချယ်နေပါသည်...");
+                } catch (e) {}
+
                 const novelId = parseInt(data.replace("select_novel_", ""), 10);
                 const rows = await db.select().from(novels).where(eq(novels.id, novelId)).limit(1);
                 const selectedNovel = rows[0];
                 if (selectedNovel) {
-                    // Important: Always use the same ID format for checking later
                     const selectionId = `select_${chatId}`;
-                    
-                    // Clear any existing selection for this user first
                     await db.delete(verification).where(eq(verification.id, selectionId));
-                    
-                    // Insert the new selection
                     await db.insert(verification).values({
                         id: selectionId,
                         identifier: "active_selection",
@@ -209,13 +212,24 @@ export async function POST(req: NextRequest) {
                     
                     await editTelegramMsgText(botToken, chatId, msgId,
                         `✅ <b>${selectedNovel.title}</b> ကို ရွေးချယ်လိုက်ပါပြီ။\n\nယခု စာသား သို့မဟုတ် စာဖိုင် (Bulk) ကို ပို့နိုင်ပါပြီ။`);
+                } else {
+                    await editTelegramMsgText(botToken, chatId, msgId, "❌ ဝတ္ထု ရှာမတွေ့ပါ။ /start ကို ပြန်နှိပ်ပါ။");
                 }
             }
             else if (data.startsWith("publish_draft_")) {
                 const draftId = data.replace("publish_draft_", "");
+                
+                // Anti-spam: Inform user processing started
+                try {
+                    await editTelegramMsgText(botToken, chatId, msgId, "⌛ စာမူများကို တင်ပေးနေပါသည်၊ ခေတ္တစောင့်ပါ...");
+                } catch (e) {}
+
                 const draftRows = await db.select().from(telegramDrafts).where(eq(telegramDrafts.id, draftId)).limit(1);
                 const draft = draftRows[0];
-                if (!draft) return NextResponse.json({ ok: true });
+                if (!draft) {
+                    await editTelegramMsgText(botToken, chatId, msgId, "❌ ဒီစာမူကို ရှာမတွေ့တော့ပါ။ (ဒါမှမဟုတ် တင်ပြီးသားဖြစ်နိုင်ပါတယ်)");
+                    return NextResponse.json({ ok: true });
+                }
 
                 const activeSelectionRows = await db.select().from(verification)
                     .where(and(eq(verification.id, `select_${chatId}`), eq(verification.identifier, "active_selection")))
@@ -355,6 +369,17 @@ export async function POST(req: NextRequest) {
                     await sendTelegramMsg(botToken, chatId, 
                         `📝 <b>စာမူလက်ခံရရှိပါသည်</b>\n\nစစ်ဆေးတွေ့ရှိသော အခန်းများ -\n${preview}${parsed.length > 5 ? "\n..." : ""}\n\nစုစုပေါင်း: <b>${parsed.length} ခန်း</b>`, 
                         kb);
+                    return NextResponse.json({ ok: true });
+                }
+            } else {
+                // Not in active selection mode - handle as "misdirected" or "help"
+                if (text && !text.startsWith("/")) {
+                    const kb = {
+                        inline_keyboard: [
+                            [{ text: "📖 ဝတ္ထုရွေးပြီး စာတင်မယ်", callback_data: "action_publish_req" }]
+                        ]
+                    };
+                    await sendTelegramMsg(botToken, chatId, "🤖 <b>ဝတ္ထုကို အရင်ရွေးချယ်ပေးပါခင်ဗျာ။</b>\n\nစာမူမတင်မီ ဘယ်ဝတ္ထုအတွက်လဲဆိုတာ သိဖို့လိုအပ်လို့ပါ။", kb);
                     return NextResponse.json({ ok: true });
                 }
             }
