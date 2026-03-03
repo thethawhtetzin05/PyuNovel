@@ -5,6 +5,7 @@ import { user, verification, novels, chapters, telegramDrafts } from "@/db/schem
 import { eq, and, desc } from "drizzle-orm";
 import mammoth from "mammoth";
 
+export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
 
 // Simple parser to split text into multiple chapters based on title patterns
