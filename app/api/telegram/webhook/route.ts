@@ -68,7 +68,18 @@ export async function GET(req: NextRequest) {
             try {
                 const db = drizzle(env.DB as any);
                 const rows = await db.select({ id: user.id, telegramId: user.telegramId }).from(user).limit(1);
-                dbQueryTest = `✅ DB query works (user table has ${rows.length >= 0 ? 'telegramId column' : '?'})`;
+                
+                // --- NEW DIAGNOSTIC FOR TELEGRAM DRAFTS TABLE ---
+                let draftsTableCheck = "";
+                try {
+                    // Try to query the table directly to see if it exists and has the expected columns
+                    const drafts = await db.select().from(telegramDrafts).limit(1);
+                    draftsTableCheck = `✅ telegram_drafts table exists and is accessible. Found ${drafts.length} rows.`;
+                } catch (tErr: any) {
+                    draftsTableCheck = `❌ telegram_drafts table error: ${tErr?.message}`;
+                }
+
+                dbQueryTest = `✅ DB query works. ${draftsTableCheck}`;
             } catch (dbErr: any) {
                 dbQueryTest = `❌ DB query failed: ${dbErr?.message}`;
             }
