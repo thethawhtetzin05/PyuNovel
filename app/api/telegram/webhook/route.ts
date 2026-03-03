@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { drizzle } from "drizzle-orm/d1";
 import { user, verification, novels, chapters, telegramDrafts } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 // import mammoth from "mammoth"; // mammoth uses 'eval' or similar which is blocked in Edge
 
 export const dynamic = 'force-dynamic';
@@ -354,16 +354,25 @@ export async function POST(req: NextRequest) {
                     const parsed = parseBulkText(contentText);
                     const draftId = `draft_${chatId}_${Date.now()}`;
                     
+                    // Get real authorId from DB based on telegramId
+                    const userRows = await db.select({ id: user.id }).from(user).where(eq(user.telegramId, chatId)).limit(1);
+                    const authorId = userRows[0]?.id;
+
+                    if (!authorId) {
+                        await sendTelegramMsg(botToken, chatId, "❌ အကောင့်ချိတ်ဆက်မှု ပြဿနာရှိနေပါသည်။ /start ကို ပြန်နှိပ်ပါ။");
+                        return NextResponse.json({ ok: true });
+                    }
+
                     try {
                         await db.insert(telegramDrafts).values({
                             id: draftId,
-                            authorId: "temp", 
+                            authorId: authorId, 
                             chaptersJson: JSON.stringify(parsed),
                             createdAt: new Date(),
                         }).run();
                     } catch (dbErr: any) {
                         console.error("[CONTENT] DB insert draft failed:", dbErr?.message);
-                        await sendTelegramMsg(botToken, chatId, "❌ စာမူကို ယာယီသိမ်းဆည်းရာတွင် အမှားအယွင်းရှိနေပါသည်။ ကျေးဇူးပြု၍ ခဏနေမှ ပြန်ကြိုးစားပါ။");
+                        await sendTelegramMsg(botToken, chatId, `❌ စာမူကို ယာယီသိမ်းဆည်းရာတွင် အမှားအယွင်းရှိနေပါသည်။\n\nError: ${dbErr?.message}`);
                         return NextResponse.json({ ok: true });
                     }
 
