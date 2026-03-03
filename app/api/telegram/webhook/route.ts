@@ -221,16 +221,20 @@ export async function POST(req: NextRequest) {
                 
                 let nextSortIndex = (lastChapter[0]?.sortIndex ?? 0) + 1;
 
-                // Insert chapters
-                for (const ch of parsedChapters) {
-                    await db.insert(chapters).values({
+                // Batch insert in chunks of 10 (ဆယ်ပိုင်းတစ်ဖြတ်)
+                const chunkSize = 10;
+                for (let i = 0; i < parsedChapters.length; i += chunkSize) {
+                    const chunk = parsedChapters.slice(i, i + chunkSize);
+                    const valuesToInsert = chunk.map((ch, index) => ({
                         novelId: novelId,
                         title: ch.title,
                         content: ch.content,
                         sortIndex: nextSortIndex++,
                         isPaid: false,
                         createdAt: new Date(),
-                    });
+                    }));
+                    
+                    await db.insert(chapters).values(valuesToInsert);
                 }
 
                 await db.delete(telegramDrafts).where(eq(telegramDrafts.id, draftId));
