@@ -10,10 +10,10 @@ export default function ViewTracker({ slug }: { slug: string }) {
     // စာဖတ်သူက စာမျက်နှာပေါ်မှာ ၅ စက္ကန့်လောက် ကြာမှ View တိုးမယ် (Quality View)
     const timer = setTimeout(() => {
       if (!hasViewed.current) {
-        incrementView(slug);
+        incrementView(slug).catch(console.error);
         hasViewed.current = true;
       }
-    }, 5000); 
+    }, 1000); 
 
     return () => clearTimeout(timer); // ၅ စက္ကန့် မပြည့်ခင် ပြန်ထွက်သွားရင် View မတိုးဘူး
   }, [slug]);
