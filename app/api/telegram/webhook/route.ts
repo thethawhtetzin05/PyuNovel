@@ -24,14 +24,20 @@ function parseBulkText(text: string) {
     const result: { title: string; content: string }[] = [];
     let currentChapter: { title: string; content: string } | null = null;
 
-    // Simple pattern for chapter titles like "Chapter 1", "အပိုင်း (၁)", etc.
-    const titleRegex = /^(Chapter|အပိုင်း|Episode|Vol|Volume)\s*[\d\(\).:-]+/i;
+    // Pattern for chapter titles: "Chapter 1", "အပိုင်း (၁)", "အပိုင်း ၁", "Episode 10", "Vol.1", "၁။ ခေါင်းစဉ်"
+    // Supports English digits (0-9) and Myanmar digits (၀-၉)
+    const titleRegex = /^(Chapter|အပိုင်း|Episode|Vol|Volume|အခန်း)\s*([0-9၀-၉]|[0-9၀-၉\(\).:-]+)/i;
+    const startWithDigitRegex = /^[0-9၀-၉]+[\)။၊।\.\s-]/; // Pattern for "၁။ ", "1. ", etc.
 
     for (let line of lines) {
         const trimmed = line.trim();
         if (!trimmed) continue;
 
-        if (titleRegex.test(trimmed) || (trimmed.length < 50 && (trimmed.includes("Chapter") || trimmed.includes("အပိုင်း")))) {
+        const isTitle = titleRegex.test(trimmed) || 
+                        startWithDigitRegex.test(trimmed) ||
+                        (trimmed.length < 60 && (trimmed.includes("Chapter") || trimmed.includes("အပိုင်း") || trimmed.includes("အခန်း")));
+
+        if (isTitle) {
             if (currentChapter) result.push(currentChapter);
             currentChapter = { title: trimmed, content: "" };
         } else {
