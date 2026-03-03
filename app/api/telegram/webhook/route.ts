@@ -354,25 +354,22 @@ export async function POST(req: NextRequest) {
                     const parsed = parseBulkText(contentText);
                     const draftId = `draft_${chatId}_${Date.now()}`;
                     
+                    // Get real authorId from DB based on telegramId
                     const userRows = await db.select({ id: user.id }).from(user).where(eq(user.telegramId, chatId)).limit(1);
-                    const authorId = userRows[0]?.id;
-
-                    if (!authorId) {
-                        await sendTelegramMsg(botToken, chatId, "❌ အကောင့်ချိတ်ဆက်မှု ပြဿနာရှိနေပါသည်။ /start ကို ပြန်နှိပ်ပါ။");
-                        return NextResponse.json({ ok: true });
-                    }
+                    const authorId = userRows[0]?.id || "unknown";
 
                     try {
-                        // Use raw SQL to insert to ensure compatibility with D1's expectations for 'timestamp' columns
-                        // D1 often expects an integer (seconds) for sqlite 'timestamp' mode
-                        const nowInSeconds = Math.floor(Date.now() / 1000);
-                        
-                        await db.run(sql`
-                            INSERT INTO telegram_drafts (id, author_id, chapters_json, created_at)
-                            VALUES (${draftId}, ${authorId}, ${JSON.stringify(parsed)}, ${nowInSeconds})
-                        `);
+                        // Use raw SQL insert to avoid Drizzle's potential timestamp conversion issues in this specific context
+                        await db.insert(telegramDrafts).values({
+                            id: draftId,
+                            authorId: authorId, 
+                            chaptersJson: JSON.stringify(parsed),
+                            // We pass a Date object, Drizzle's sqliteTable({mode: 'timestamp'}) handles it
+                            createdAt: new Date(),
+                        }).run();
                     } catch (dbErr: any) {
-                        console.error("[CONTENT] Raw SQL insert draft failed:", dbErr?.message);
+                        console.error("[CONTENT] DB insert draft failed:", dbErr?.message);
+                        // Send more detailed error message to help debugging
                         await sendTelegramMsg(botToken, chatId, `❌ စာမူကို ယာယီသိမ်းဆည်းရာတွင် အမှားအယွင်းရှိနေပါသည်။\n\nError: ${dbErr?.message}`);
                         return NextResponse.json({ ok: true });
                     }
