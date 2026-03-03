@@ -354,21 +354,16 @@ export async function POST(req: NextRequest) {
                     const parsed = parseBulkText(contentText);
                     const draftId = `draft_${chatId}_${Date.now()}`;
                     
-                    // Get real authorId from DB based on telegramId
-                    const userRows = await db.select({ id: user.id }).from(user).where(eq(user.telegramId, chatId)).limit(1);
-                    const authorId = userRows[0]?.id || "unknown";
-
                     try {
                         await db.insert(telegramDrafts).values({
                             id: draftId,
-                            authorId: authorId, 
+                            authorId: "temp", 
                             chaptersJson: JSON.stringify(parsed),
                             createdAt: new Date(),
                         }).run();
                     } catch (dbErr: any) {
                         console.error("[CONTENT] DB insert draft failed:", dbErr?.message);
-                        // Send more detailed error message to help debugging
-                        await sendTelegramMsg(botToken, chatId, `❌ စာမူကို ယာယီသိမ်းဆည်းရာတွင် အမှားအယွင်းရှိနေပါသည်။\n\nError: ${dbErr?.message}`);
+                        await sendTelegramMsg(botToken, chatId, "❌ စာမူကို ယာယီသိမ်းဆည်းရာတွင် အမှားအယွင်းရှိနေပါသည်။ ကျေးဇူးပြု၍ ခဏနေမှ ပြန်ကြိုးစားပါ။");
                         return NextResponse.json({ ok: true });
                     }
 
