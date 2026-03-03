@@ -3,6 +3,7 @@ import { getRequestContext } from "@cloudflare/next-on-pages";
 import { drizzle } from "drizzle-orm/d1";
 import { user, verification, novels, chapters, telegramDrafts } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import mammoth from "mammoth";
 
 export const runtime = 'edge';
 
@@ -288,16 +289,30 @@ export async function POST(req: NextRequest) {
                 let contentText = "";
                 if (text) contentText = text;
                 else if (doc) {
-                    // Fetch document if it's small/supported (Simplified: Only text files for now)
-                    if (doc.mime_type === "text/plain") {
+                    const isDocx = doc.mime_type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || doc.file_name?.endsWith(".docx");
+                    const isTxt = doc.mime_type === "text/plain" || doc.file_name?.endsWith(".txt");
+
+                    if (isDocx || isTxt) {
                         const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${doc.file_id}`);
                         const fileData = await fileRes.json() as any;
                         if (fileData.ok) {
                             const fileContentRes = await fetch(`https://api.telegram.org/file/bot${botToken}/${fileData.result.file_path}`);
-                            contentText = await fileContentRes.text();
+                            const arrayBuffer = await fileContentRes.arrayBuffer();
+                            
+                            if (isDocx) {
+                                try {
+                                    const result = await mammoth.extractRawText({ arrayBuffer: Buffer.from(arrayBuffer) });
+                                    contentText = result.value;
+                                } catch (err) {
+                                    await sendTelegramMsg(botToken, chatId, "❌ .docx ဖိုင်ကို ဖတ်၍မရပါ။ စာဖိုင်အမှန်ဖြစ်ကြောင်း ပြန်စစ်ပေးပါ။");
+                                    return NextResponse.json({ ok: true });
+                                }
+                            } else {
+                                contentText = new TextDecoder().decode(arrayBuffer);
+                            }
                         }
                     } else {
-                        await sendTelegramMsg(botToken, chatId, "❌ လက်ရှိတွင် .txt ဖိုင်များကိုသာ Bulk upload အဖြစ် လက်ခံနိုင်ပါသေးသည်။");
+                        await sendTelegramMsg(botToken, chatId, "❌ လက်ရှိတွင် .txt နှင့် .docx ဖိုင်များကိုသာ လက်ခံနိုင်ပါသေးသည်။");
                         return NextResponse.json({ ok: true });
                     }
                 }
