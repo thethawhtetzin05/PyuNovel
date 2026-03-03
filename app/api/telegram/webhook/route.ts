@@ -193,13 +193,20 @@ export async function POST(req: NextRequest) {
                 const rows = await db.select().from(novels).where(eq(novels.id, novelId)).limit(1);
                 const selectedNovel = rows[0];
                 if (selectedNovel) {
-                    await db.delete(verification).where(and(eq(verification.identifier, "active_selection"), eq(verification.value, chatId)));
+                    // Important: Always use the same ID format for checking later
+                    const selectionId = `select_${chatId}`;
+                    
+                    // Clear any existing selection for this user first
+                    await db.delete(verification).where(eq(verification.id, selectionId));
+                    
+                    // Insert the new selection
                     await db.insert(verification).values({
-                        id: `select_${chatId}`,
+                        id: selectionId,
                         identifier: "active_selection",
                         value: String(novelId),
                         expiresAt: new Date(Date.now() + 3600000), 
                     });
+                    
                     await editTelegramMsgText(botToken, chatId, msgId,
                         `✅ <b>${selectedNovel.title}</b> ကို ရွေးချယ်လိုက်ပါပြီ။\n\nယခု စာသား သို့မဟုတ် စာဖိုင် (Bulk) ကို ပို့နိုင်ပါပြီ။`);
                 }
