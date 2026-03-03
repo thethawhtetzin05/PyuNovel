@@ -154,8 +154,20 @@ export async function POST(req: NextRequest) {
                 const rows = await db.select().from(novels).where(eq(novels.id, novelId)).limit(1);
                 const selectedNovel = rows[0];
                 if (selectedNovel) {
+                    // Option 3: Use verification table to store "active_selection"
+                    // Delete any old selection for this user first
+                    await db.delete(verification).where(and(eq(verification.identifier, "active_selection"), eq(verification.value, chatId)));
+                    
+                    // Insert new selection: id = novelId, identifier = "active_selection", value = chatId
+                    await db.insert(verification).values({
+                        id: `select_${chatId}`,
+                        identifier: "active_selection",
+                        value: String(novelId),
+                        expiresAt: new Date(Date.now() + 3600000), // Expire in 1 hour
+                    });
+
                     await editTelegramMsgText(botToken, chatId, msgId,
-                        `✅ <b>${selectedNovel.title}</b> ကို ရွေးချယ်လိုက်ပါပြီ။\n\nယခု စာများကို ပို့နိုင်ပါပြီ။`);
+                        `✅ <b>${selectedNovel.title}</b> ကို ရွေးချယ်လိုက်ပါပြီ။\n\nယခု စာမူများကို (စာသားအတိုင်း) ပို့နိုင်ပါပြီ။ (၁ နာရီအတွင်း ပို့ပေးရန်)`);
                 }
             }
             return NextResponse.json({ ok: true });
@@ -209,8 +221,27 @@ export async function POST(req: NextRequest) {
                             "✅ အကောင့်ချိတ်ဆက်မှု အောင်မြင်ပါပြီ! /start ကို ပြန်နှိပ်ပါ။");
                     }
                 } else {
-                    await sendTelegramMsg(botToken, chatId,
-                        "🤖 လုပ်ဆောင်ချက် မရှင်းလင်းပါ။ /start ကို နှိပ်ပါ။");
+                    // Option 3 Check: Does this user have an active selection in verification table?
+                    const activeSelectionRows = await db.select().from(verification)
+                        .where(and(eq(verification.id, `select_${chatId}`), eq(verification.identifier, "active_selection")))
+                        .limit(1);
+                    
+                    const activeSel = activeSelectionRows[0];
+                    if (activeSel && new Date() <= new Date(activeSel.expiresAt)) {
+                        const novelId = parseInt(activeSel.value, 10);
+                        const novelRows = await db.select().from(novels).where(eq(novels.id, novelId)).limit(1);
+                        const selectedNovel = novelRows[0];
+
+                        if (selectedNovel) {
+                            // Process content for the selected novel
+                            await sendTelegramMsg(botToken, chatId, 
+                                `📥 <b>"${selectedNovel.title}"</b> အတွက် စာမူလက်ခံရရှိပါသည်။\n\n(လက်ရှိတွင် စမ်းသပ်ဆဲဖြစ်သောကြောင့် Draft အနေဖြင့်သာ မှတ်သားထားပါသည်)`);
+                        } else {
+                            await sendTelegramMsg(botToken, chatId, "🤖 လုပ်ဆောင်ချက် မရှင်းလင်းပါ။ /start ကို နှိပ်ပါ။");
+                        }
+                    } else {
+                        await sendTelegramMsg(botToken, chatId, "🤖 လုပ်ဆောင်ချက် မရှင်းလင်းပါ။ /start ကို နှိပ်ပါ။");
+                    }
                 }
             }
         }
