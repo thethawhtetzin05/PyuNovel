@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
                 await editTelegramMsgText(botToken, chatId, msgId,
                     "🔓 <b>အကောင့်ဖြုတ်လိုက်ပါပြီ။</b>");
             }
-            if (data === "action_publish_req") {
+            else if (data === "action_publish_req") {
                 const rows = await db.select().from(user).where(eq(user.telegramId, chatId)).limit(1);
                 const dbUser = rows[0];
                 if (!dbUser || (dbUser.role !== 'admin' && dbUser.role !== 'writer')) {
