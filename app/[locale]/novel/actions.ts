@@ -11,6 +11,7 @@ export async function incrementView(novelSlug: string) {
   const db = drizzle(env.DB, { schema });
 
   try {
+    // 1. Update the database
     await db.update(schema.novels)
       .set({
         views: sql`${schema.novels.views} + 1`
@@ -18,9 +19,15 @@ export async function incrementView(novelSlug: string) {
       .where(eq(schema.novels.slug, novelSlug))
       .run();
 
+    // 2. Revalidate the path so the user sees the new count
+    // Try multiple path variations to ensure the cache is cleared
     revalidatePath(`/novel/${novelSlug}`);
+    revalidatePath(`/[locale]/novel/${novelSlug}`, 'page');
+    
     console.log(`[VIEW] Incremented view for: ${novelSlug}`);
+    return { success: true };
   } catch (error) {
     console.error("Failed to increment view:", error);
+    return { success: false, error: String(error) };
   }
 }
