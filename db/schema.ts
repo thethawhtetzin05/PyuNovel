@@ -80,7 +80,7 @@ export const novels = sqliteTable('novels', {
 
   status: text('status', { enum: ['ongoing', 'completed', 'hiatus'] }).default('ongoing'),
 
-  views: integer('views').default(0),
+  views: integer('views').default(0).notNull(),
   chapterPrice: integer('price').default(0),
 
   // ✅ Fix: $defaultFn ensures current time on insert

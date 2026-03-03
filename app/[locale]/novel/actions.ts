@@ -12,9 +12,10 @@ export async function incrementView(novelSlug: string) {
 
   try {
     // 1. Update the database
+    // Use COALESCE as a safety measure for existing null rows
     await db.update(schema.novels)
       .set({
-        views: sql`${schema.novels.views} + 1`
+        views: sql`COALESCE(${schema.novels.views}, 0) + 1`
       })
       .where(eq(schema.novels.slug, novelSlug))
       .run();
