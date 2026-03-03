@@ -169,7 +169,8 @@ export async function POST(req: NextRequest) {
             else if (data === "action_unlink_req") {
                 await db.update(user)
                     .set({ telegramId: null, telegramName: null })
-                    .where(eq(user.telegramId, chatId));
+                    .where(eq(user.telegramId, chatId))
+                    .run();
                 await editTelegramMsgText(botToken, chatId, msgId,
                     "🔓 <b>အကောင့်ဖြုတ်လိုက်ပါပြီ။</b>");
             }
@@ -180,7 +181,7 @@ export async function POST(req: NextRequest) {
                     await editTelegramMsgText(botToken, chatId, msgId, "⚠️ စာရေးသူ အကောင့် မဟုတ်ပါ။");
                 } else {
                     // Clean up any old selection or draft when starting a new publish request
-                    await db.delete(verification).where(eq(verification.id, `select_${chatId}`));
+                    await db.delete(verification).where(eq(verification.id, `select_${chatId}`)).run();
                     
                     const myNovels = await db.select().from(novels).where(eq(novels.ownerId, dbUser.id)).limit(15);
                     if (myNovels.length === 0) {
@@ -202,13 +203,14 @@ export async function POST(req: NextRequest) {
                 const selectedNovel = rows[0];
                 if (selectedNovel) {
                     const selectionId = `select_${chatId}`;
-                    await db.delete(verification).where(eq(verification.id, selectionId));
+                    await db.delete(verification).where(eq(verification.id, selectionId)).run();
+                    
                     await db.insert(verification).values({
                         id: selectionId,
                         identifier: "active_selection",
                         value: String(novelId),
                         expiresAt: new Date(Date.now() + 3600000), 
-                    });
+                    }).run();
                     
                     await editTelegramMsgText(botToken, chatId, msgId,
                         `✅ <b>${selectedNovel.title}</b> ကို ရွေးချယ်လိုက်ပါပြီ။\n\nယခု စာသား သို့မဟုတ် စာဖိုင် (Bulk) ကို ပို့နိုင်ပါပြီ။`);
@@ -266,16 +268,16 @@ export async function POST(req: NextRequest) {
                         createdAt: new Date(),
                     }));
                     
-                    await db.insert(chapters).values(valuesToInsert);
+                    await db.insert(chapters).values(valuesToInsert).run();
                 }
 
-                await db.delete(telegramDrafts).where(eq(telegramDrafts.id, draftId));
+                await db.delete(telegramDrafts).where(eq(telegramDrafts.id, draftId)).run();
                 await editTelegramMsgText(botToken, chatId, msgId, 
                     `✅ <b>အခန်း (${parsedChapters.length}) ခန်း</b> ကို အောင်မြင်စွာ တင်လိုက်ပါပြီ။`);
             }
             else if (data.startsWith("discard_draft_")) {
                 const draftId = data.replace("discard_draft_", "");
-                await db.delete(telegramDrafts).where(eq(telegramDrafts.id, draftId));
+                await db.delete(telegramDrafts).where(eq(telegramDrafts.id, draftId)).run();
                 await editTelegramMsgText(botToken, chatId, msgId, "🗑 စာမူကို ဖျက်လိုက်ပါပြီ။");
             }
             return NextResponse.json({ ok: true });
@@ -351,12 +353,19 @@ export async function POST(req: NextRequest) {
                 if (contentText) {
                     const parsed = parseBulkText(contentText);
                     const draftId = `draft_${chatId}_${Date.now()}`;
-                    await db.insert(telegramDrafts).values({
-                        id: draftId,
-                        authorId: "temp", // Simplified or link to actual user
-                        chaptersJson: JSON.stringify(parsed),
-                        createdAt: new Date(),
-                    });
+                    
+                    try {
+                        await db.insert(telegramDrafts).values({
+                            id: draftId,
+                            authorId: "temp", 
+                            chaptersJson: JSON.stringify(parsed),
+                            createdAt: new Date(),
+                        }).run();
+                    } catch (dbErr: any) {
+                        console.error("[CONTENT] DB insert draft failed:", dbErr?.message);
+                        await sendTelegramMsg(botToken, chatId, "❌ စာမူကို ယာယီသိမ်းဆည်းရာတွင် အမှားအယွင်းရှိနေပါသည်။ ကျေးဇူးပြု၍ ခဏနေမှ ပြန်ကြိုးစားပါ။");
+                        return NextResponse.json({ ok: true });
+                    }
 
                     const kb = {
                         inline_keyboard: [
@@ -397,8 +406,9 @@ export async function POST(req: NextRequest) {
                         const fromName = message.from?.first_name || "User";
                         await db.update(user)
                             .set({ telegramId: chatId, telegramName: fromName })
-                            .where(eq(user.id, verif.value));
-                        await db.delete(verification).where(eq(verification.id, text));
+                            .where(eq(user.id, verif.value))
+                            .run();
+                        await db.delete(verification).where(eq(verification.id, text)).run();
                         await sendTelegramMsg(botToken, chatId, "✅ အကောင့်ချိတ်ဆက်မှု အောင်မြင်ပါပြီ! /start ကို ပြန်နှိပ်ပါ။");
                     }
                 } else {
