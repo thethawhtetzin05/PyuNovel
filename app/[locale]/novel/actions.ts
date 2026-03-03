@@ -15,7 +15,8 @@ export async function incrementView(novelSlug: string) {
       .set({
         views: sql`${schema.novels.views} + 1`
       })
-      .where(eq(schema.novels.slug, novelSlug));
+      .where(eq(schema.novels.slug, novelSlug))
+      .run();
 
     revalidatePath(`/novel/${novelSlug}`);
     console.log(`[VIEW] Incremented view for: ${novelSlug}`);
