@@ -3,10 +3,20 @@ import { getRequestContext } from "@cloudflare/next-on-pages";
 import { drizzle } from "drizzle-orm/d1";
 import { user, verification, novels, chapters, telegramDrafts } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import mammoth from "mammoth";
+// import mammoth from "mammoth"; // mammoth uses 'eval' or similar which is blocked in Edge
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
+
+// Simple .docx parser for Edge (Experimental/Partial)
+// Since mammoth is blocked, we can't easily parse .docx in Edge.
+// For now, we'll suggest using .txt or direct messages, or use a workaround.
+async function parseDocx(arrayBuffer: ArrayBuffer): Promise<string> {
+    // This is a placeholder since we can't use mammoth in Edge.
+    // In a real production app, you might offload this to a separate microservice 
+    // or use a more edge-compatible library if available.
+    throw new Error("Edge runtime does not support .docx parsing yet. Please use .txt or direct messages.");
+}
 
 // Simple parser to split text into multiple chapters based on title patterns
 function parseBulkText(text: string) {
@@ -305,13 +315,8 @@ export async function POST(req: NextRequest) {
                             const arrayBuffer = await fileContentRes.arrayBuffer();
                             
                             if (isDocx) {
-                                try {
-                                    const result = await mammoth.extractRawText({ arrayBuffer: Buffer.from(arrayBuffer) });
-                                    contentText = result.value;
-                                } catch (err) {
-                                    await sendTelegramMsg(botToken, chatId, "❌ .docx ဖိုင်ကို ဖတ်၍မရပါ။ စာဖိုင်အမှန်ဖြစ်ကြောင်း ပြန်စစ်ပေးပါ။");
-                                    return NextResponse.json({ ok: true });
-                                }
+                                await sendTelegramMsg(botToken, chatId, "⚠️ Cloudflare Edge Runtime တွင် .docx ဖိုင်များကို လက်ရှိတွင် တိုက်ရိုက်ဖတ်၍မရသေးပါ။ ကျေးဇူးပြု၍ .txt ဖိုင် သို့မဟုတ် စာသားအတိုင်း ပို့ပေးပါရန်။");
+                                return NextResponse.json({ ok: true });
                             } else {
                                 contentText = new TextDecoder().decode(arrayBuffer);
                             }
