@@ -359,12 +359,10 @@ export async function POST(req: NextRequest) {
                     const authorId = userRows[0]?.id || "unknown";
 
                     try {
-                        // Use raw SQL insert to avoid Drizzle's potential timestamp conversion issues in this specific context
                         await db.insert(telegramDrafts).values({
                             id: draftId,
                             authorId: authorId, 
                             chaptersJson: JSON.stringify(parsed),
-                            // We pass a Date object, Drizzle's sqliteTable({mode: 'timestamp'}) handles it
                             createdAt: new Date(),
                         }).run();
                     } catch (dbErr: any) {
