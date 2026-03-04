@@ -24,12 +24,13 @@ function parseBulkText(text: string) {
     const result: { title: string; content: string }[] = [];
     let currentChapter: { title: string; content: string } | null = null;
 
-    // Pattern for chapter titles: "Chapter 1", "အပိုင်း (၁)", "အပိုင်း ၁", "Episode 10", "Vol.1", "၁။ ခေါင်းစဉ်"
-    // Enhanced to support symbols and no-space variations: "--- အခန်း ၁ ---", "အပိုင်း-၁", "အခန်း(၁၀)", "[Chapter 1]"
-    const titleRegex = /^([*-=\s\[\(])* (Chapter|အပိုင်း|Episode|Vol|Volume|အခန်း) \s* ([0-9၀-၉]|[0-9၀-၉\(\).:-]+) ([\s\]\)-=*])*$/i;
+    // Pattern for chapter titles: Must include keywords like Chapter/အပိုင်း and be followed by digits
+    // Supports symbols, no-space, and Myanmar/English digits: "--- အခန်း ၁ ---", "အပိုင်း-၁", "အခန်း(၁၀)", "[Chapter 1]"
+    // Strictly requires digits (0-9 or ၀-၉) to be present after the keyword
+    const titleRegex = /^([*-=\s\[\(])* (Chapter|အပိုင်း|Episode|Vol|Volume|အခန်း) [\s\(\).:-]* [0-9၀-၉]+ ([\s\]\)-=*])*$/i;
     
-    // Fallback for more flexible matches (no-space, symbols, etc.)
-    const flexibleTitleRegex = /^([*-=\s\[\(])* (Chapter|အပိုင်း|Episode|Vol|Volume|အခန်း) [\s\(\).:-]* [0-9၀-၉]+/i;
+    // More precise flexible check that STILL requires digits
+    const flexibleTitleWithDigitsRegex = /^([*-=\s\[\(])* (Chapter|အပိုင်း|Episode|Vol|Volume|အခန်း) [\s\(\).:-]* [0-9၀-၉]+/i;
     const startWithDigitRegex = /^[0-9၀-၉]+[\)။၊।\.\s-]/; // Pattern for "၁။ ", "1. ", etc.
 
     for (let line of lines) {
@@ -37,9 +38,8 @@ function parseBulkText(text: string) {
         if (!trimmed) continue;
 
         const isTitle = titleRegex.test(trimmed) || 
-                        flexibleTitleRegex.test(trimmed) ||
-                        startWithDigitRegex.test(trimmed) ||
-                        (trimmed.length < 65 && (trimmed.startsWith("Chapter") || trimmed.startsWith("အပိုင်း") || trimmed.startsWith("အခန်း")));
+                        flexibleTitleWithDigitsRegex.test(trimmed) ||
+                        startWithDigitRegex.test(trimmed);
 
         if (isTitle) {
             if (currentChapter) result.push(currentChapter);
