@@ -184,8 +184,30 @@ export async function POST(req: NextRequest) {
             const data = cb.data as string;
 
             if (data === "action_link_req") {
+                // Clear any existing active selection to avoid conflicts
+                await db.delete(verification).where(eq(verification.id, `select_${chatId}`)).run();
+                
+                // Set the "awaiting_verification_code" state
+                await db.insert(verification).values({
+                    id: `state_${chatId}`,
+                    identifier: "awaiting_verification_code",
+                    value: "pending",
+                    expiresAt: new Date(Date.now() + 15 * 60000), // 15 minutes expiry
+                }).run();
+
+                const kb = {
+                    inline_keyboard: [
+                        [{ text: "❌ မလုပ်တော့ပါ (Cancel)", callback_data: "action_cancel_state" }]
+                    ]
+                };
+
                 await editTelegramMsgText(botToken, chatId, msgId,
-                    "🔗 <b>အကောင့်ချိတ်ဆက်ရန်</b>\n\nဝဘ်ဆိုက်မှရရှိသော Code ကို ရိုက်ထည့်ပေးပါ။");
+                    "🔗 <b>အကောင့်ချိတ်ဆက်ရန်</b>\n\nဝဘ်ဆိုက်မှရရှိသော Code ကို ရိုက်ထည့်ပေးပါ။ (၁၅ မိနစ်အတွင်း)\n\n<i>မှတ်ချက်: မှားယွင်းနှိပ်မိပါက အောက်ပါခလုတ်ကို နှိပ်ပါ။</i>", kb);
+            }
+            else if (data === "action_cancel_state") {
+                // Clear any states
+                await db.delete(verification).where(eq(verification.id, `state_${chatId}`)).run();
+                await editTelegramMsgText(botToken, chatId, msgId, "❌ လုပ်ဆောင်ချက်ကို ပယ်ဖျက်လိုက်ပါပြီ။");
             }
             else if (data === "action_unlink_req") {
                 await db.update(user)
@@ -196,6 +218,9 @@ export async function POST(req: NextRequest) {
                     "🔓 <b>အကောင့်ဖြုတ်လိုက်ပါပြီ။</b>");
             }
             else if (data === "action_publish_req") {
+                // Auto-clear awaiting code state if user clicks something else
+                await db.delete(verification).where(eq(verification.id, `state_${chatId}`)).run();
+                
                 const rows = await db.select().from(user).where(eq(user.telegramId, chatId)).limit(1);
                 const dbUser = rows[0];
                 if (!dbUser || (dbUser.role !== 'admin' && dbUser.role !== 'writer')) {
@@ -312,6 +337,10 @@ export async function POST(req: NextRequest) {
             const doc = message.document;
 
             if (text === "/start") {
+                // Auto-clear states on /start
+                await db.delete(verification).where(eq(verification.id, `state_${chatId}`)).run();
+                await db.delete(verification).where(eq(verification.id, `select_${chatId}`)).run();
+
                 let dbUser: typeof user.$inferSelect | undefined;
                 try {
                     const rows = await db.select().from(user).where(eq(user.telegramId, chatId)).limit(1);
@@ -336,7 +365,45 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ ok: true });
             }
 
-            // Handle Content (Text or Document)
+            // 1. Check if user is in "awaiting_verification_code" state
+            const stateRows = await db.select().from(verification)
+                .where(and(eq(verification.id, `state_${chatId}`), eq(verification.identifier, "awaiting_verification_code")))
+                .limit(1);
+            const currentState = stateRows[0];
+            const isAwaitingCode = currentState && new Date() <= new Date(currentState.expiresAt);
+
+            if (isAwaitingCode && text) {
+                // We are explicitly expecting a verification code
+                const verifRows = await db.select().from(verification)
+                    .where(and(eq(verification.id, text), eq(verification.identifier, "telegram")))
+                    .limit(1);
+                const verif = verifRows[0];
+
+                if (verif) {
+                    if (new Date() > new Date(verif.expiresAt)) {
+                        await sendTelegramMsg(botToken, chatId, "❌ Code သက်တမ်းကုန်သွားပါပြီ။ ကျေးဇူးပြု၍ Code အသစ် ပြန်တောင်းပါ။");
+                        await db.delete(verification).where(eq(verification.id, `state_${chatId}`)).run(); // Clear state
+                    } else {
+                        const fromName = message.from?.first_name || "User";
+                        await db.update(user)
+                            .set({ telegramId: chatId, telegramName: fromName })
+                            .where(eq(user.id, verif.value))
+                            .run();
+                        
+                        // Clean up both the token and the state
+                        await db.delete(verification).where(eq(verification.id, text)).run();
+                        await db.delete(verification).where(eq(verification.id, `state_${chatId}`)).run();
+                        
+                        await sendTelegramMsg(botToken, chatId, "✅ အကောင့်ချိတ်ဆက်မှု အောင်မြင်ပါပြီ! /start ကို ပြန်နှိပ်ပါ။");
+                    }
+                } else {
+                    // Specific error message for invalid code entry
+                    await sendTelegramMsg(botToken, chatId, "❌ ချိတ်ဆက်ရန် ကုဒ် မမှန်ကန်ပါ။ ဝဘ်ဆိုက်မှ ရရှိသော Code ကို ပြန်လည်စစ်ဆေးပြီး ရိုက်ထည့်ပေးပါ။\n\n<i>မှတ်ချက်: မလုပ်တော့ပါက /start ကိုနှိပ်ပါ။</i>");
+                }
+                return NextResponse.json({ ok: true });
+            }
+
+            // 2. Handle Content (Text or Document) - ONLY if not awaiting code
             const activeSelectionRows = await db.select().from(verification)
                 .where(and(eq(verification.id, `select_${chatId}`), eq(verification.identifier, "active_selection")))
                 .limit(1);
@@ -418,31 +485,8 @@ export async function POST(req: NextRequest) {
                             [{ text: "📖 ဝတ္ထုရွေးပြီး စာတင်မယ်", callback_data: "action_publish_req" }]
                         ]
                     };
-                    await sendTelegramMsg(botToken, chatId, "🤖 <b>ဝတ္ထုကို အရင်ရွေးချယ်ပေးပါခင်ဗျာ။</b>\n\nစာမူမတင်မီ ဘယ်ဝတ္ထုအတွက်လဲဆိုတာ သိဖို့လိုအပ်လို့ပါ။", kb);
+                    await sendTelegramMsg(botToken, chatId, "🤖 <b>လုပ်ဆောင်ချက် မရှင်းလင်းပါ။</b>\n\nစာမူတင်လိုပါက ဝတ္ထုကို အရင်ရွေးချယ်ပေးပါခင်ဗျာ။", kb);
                     return NextResponse.json({ ok: true });
-                }
-            }
-
-            // Linking token flow (fallback)
-            if (text) {
-                const verifRows = await db.select().from(verification)
-                    .where(and(eq(verification.id, text), eq(verification.identifier, "telegram")))
-                    .limit(1);
-                const verif = verifRows[0];
-                if (verif) {
-                    if (new Date() > new Date(verif.expiresAt)) {
-                        await sendTelegramMsg(botToken, chatId, "❌ Code သက်တမ်းကုန်သွားပါပြီ။");
-                    } else {
-                        const fromName = message.from?.first_name || "User";
-                        await db.update(user)
-                            .set({ telegramId: chatId, telegramName: fromName })
-                            .where(eq(user.id, verif.value))
-                            .run();
-                        await db.delete(verification).where(eq(verification.id, text)).run();
-                        await sendTelegramMsg(botToken, chatId, "✅ အကောင့်ချိတ်ဆက်မှု အောင်မြင်ပါပြီ! /start ကို ပြန်နှိပ်ပါ။");
-                    }
-                } else {
-                    await sendTelegramMsg(botToken, chatId, "🤖 လုပ်ဆောင်ချက် မရှင်းလင်းပါ။ /start ကို နှိပ်ပါ။");
                 }
             }
         }
