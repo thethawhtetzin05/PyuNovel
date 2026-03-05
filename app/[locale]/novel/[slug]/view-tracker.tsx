@@ -1,22 +1,35 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { incrementView } from '../actions'; // Action လမ်းကြောင်း မှန်ပါစေ
 
 export default function ViewTracker({ slug }: { slug: string }) {
   const hasViewed = useRef(false); // ၂ ခါ မတိုးအောင် ကာကွယ်မယ်
 
   useEffect(() => {
     console.log("[TRACKER] Starting timer for:", slug);
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       if (!hasViewed.current) {
-        console.log("[TRACKER] Triggering incrementView for:", slug);
-        incrementView(slug).catch(err => console.error("[TRACKER] Error:", err));
+        try {
+          console.log("[TRACKER] Calling /api/novel/view for:", slug);
+          const res = await fetch('/api/novel/view', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug }),
+          });
+          const data = await res.json() as { success: boolean; error?: string };
+          if (data.success) {
+            console.log("[TRACKER] View incremented for:", slug);
+          } else {
+            console.error("[TRACKER] Server error:", data.error);
+          }
+        } catch (err) {
+          console.error("[TRACKER] Fetch error:", err);
+        }
         hasViewed.current = true;
       }
-    }, 1000); 
+    }, 1000); // ၁ စက္ကန့် ကြာမှ တိုး (မကြာမီ ထွက်သွားရင် view မတိုးဘူး)
 
-    return () => clearTimeout(timer); // ၅ စက္ကန့် မပြည့်ခင် ပြန်ထွက်သွားရင် View မတိုးဘူး
+    return () => clearTimeout(timer);
   }, [slug]);
 
   return null; // UI မှာ ဘာမှ မပြဘူး
