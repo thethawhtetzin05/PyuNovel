@@ -19,7 +19,7 @@ export default async function RankingPage({
     const { env } = getRequestContext();
     const db = drizzle(env.DB);
 
-    let rankedNovels: Record<string, unknown>[] = [];
+    let rankedNovels: any[] = [];
     let title = "";
     let subtitle = "";
 

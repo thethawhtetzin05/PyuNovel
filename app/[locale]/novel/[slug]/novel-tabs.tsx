@@ -26,6 +26,18 @@ interface Chapter {
   volumeId: number | null;
 }
 
+interface Review {
+  id: number;
+  rating: number;
+  comment: string | null;
+  createdAt: Date;
+  user: {
+    id: string;
+    name: string;
+    image: string | null;
+  };
+}
+
 interface NovelTabsProps {
   novelSlug: string;
   novelId: number;
@@ -33,7 +45,7 @@ interface NovelTabsProps {
   chapters: Chapter[];
   volumes?: Volume[];
   isOwner?: boolean;
-  reviews?: Record<string, unknown>[];
+  reviews?: Review[];
   userReview?: Record<string, unknown> | null;
   isLoggedIn?: boolean;
 }
@@ -299,7 +311,7 @@ export default function NovelTabs({
               <ReviewSection
                 novelId={novelId}
                 novelSlug={novelSlug}
-                reviews={reviews as Record<string, unknown>[]}
+                reviews={reviews}
                 userReview={userReview}
                 isLoggedIn={isLoggedIn}
               />

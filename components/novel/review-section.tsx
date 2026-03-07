@@ -20,7 +20,7 @@ interface ReviewSectionProps {
     novelId: number;
     novelSlug: string;
     reviews: Review[];
-    userReview: Record<string, unknown> | null;
+    userReview: any;
     isLoggedIn: boolean;
 }
 
