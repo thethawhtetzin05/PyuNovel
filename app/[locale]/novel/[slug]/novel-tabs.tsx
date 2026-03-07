@@ -176,7 +176,7 @@ export default function NovelTabs({
     <>
       <div className="mt-8">
         {/* 1. Tab Headers */}
-        <div className="flex gap-8 border-b border-[var(--border)] mb-8">
+        <div className="flex gap-4 sm:gap-8 border-b border-[var(--border)] mb-8 overflow-x-auto whitespace-nowrap scrollbar-hide w-full">
           <button
             onClick={() => setActiveTab('about')}
             className={`pb-4 text-xl font-bold transition-all relative ${activeTab === 'about' ? 'text-[var(--foreground)]' : 'text-[var(--text-muted)] hover:text-[var(--foreground)]'

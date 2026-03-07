@@ -121,7 +121,7 @@ export default async function NovelDetailsPage({ params }: Props) {
     : [];
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8 sm:py-12 pb-24 font-sans">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 pb-24 font-sans overflow-x-hidden md:overflow-x-visible w-full min-w-0">
       <ViewTracker slug={slug} />
 
       {/* HEADER INFO SECTION */}
@@ -150,7 +150,7 @@ export default async function NovelDetailsPage({ params }: Props) {
         <div className="flex flex-col flex-1 py-1 text-center md:text-left w-full">
 
           {/* Title */}
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-[var(--foreground)] leading-[1.1] mb-4 tracking-tight">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-[var(--foreground)] leading-[1.1] mb-4 tracking-tight break-words">
             {novel.title}
           </h1>
 
@@ -173,8 +173,8 @@ export default async function NovelDetailsPage({ params }: Props) {
             </span>
 
             {/* Views Badge */}
-            <span className="px-3 py-1 rounded-full text-[11px] font-bold tracking-wider bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1 shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+            <span className="px-3 py-1 rounded-full text-[11px] font-bold tracking-wider bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1 shadow-sm whitespace-nowrap">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 shrink-0">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
@@ -182,8 +182,8 @@ export default async function NovelDetailsPage({ params }: Props) {
             </span>
 
             {/* Collectors Badge */}
-            <span className="px-3 py-1 rounded-full text-[11px] font-bold tracking-wider bg-amber-100 text-amber-700 border border-amber-200 flex items-center gap-1 shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+            <span className="px-3 py-1 rounded-full text-[11px] font-bold tracking-wider bg-amber-100 text-amber-700 border border-amber-200 flex items-center gap-1 shadow-sm whitespace-nowrap">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 shrink-0">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
               </svg>
               {collectorCount.toLocaleString()} Collectors
@@ -191,7 +191,7 @@ export default async function NovelDetailsPage({ params }: Props) {
 
             {/* Tags Badges */}
             {tagsList.map((tag, index) => (
-              <span key={index} className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[var(--surface-2)] text-[var(--foreground)] border border-[var(--border)]">
+              <span key={index} className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[var(--surface-2)] text-[var(--foreground)] border border-[var(--border)] whitespace-nowrap">
                 {tag}
               </span>
             ))}
