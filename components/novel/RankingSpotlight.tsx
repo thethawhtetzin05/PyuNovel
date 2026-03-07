@@ -1,6 +1,5 @@
 import { Link } from '@/i18n/routing';
 import Image from "next/image";
-import { novels } from "@/db/schema";
 
 interface Novel {
     id: number;
@@ -11,14 +10,18 @@ interface Novel {
     status?: "completed" | "ongoing" | "hiatus" | null;
     views?: number | null;
     tags?: string | null;
+    collectorCount?: number | null;
 }
 
 interface Props {
     novels: Novel[];
+    rankingType?: string;
 }
 
-export default function RankingSpotlight({ novels }: Props) {
+export default function RankingSpotlight({ novels, rankingType }: Props) {
     if (novels.length === 0) return null;
+
+    const isCollectorRanking = rankingType === 'collector';
 
     // Reorder to 2, 1, 3 for visual hierarchy (center is rank 1)
     const spotlight = [
@@ -83,11 +86,15 @@ export default function RankingSpotlight({ novels }: Props) {
                                 {novel.title}
                             </h3>
                             <p className="text-xs text-[var(--text-muted)] mt-1 font-medium truncate italic">{novel.author}</p>
-                            {isFirst && (
-                                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--action)]/10 text-[var(--action)] text-[10px] uppercase font-black tracking-wider border border-[var(--action)]/20">
-                                    <span className="animate-pulse">🔥</span> Hot Ranking
-                                </div>
-                            )}
+
+                            {/* Stat chip */}
+                            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--action)]/10 text-[var(--action)] text-[10px] uppercase font-black tracking-wider border border-[var(--action)]/20">
+                                {isFirst && <span className="animate-pulse">🔥</span>}
+                                {isCollectorRanking
+                                    ? `${(novel.collectorCount ?? 0).toLocaleString()} Collectors`
+                                    : isFirst ? 'Hot Ranking' : `${(novel.views ?? 0).toLocaleString()} Views`
+                                }
+                            </div>
                         </div>
                     </Link>
                 );

@@ -1,6 +1,6 @@
 import { DrizzleD1Database } from 'drizzle-orm/d1';
-import { novels } from '@/db/schema'; // Schema လမ်းကြောင်း မှန်ပါစေ
-import { eq, desc, sql } from 'drizzle-orm';
+import { novels, collections } from '@/db/schema'; // Schema လမ်းကြောင်း မှန်ပါစေ
+import { eq, desc, sql, count } from 'drizzle-orm';
 
 // 👇 Function အားလုံးကို db (Drizzle Instance) တစ်ခုတည်းသာ လက်ခံအောင် ပြင်ထားပါတယ်
 // ❌ getDb() ကို ထပ်သုံးစရာ မလိုတော့ပါဘူး
@@ -115,3 +115,26 @@ export const searchNovels = cache(async (db: DrizzleD1Database<Record<string, un
     .limit(limit)
     .all();
 });
+
+// ၈။ Ranking Page - Collector အများဆုံး ဝတ္ထုများ
+export const getTopNovelsByCollectors = cache(async (db: DrizzleD1Database<Record<string, unknown>>, limit: number = 20) => {
+  return await db
+    .select({
+      id: novels.id,
+      title: novels.title,
+      slug: novels.slug,
+      author: novels.author,
+      coverUrl: novels.coverUrl,
+      status: novels.status,
+      views: novels.views,
+      description: novels.description,
+      tags: novels.tags,
+      collectorCount: count(collections.id),
+    })
+    .from(novels)
+    .leftJoin(collections, eq(collections.novelId, novels.id))
+    .groupBy(novels.id)
+    .orderBy(desc(count(collections.id)), desc(novels.views))
+    .limit(limit)
+    .all();
+});

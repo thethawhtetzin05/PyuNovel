@@ -1,6 +1,5 @@
 import { Link } from '@/i18n/routing';
 import Image from "next/image";
-import { novels } from "@/db/schema";
 
 interface Novel {
     id: number;
@@ -11,14 +10,18 @@ interface Novel {
     status?: "completed" | "ongoing" | "hiatus" | null;
     views?: number | null;
     tags?: string | null;
+    collectorCount?: number | null;
 }
 
 interface Props {
     novel: Novel;
     rank: number;
+    rankingType?: string;
 }
 
-export default function RankingRow({ novel, rank }: Props) {
+export default function RankingRow({ novel, rank, rankingType }: Props) {
+    const isCollectorRanking = rankingType === 'collector';
+
     return (
         <Link
             href={`/novel/${novel.slug}`}
@@ -49,10 +52,19 @@ export default function RankingRow({ novel, rank }: Props) {
                 <p className="text-xs text-[var(--text-muted)] mt-1 truncate">By <span className="font-medium text-[var(--foreground)]">{novel.author}</span></p>
 
                 <div className="flex items-center gap-4 mt-3">
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-xs">👁️</span>
-                        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{novel.views?.toLocaleString()} Views</span>
-                    </div>
+                    {isCollectorRanking ? (
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-xs">🔖</span>
+                            <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                {(novel.collectorCount ?? 0).toLocaleString()} Collectors
+                            </span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-xs">👁️</span>
+                            <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{novel.views?.toLocaleString()} Views</span>
+                        </div>
+                    )}
                     <div className="flex items-center gap-1.5">
                         <span className="text-xs">🏷️</span>
                         <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider line-clamp-1">

@@ -1,7 +1,7 @@
 import React from 'react';
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { drizzle } from 'drizzle-orm/d1';
-import { getTopNovelsByViews, getLatestNovels, getRecentlyUpdatedNovels } from '@/lib/resources/novels/queries';
+import { getTopNovelsByViews, getLatestNovels, getRecentlyUpdatedNovels, getTopNovelsByCollectors } from '@/lib/resources/novels/queries';
 import RankingSpotlight from '@/components/novel/RankingSpotlight';
 import RankingRow from '@/components/novel/RankingRow';
 import { Link } from '@/i18n/routing';
@@ -19,7 +19,7 @@ export default async function RankingPage({
     const { env } = getRequestContext();
     const db = drizzle(env.DB);
 
-    let rankedNovels = [];
+    let rankedNovels: Record<string, unknown>[] = [];
     let title = "";
     let subtitle = "";
 
@@ -34,6 +34,11 @@ export default async function RankingPage({
             title = "Recently Updated";
             subtitle = "Follow the latest chapters from ongoing series.";
             break;
+        case 'collector':
+            rankedNovels = await getTopNovelsByCollectors(db, 20);
+            title = "Most Collected";
+            subtitle = "Stories that readers love enough to save to their library.";
+            break;
         default:
             rankedNovels = await getTopNovelsByViews(db, 20);
             title = "Most Popular";
@@ -45,6 +50,7 @@ export default async function RankingPage({
 
     const tabs = [
         { id: 'popular', label: 'Most Popular', icon: '🔥' },
+        { id: 'collector', label: 'Most Collected', icon: '🔖' },
         { id: 'new', label: 'New Releases', icon: '✨' },
         { id: 'updated', label: 'Recently Updated', icon: '🔄' },
     ];
@@ -100,7 +106,7 @@ export default async function RankingPage({
                         </div>
 
                         {/* Top 3 Spotlight */}
-                        <RankingSpotlight novels={spotlight} />
+                        <RankingSpotlight novels={spotlight} rankingType={type} />
 
                         {/* Rank List (4-20) */}
                         <div className="mt-12 space-y-4">
@@ -109,6 +115,7 @@ export default async function RankingPage({
                                     key={novel.slug}
                                     novel={novel}
                                     rank={index + 4}
+                                    rankingType={type}
                                 />
                             ))}
                         </div>

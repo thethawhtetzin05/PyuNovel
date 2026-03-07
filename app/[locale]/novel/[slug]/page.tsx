@@ -2,14 +2,13 @@ import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getNovelBySlug } from '@/lib/resources/novels/queries';
 import { getChaptersByNovelId } from '@/lib/resources/chapters/queries';
 import { getVolumesByNovelId } from '@/lib/resources/volumes/queries';
-import { isNovelCollected } from '@/lib/resources/collections/queries';
+import { isNovelCollected, getCollectionCountByNovelId } from '@/lib/resources/collections/queries';
 import { getReviewsByNovelId, getUserReview } from '@/lib/resources/reviews/queries';
 import { notFound } from 'next/navigation';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import NovelTabs from './novel-tabs';
 import CollectButton from './collect-button';
-import ReviewSection from '@/components/novel/review-section';
 import DownloadButton from '@/components/novel/OfflineDownloadButton';
 import ViewTracker from './view-tracker';
 import { Link } from '@/i18n/routing';
@@ -113,6 +112,9 @@ export default async function NovelDetailsPage({ params }: Props) {
   // Reviews data ယူမယ်
   const reviews = await getReviewsByNovelId(db, novel.id);
 
+  // Collector count ယူမယ်
+  const collectorCount = await getCollectionCountByNovelId(db, novel.id);
+
   // Tags စာရင်းကို Array ပြောင်းမယ် (ကော်မာ၊ Space တွေ ရှင်းမယ်)
   const tagsList = novel.tags
     ? novel.tags.split(',').map(tag => tag.trim()).filter(t => t.length > 0)
@@ -179,6 +181,14 @@ export default async function NovelDetailsPage({ params }: Props) {
               {(novel.views || 0).toLocaleString()} Views
             </span>
 
+            {/* Collectors Badge */}
+            <span className="px-3 py-1 rounded-full text-[11px] font-bold tracking-wider bg-amber-100 text-amber-700 border border-amber-200 flex items-center gap-1 shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+              </svg>
+              {collectorCount.toLocaleString()} Collectors
+            </span>
+
             {/* Tags Badges */}
             {tagsList.map((tag, index) => (
               <span key={index} className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[var(--surface-2)] text-[var(--foreground)] border border-[var(--border)]">
@@ -224,8 +234,8 @@ export default async function NovelDetailsPage({ params }: Props) {
         </div>
       </div>
 
-      {/* TABS & DESCRIPTION SECTION */}
-      <div className="mt-16 border-t border-gray-100 pt-8">
+      {/* TABS & CONTENT SECTION */}
+      <div className="mt-16 border-t border-[var(--border)] pt-8">
         <NovelTabs
           novelSlug={novel.slug}
           novelId={novel.id}
@@ -233,14 +243,6 @@ export default async function NovelDetailsPage({ params }: Props) {
           chapters={formattedChapters}
           volumes={volumes}
           isOwner={isOwner}
-        />
-      </div>
-
-      {/* REVIEWS SECTION */}
-      <div className="mt-4">
-        <ReviewSection
-          novelId={novel.id}
-          novelSlug={novel.slug}
           reviews={reviews as any}
           userReview={userReview}
           isLoggedIn={!!session?.user}

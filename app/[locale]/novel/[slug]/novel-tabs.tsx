@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic';
 import { ConfirmModal, AlertModal } from '@/components/ui/Modals';
 
 const BulkUploadModal = dynamic(() => import('./bulk-upload-modal'), { ssr: false });
+import ReviewSection from '@/components/novel/review-section';
 
 interface Volume {
   id: number;
@@ -32,6 +33,9 @@ interface NovelTabsProps {
   chapters: Chapter[];
   volumes?: Volume[];
   isOwner?: boolean;
+  reviews?: Record<string, unknown>[];
+  userReview?: Record<string, unknown> | null;
+  isLoggedIn?: boolean;
 }
 
 export default function NovelTabs({
@@ -40,11 +44,14 @@ export default function NovelTabs({
   description,
   chapters,
   volumes = [],
-  isOwner = false
+  isOwner = false,
+  reviews = [],
+  userReview = null,
+  isLoggedIn = false
 }: NovelTabsProps) {
   const router = useRouter();
   const t = useTranslations('Navbar');
-  const [activeTab, setActiveTab] = useState<'about' | 'chapters'>('about');
+  const [activeTab, setActiveTab] = useState<'about' | 'chapters' | 'reviews'>('about');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [chapterToDelete, setChapterToDelete] = useState<Chapter | null>(null);
   const [alertMsg, setAlertMsg] = useState('');
@@ -76,7 +83,7 @@ export default function NovelTabs({
       } else {
         setAlertMsg(res.error || "Failed to delete chapter");
       }
-    } catch (error) {
+    } catch {
       setAlertMsg("An error occurred while deleting the chapter");
     } finally {
       setIsDeleting(null);
@@ -178,6 +185,18 @@ export default function NovelTabs({
             </span>
             {activeTab === 'chapters' && <div className="absolute bottom-0 left-0 w-full h-1 bg-[var(--action)] rounded-t-full"></div>}
           </button>
+
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`pb-4 text-xl font-bold transition-all relative flex items-center gap-2 ${activeTab === 'reviews' ? 'text-[var(--foreground)]' : 'text-[var(--text-muted)] hover:text-[var(--foreground)]'
+              }`}
+          >
+            Reviews
+            <span className="text-xs bg-[var(--surface-2)] text-[var(--foreground)] px-2.5 py-0.5 rounded-full border border-[var(--border)] font-extrabold">
+              {reviews.length}
+            </span>
+            {activeTab === 'reviews' && <div className="absolute bottom-0 left-0 w-full h-1 bg-[var(--action)] rounded-t-full"></div>}
+          </button>
         </div>
 
         {/* 2. Content Area */}
@@ -271,6 +290,19 @@ export default function NovelTabs({
                   <span className="text-[var(--text-muted)] opacity-60 text-sm mt-2 block">New chapters coming soon!</span>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* REVIEWS TAB */}
+          {activeTab === 'reviews' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <ReviewSection
+                novelId={novelId}
+                novelSlug={novelSlug}
+                reviews={reviews as Record<string, unknown>[]}
+                userReview={userReview}
+                isLoggedIn={isLoggedIn}
+              />
             </div>
           )}
         </div>
