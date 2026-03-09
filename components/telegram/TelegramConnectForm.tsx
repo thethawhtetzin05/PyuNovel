@@ -156,7 +156,7 @@ export default function TelegramConnectForm({
                                         <div className="p-6 rounded-2xl bg-background/50 border border-border/50 space-y-3">
                                             <Badge className="bg-primary/10 text-primary border-none font-bold">Step 1</Badge>
                                             <p className="text-sm font-bold leading-relaxed">
-                                                {t('openBot')}: <a href="https://t.me/PyuNovel_Bot" target="_blank" className="text-primary hover:underline decoration-2 underline-offset-2">@PyuNovel_Bot</a>
+                                                {t('openBot')}: <a href="https://t.me/pyunovel_userbot" target="_blank" className="text-primary hover:underline decoration-2 underline-offset-2">@pyunovel_userbot</a>
                                             </p>
                                         </div>
                                         <div className="p-6 rounded-2xl bg-background/50 border border-border/50 space-y-3">
@@ -169,17 +169,17 @@ export default function TelegramConnectForm({
 
                                     <div className="relative group">
                                         <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[2rem] blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
-                                        <div className="relative flex items-center gap-4 bg-background p-3 rounded-[1.5rem] border border-border/50 shadow-inner">
-                                            <div className="flex-1 px-6 py-4 font-mono text-2xl font-black tracking-[0.3em] text-primary text-center">
+                                        <div className="relative flex items-center gap-2 bg-background p-3 rounded-[1.5rem] border border-border/50 shadow-inner overflow-hidden">
+                                            <div className="flex-1 px-2 sm:px-6 py-4 font-mono text-xl sm:text-2xl font-black tracking-[0.2em] sm:tracking-[0.3em] text-primary text-center truncate">
                                                 {token}
                                             </div>
                                             <Button
                                                 variant="secondary"
                                                 size="icon"
                                                 onClick={copyToClipboard}
-                                                className="h-14 w-14 rounded-2xl shrink-0 shadow-sm bg-muted hover:bg-primary hover:text-white transition-all"
+                                                className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl shrink-0 shadow-sm bg-muted hover:bg-primary hover:text-white transition-all ml-auto"
                                             >
-                                                {copied ? <Check size={24} className="animate-in zoom-in duration-300" /> : <Copy size={24} />}
+                                                {copied ? <Check size={20} className="animate-in zoom-in duration-300" /> : <Copy size={20} />}
                                             </Button>
                                         </div>
                                     </div>
