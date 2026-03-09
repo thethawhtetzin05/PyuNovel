@@ -3,13 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Link } from '@/i18n/routing';
-import { Calendar, Crown, Folder, Pencil, Trash2, ChevronRight, UploadCloud, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, Crown, Folder, Pencil, Trash2, ChevronRight, UploadCloud, ChevronDown, ChevronUp, MessageSquare, BookOpen, Info } from "lucide-react";
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import { ConfirmModal, AlertModal } from '@/components/ui/Modals';
 
 const BulkUploadModal = dynamic(() => import('./bulk-upload-modal'), { ssr: false });
 import ReviewSection from '@/components/novel/review-section';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 
 interface Volume {
   id: number;
@@ -63,7 +67,6 @@ export default function NovelTabs({
 }: NovelTabsProps) {
   const router = useRouter();
   const t = useTranslations('Navbar');
-  const [activeTab, setActiveTab] = useState<'about' | 'chapters' | 'reviews'>('about');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [chapterToDelete, setChapterToDelete] = useState<Chapter | null>(null);
   const [alertMsg, setAlertMsg] = useState('');
@@ -106,65 +109,63 @@ export default function NovelTabs({
   const renderChapter = (chapter: Chapter) => (
     <div
       key={chapter.id}
-      className={`group relative flex items-center justify-between p-4 bg-[var(--surface)] border border-[var(--border)] rounded-xl hover:border-[var(--action)]/50 hover:shadow-lg transition-all ${isDeleting === chapter.id ? "opacity-50 pointer-events-none" : ""
+      className={`group relative flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:border-primary/50 hover:shadow-md transition-all ${isDeleting === chapter.id ? "opacity-50 pointer-events-none" : ""
         }`}
     >
       <Link
         href={`/novel/${novelSlug}/${chapter.sortIndex}`}
         className="flex-1 flex items-center gap-4 min-w-0 cursor-pointer"
       >
-        <span className="text-sm font-bold text-[var(--text-muted)] bg-[var(--surface-2)] px-3 py-1.5 rounded-lg min-w-[3.5rem] text-center group-hover:bg-[var(--action)]/10 group-hover:text-[var(--action)] transition-colors border border-[var(--border)]">
+        <span className="text-sm font-bold text-muted-foreground bg-muted px-3 py-1.5 rounded-lg min-w-[3.5rem] text-center group-hover:bg-primary/10 group-hover:text-primary transition-colors border border-border">
           #{chapter.sortIndex}
         </span>
 
         <div className="min-w-0">
-          <h4 className="font-bold text-[var(--foreground)] group-hover:text-[var(--action)] transition-colors text-lg truncate pr-4">
+          <h4 className="font-bold text-foreground group-hover:text-primary transition-colors text-lg truncate pr-4">
             {chapter.title}
           </h4>
-          <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mt-1">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
             <Calendar size={12} />
             <span>{new Date(chapter.createdAt || new Date()).toLocaleDateString()}</span>
           </div>
         </div>
       </Link>
 
-      <div className="flex items-center gap-3 shrink-0 pl-4 border-l border-[var(--border)] ml-4">
+      <div className="flex items-center gap-3 shrink-0 pl-4 border-l border-border ml-4">
         {chapter.isPaid && (
-          <div className="flex items-center gap-1 text-[var(--accent)] bg-[var(--accent)]/10 px-2.5 py-1 rounded-full text-xs font-bold border border-[var(--accent)]/30">
+          <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30 gap-1 font-bold">
             <Crown size={12} fill="currentColor" />
-            <span>VIP</span>
-          </div>
+            VIP
+          </Badge>
         )}
 
         {isOwner && (
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/novel/${novelSlug}/${chapter.sortIndex}/edit`}
-              className="p-2 text-[var(--text-muted)] hover:text-[var(--action)] hover:bg-[var(--surface-2)] rounded-full transition-colors"
-              title="Edit Chapter"
-            >
-              <Pencil size={18} />
-            </Link>
+          <div className="flex items-center gap-1">
+            <Button asChild variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:text-primary hover:bg-primary/10">
+              <Link href={`/novel/${novelSlug}/${chapter.sortIndex}/edit`} title="Edit Chapter">
+                <Pencil size={18} />
+              </Link>
+            </Button>
 
-            <button
-              onClick={(e) => handleDelete(e, chapter)}
-              className="p-2 text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
-              title="Delete Chapter"
-              disabled={isDeleting === chapter.id}
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-9 w-9 rounded-full hover:text-destructive hover:bg-destructive/10"
+                onClick={(e) => handleDelete(e, chapter)}
+                disabled={isDeleting === chapter.id}
+                title="Delete Chapter"
             >
               {isDeleting === chapter.id ? (
-                <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-destructive border-t-transparent rounded-full animate-spin"></div>
               ) : (
                 <Trash2 size={18} />
               )}
-            </button>
+            </Button>
           </div>
         )}
 
         {!isOwner && (
-          <Link href={`/novel/${novelSlug}/${chapter.sortIndex}`}>
-            <ChevronRight className="text-[var(--text-muted)] group-hover:text-[var(--action)] transition-colors" size={20} />
-          </Link>
+          <ChevronRight className="text-muted-foreground group-hover:text-primary transition-colors" size={20} />
         )}
       </div>
     </div>
@@ -175,138 +176,137 @@ export default function NovelTabs({
   return (
     <>
       <div className="mt-8">
-        {/* 1. Tab Headers */}
-        <div className="flex gap-4 sm:gap-8 border-b border-[var(--border)] mb-8 overflow-x-auto whitespace-nowrap scrollbar-hide w-full">
-          <button
-            onClick={() => setActiveTab('about')}
-            className={`pb-4 text-xl font-bold transition-all relative ${activeTab === 'about' ? 'text-[var(--foreground)]' : 'text-[var(--text-muted)] hover:text-[var(--foreground)]'
-              }`}
-          >
-            About
-            {activeTab === 'about' && <div className="absolute bottom-0 left-0 w-full h-1 bg-[var(--action)] rounded-t-full"></div>}
-          </button>
+        <Tabs defaultValue="about" className="w-full">
+          <TabsList className="w-full justify-start bg-transparent border-b border-border rounded-none h-auto p-0 mb-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
+            <TabsTrigger 
+                value="about" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 text-lg font-bold transition-all gap-2"
+            >
+              <Info size={18} />
+              About
+            </TabsTrigger>
+            <TabsTrigger 
+                value="chapters" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 text-lg font-bold transition-all gap-2"
+            >
+              <BookOpen size={18} />
+              Chapters
+              <Badge variant="secondary" className="ml-1 px-2 py-0 h-5 font-black bg-muted text-foreground border-none">
+                {chapters.length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger 
+                value="reviews" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 text-lg font-bold transition-all gap-2"
+            >
+              <MessageSquare size={18} />
+              Reviews
+              <Badge variant="secondary" className="ml-1 px-2 py-0 h-5 font-black bg-muted text-foreground border-none">
+                {reviews.length}
+              </Badge>
+            </TabsTrigger>
+          </TabsList>
 
-          <button
-            onClick={() => setActiveTab('chapters')}
-            className={`pb-4 text-xl font-bold transition-all relative flex items-center gap-2 ${activeTab === 'chapters' ? 'text-[var(--foreground)]' : 'text-[var(--text-muted)] hover:text-[var(--foreground)]'
-              }`}
-          >
-            Chapters
-            <span className="text-xs bg-[var(--surface-2)] text-[var(--foreground)] px-2.5 py-0.5 rounded-full border border-[var(--border)] font-extrabold">
-              {chapters.length}
-            </span>
-            {activeTab === 'chapters' && <div className="absolute bottom-0 left-0 w-full h-1 bg-[var(--action)] rounded-t-full"></div>}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('reviews')}
-            className={`pb-4 text-xl font-bold transition-all relative flex items-center gap-2 ${activeTab === 'reviews' ? 'text-[var(--foreground)]' : 'text-[var(--text-muted)] hover:text-[var(--foreground)]'
-              }`}
-          >
-            Reviews
-            <span className="text-xs bg-[var(--surface-2)] text-[var(--foreground)] px-2.5 py-0.5 rounded-full border border-[var(--border)] font-extrabold">
-              {reviews.length}
-            </span>
-            {activeTab === 'reviews' && <div className="absolute bottom-0 left-0 w-full h-1 bg-[var(--action)] rounded-t-full"></div>}
-          </button>
-        </div>
-
-        {/* 2. Content Area */}
-        <div>
-          {/* ABOUT TAB */}
-          {activeTab === 'about' && (
+          <TabsContent value="about" className="mt-0 focus-visible:outline-none">
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <p className="text-[17px] leading-8 text-[var(--text-muted)] whitespace-pre-line text-justify md:text-left font-serif">
+              <p className="text-[17px] leading-8 text-muted-foreground whitespace-pre-line text-justify md:text-left font-serif">
                 {description || "No synopsis available."}
               </p>
             </div>
-          )}
+          </TabsContent>
 
-          {/* CHAPTERS TAB */}
-          {activeTab === 'chapters' && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-3">
-              {/* Upload File button for owners */}
-              {isOwner && (
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => setShowBulkUpload(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold btn-primary transition-transform active:scale-95"
-                  >
-                    <UploadCloud size={16} />
-                    {t('bulkUpload')}
-                  </button>
-                </div>
-              )}
+          <TabsContent value="chapters" className="mt-0 focus-visible:outline-none space-y-6">
+            {/* Upload File button for owners */}
+            {isOwner && (
+              <div className="flex justify-end">
+                <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm" className="gap-2 font-bold rounded-xl border-primary/30 hover:bg-primary/5 hover:text-primary">
+                  <UploadCloud size={16} />
+                  {t('bulkUpload')}
+                </Button>
+              </div>
+            )}
 
-              {chapters.length > 0 ? (
-                <div className="space-y-6">
-                  {/* Unassigned Chapters (Only show if there are actual unassigned chapters. And if there are volumes, give it a 'No Volume' header) */}
-                  {unassignedChapters.length > 0 && (
-                    <div className="space-y-3">
-                      {volumes.length > 0 && (
-                        <div
-                          className="flex items-center justify-between cursor-pointer group"
-                          onClick={() => toggleVolume('unassigned')}
-                        >
-                          <h3 className="font-bold text-[var(--foreground)] text-lg flex items-center gap-2 group-hover:text-[var(--action)] transition-colors">
-                            <Folder size={20} className="text-[var(--action)]" />
-                            No Volume
-                          </h3>
-                          {expandedVolumes['unassigned'] ? (
-                            <ChevronUp size={20} className="text-[var(--text-muted)] group-hover:text-[var(--action)] transition-colors" />
-                          ) : (
-                            <ChevronDown size={20} className="text-[var(--text-muted)] group-hover:text-[var(--action)] transition-colors" />
-                          )}
+            {chapters.length > 0 ? (
+              <div className="space-y-8">
+                {/* Unassigned Chapters */}
+                {unassignedChapters.length > 0 && (
+                  <div className="space-y-3">
+                    {volumes.length > 0 && (
+                      <div
+                        className="flex items-center justify-between cursor-pointer group mb-2"
+                        onClick={() => toggleVolume('unassigned')}
+                      >
+                        <h3 className="font-bold text-foreground text-lg flex items-center gap-2 group-hover:text-primary transition-colors">
+                          <Folder size={20} className="text-primary" />
+                          No Volume
+                        </h3>
+                        {expandedVolumes['unassigned'] ? (
+                          <ChevronUp size={20} className="text-muted-foreground group-hover:text-primary" />
+                        ) : (
+                          <ChevronDown size={20} className="text-muted-foreground group-hover:text-primary" />
+                        )}
+                      </div>
+                    )}
+                    {(!volumes.length || !expandedVolumes['unassigned']) && (
+                        <div className="space-y-3">
+                            {unassignedChapters.map(renderChapter)}
                         </div>
-                      )}
-                      {/* Show chapters if expanded, or if there are no volumes at all (so it defaults to always open) */}
-                      {(!volumes.length || !expandedVolumes['unassigned']) && unassignedChapters.map(renderChapter)}
-                    </div>
-                  )}
+                    )}
+                  </div>
+                )}
 
-                  {/* Volumes */}
-                  {volumes.map(volume => {
-                    const volumeChapters = chapters.filter(c => c.volumeId === volume.id);
-                    if (volumeChapters.length === 0) return null;
-                    const isExpanded = !expandedVolumes[volume.id.toString()]; // Default: Open
+                {/* Volumes */}
+                {volumes.map(volume => {
+                  const volumeChapters = chapters.filter(c => c.volumeId === volume.id);
+                  if (volumeChapters.length === 0) return null;
+                  const isExpanded = !expandedVolumes[volume.id.toString()];
 
-                    return (
-                      <div key={volume.id} className="space-y-3 mt-8">
-                        <div
-                          className="flex items-center justify-between cursor-pointer group border-b border-[var(--border)] pb-2"
-                          onClick={() => toggleVolume(volume.id.toString())}
-                        >
-                          <h3 className="font-bold text-[var(--foreground)] text-lg flex items-center gap-2 group-hover:text-[var(--action)] transition-colors">
-                            <Folder size={20} className="text-[var(--action)]" />
-                            {volume.name}
-                          </h3>
-                          {isExpanded ? (
-                            <ChevronUp size={20} className="text-[var(--text-muted)] group-hover:text-[var(--action)] transition-colors" />
-                          ) : (
-                            <ChevronDown size={20} className="text-[var(--text-muted)] group-hover:text-[var(--action)] transition-colors" />
-                          )}
+                  return (
+                    <div key={volume.id} className="space-y-4">
+                      <div
+                        className="flex items-center justify-between cursor-pointer group"
+                        onClick={() => toggleVolume(volume.id.toString())}
+                      >
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                                <Folder size={20} />
+                            </div>
+                            <h3 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">
+                                {volume.name}
+                            </h3>
+                            <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground border-border">
+                                {volumeChapters.length} Chapters
+                            </Badge>
                         </div>
-                        {/* Chapters Container */}
-                        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[5000px] opacity-100 mt-4' : 'max-h-0 opacity-0 mb-0'}`}>
-                          <div className="space-y-3 pb-2 pt-1">
-                            {volumeChapters.map(renderChapter)}
-                          </div>
+                        {isExpanded ? (
+                          <ChevronUp size={20} className="text-muted-foreground group-hover:text-primary" />
+                        ) : (
+                          <ChevronDown size={20} className="text-muted-foreground group-hover:text-primary" />
+                        )}
+                      </div>
+                      <Separator className="bg-border/60" />
+                      
+                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[5000px] opacity-100 mt-2' : 'max-h-0 opacity-0 mb-0'}`}>
+                        <div className="grid gap-3 pb-2 pt-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1">
+                          {volumeChapters.map(renderChapter)}
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-muted/30 rounded-2xl p-16 text-center border-2 border-dashed border-border">
+                <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <BookOpen size={32} className="text-muted-foreground" />
                 </div>
-              ) : (
-                <div className="bg-[var(--surface-2)] rounded-xl p-12 text-center border-2 border-dashed border-[var(--border)]">
-                  <p className="text-[var(--text-muted)] font-medium text-lg">No chapters uploaded yet.</p>
-                  <span className="text-[var(--text-muted)] opacity-60 text-sm mt-2 block">New chapters coming soon!</span>
-                </div>
-              )}
-            </div>
-          )}
+                <h3 className="text-xl font-bold text-foreground">No chapters yet</h3>
+                <p className="text-muted-foreground mt-2 max-w-xs mx-auto">New chapters coming soon! Check back later or follow the novel.</p>
+              </div>
+            )}
+          </TabsContent>
 
-          {/* REVIEWS TAB */}
-          {activeTab === 'reviews' && (
+          <TabsContent value="reviews" className="mt-0 focus-visible:outline-none">
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               <ReviewSection
                 novelId={novelId}
@@ -316,8 +316,8 @@ export default function NovelTabs({
                 isLoggedIn={isLoggedIn}
               />
             </div>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Bulk Upload Modal */}
