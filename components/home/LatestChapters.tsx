@@ -38,16 +38,16 @@ export default function LatestChapters({ chapters }: Props) {
                     <Link
                         key={chapter.id}
                         href={`/novel/${chapter.novelSlug}/${chapter.sortIndex}`}
-                        className="group flex gap-3.5 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--action)]/50 hover:shadow-md transition-all"
+                        className="group flex gap-3.5 p-3 rounded-[1.25rem] bg-card border border-border/20 hover:border-primary/20 hover:shadow-md transition-all duration-300"
                     >
                         {/* Cover */}
-                        <div className="relative w-[60px] h-[80px] sm:w-[70px] sm:h-[96px] shrink-0 rounded-lg overflow-hidden bg-[var(--surface-2)] shadow-sm">
+                        <div className="relative w-[60px] h-[80px] sm:w-[70px] sm:h-[96px] shrink-0 rounded-xl overflow-hidden bg-muted shadow-sm border border-border/20">
                             {chapter.novelCoverUrl ? (
                                 <Image
                                     src={chapter.novelCoverUrl}
                                     alt={chapter.novelTitle}
                                     fill
-                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                    className="object-cover group-hover:scale-105 transition-transform duration-500"
                                     sizes="70px"
                                 />
                             ) : (
@@ -57,19 +57,19 @@ export default function LatestChapters({ chapters }: Props) {
 
                         {/* Info */}
                         <div className="flex flex-col flex-1 min-w-0 justify-center py-0.5">
-                            <h3 className="text-[var(--foreground)] font-bold text-[13px] sm:text-sm leading-snug line-clamp-1 group-hover:text-[var(--action)] transition-colors">
+                            <h3 className="text-foreground font-bold text-[13px] sm:text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors duration-200">
                                 {chapter.novelTitle}
                             </h3>
                             <div className="flex items-center gap-2 mt-1.5 sm:mt-2">
-                                <span className="text-[10px] sm:text-[11px] font-bold px-1.5 py-0.5 rounded bg-[var(--surface-2)] text-[var(--text-muted)] border border-[var(--border)] shrink-0">
+                                <span className="text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/10 shrink-0">
                                     Ch {chapter.sortIndex}
                                 </span>
-                                <span className="text-xs sm:text-[13px] text-[var(--text-muted)] truncate font-medium">
+                                <span className="text-xs sm:text-[13px] text-muted-foreground truncate font-medium group-hover:text-foreground transition-colors duration-200">
                                     {chapter.title}
                                 </span>
                             </div>
                             <div className="mt-auto pt-2 flex items-center justify-between">
-                                <span className="text-[10px] sm:text-[11px] text-[var(--text-muted)] truncate">
+                                <span className="text-[10px] sm:text-[11px] text-muted-foreground/70 truncate font-medium group-hover:text-muted-foreground transition-colors duration-200">
                                     {chapter.novelAuthor}
                                 </span>
                             </div>
