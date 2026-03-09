@@ -151,7 +151,7 @@ export default async function NovelDetailsPage({ params }: Props) {
         <div className="flex flex-col flex-1 py-1 text-center md:text-left w-full">
 
           {/* Title */}
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-[var(--foreground)] leading-[1.1] mb-4 tracking-tight break-words">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-[var(--foreground)] leading-snug md:leading-tight mb-4 tracking-tight break-words">
             {novel.title}
           </h1>
 
