@@ -10,6 +10,7 @@ import { novels } from "@/db/schema";
 import CinematicHero from '@/components/home/CinematicHero';
 import LatestChapters from '@/components/home/LatestChapters';
 import ContinueReadingBanner from '@/components/home/ContinueReading';
+import { NovelCard } from '@/components/novel/NovelCard';
 import { getTranslations } from 'next-intl/server';
 
 export const runtime = 'edge';
@@ -122,39 +123,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
             </div>
             <div className="grid grid-cols-2 min-[480px]:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-5 pb-4">
               {spotlightNovels.slice(0, 7).map((novel, idx) => (
-                <Link href={`/novel/${novel.slug}`} key={novel.slug} className="group relative rounded-xl overflow-hidden bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--action)]/50 transition-colors shadow-sm hover:shadow-md">
-                  <div className="relative w-full aspect-[2/3] bg-[var(--surface-2)]">
-                    {novel.coverUrl ? (
-                      <Image
-                        src={novel.coverUrl}
-                        alt={novel.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        sizes="(max-width: 1024px) 50vw, 20vw"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-3xl">📚</div>
-                    )}
-                    {/* Dark gradient for text overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent pointer-events-none" />
-
-                    {/* Rank Number Overlay */}
-                    <div className="absolute bottom-[18%] left-2 text-[80px] font-black italic leading-none pointer-events-none opacity-40 group-hover:opacity-60 transition-opacity" style={{ color: "transparent", WebkitTextStroke: "2px rgba(255,255,255,0.7)" }}>
-                      {idx + 1}
-                    </div>
-
-                    {/* Meta */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 pt-10">
-                      <div className="flex items-center gap-1.5 mb-1 shadow-sm">
-                        <span className="text-[var(--accent)] text-xs">👍</span>
-                        <span className="text-white text-xs font-bold">100%</span>
-                      </div>
-                      <h3 className="text-white font-bold text-sm leading-snug line-clamp-2 drop-shadow-md">
-                        {novel.title}
-                      </h3>
-                    </div>
-                  </div>
-                </Link>
+                <NovelCard 
+                  key={novel.slug} 
+                  novel={novel as any} 
+                  variant="ranked" 
+                  rank={idx + 1} 
+                />
               ))}
             </div>
           </section>
@@ -174,32 +148,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
           <div className="grid grid-cols-2 min-[480px]:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-5 pb-4">
             {latestNovels.slice(0, 14).map((novel) => (
-              <Link href={`/novel/${novel.slug}`} key={novel.slug} className="group flex flex-col gap-2">
-                <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden bg-[var(--surface-2)] border border-[var(--border)] group-hover:border-[var(--action)]/50 transition-all">
-                  {novel.status && (
-                    <div className="absolute top-2 left-2 z-10 bg-black/60 backdrop-blur-sm text-white text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded">
-                      {novel.status}
-                    </div>
-                  )}
-                  {novel.coverUrl ? (
-                    <Image
-                      src={novel.coverUrl}
-                      alt={novel.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      sizes="(max-width: 768px) 50vw, 16vw"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-2xl">📚</div>
-                  )}
-                </div>
-                <div className="flex flex-col py-1">
-                  <h3 className="text-[var(--foreground)] font-bold text-[13px] leading-snug line-clamp-2 group-hover:text-[var(--action)] transition-colors">
-                    {novel.title}
-                  </h3>
-                  <p className="text-xs text-[var(--text-muted)] mt-1 truncate font-medium">{novel.author}</p>
-                </div>
-              </Link>
+              <NovelCard 
+                key={novel.slug} 
+                novel={novel as any} 
+              />
             ))}
           </div>
         </section>
