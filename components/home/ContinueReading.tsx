@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Link } from '@/i18n/routing';
+import { Button } from "@/components/ui/button";
+import { BookOpen, X } from "lucide-react";
 
 type ReadingProgress = {
     slug: string;
@@ -40,38 +42,45 @@ export default function ContinueReadingBanner() {
 
     return (
         <div
-            className="flex items-center gap-3 px-4 py-3 rounded-xl mb-2 animate-fade-in"
-            style={{
-                background: "var(--accent-light)",
-                border: "1px solid var(--accent)",
-            }}
+            className="flex items-center gap-4 px-5 py-4 rounded-2xl mb-2 animate-in fade-in slide-in-from-right-4 duration-500 shadow-2xl border border-primary/20 backdrop-blur-md bg-card/95"
         >
-            <span className="text-base shrink-0">📖</span>
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary shadow-inner">
+                <BookOpen size={20} />
+            </div>
+            
             <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold truncate" style={{ color: "var(--foreground)" }}>
-                    {latest.novelTitle}
+                <p className="text-[10px] font-black uppercase tracking-wider text-primary mb-0.5">
+                    Continue Reading
                 </p>
-                <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>
+                <h4 className="text-sm font-bold truncate text-foreground leading-tight">
+                    {latest.novelTitle}
+                </h4>
+                <p className="text-[11px] truncate text-muted-foreground mt-0.5">
                     {latest.chapterTitle}
                 </p>
             </div>
-            <Link
-                href={`/novel/${latest.slug}/${latest.chapterId}`}
-                className="btn-primary px-4 py-1.5 text-xs font-semibold shrink-0"
-            >
-                Continue
-            </Link>
-            <button
-                type="button"
-                onClick={() => setLatest(null)}
-                className="p-1 rounded-lg transition opacity-40 hover:opacity-80 shrink-0"
-                style={{ color: "var(--accent)" }}
-                aria-label="Dismiss"
-            >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
+
+            <div className="flex items-center gap-2">
+                <Button
+                    asChild
+                    variant="default"
+                    size="sm"
+                    className="h-9 px-4 rounded-xl font-bold shadow-md shadow-primary/20"
+                >
+                    <Link href={`/novel/${latest.slug}/${latest.chapterId}`}>
+                        Read
+                    </Link>
+                </Button>
+                
+                <button
+                    type="button"
+                    onClick={() => setLatest(null)}
+                    className="p-1.5 rounded-full transition-colors hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
+                    aria-label="Dismiss"
+                >
+                    <X size={16} />
+                </button>
+            </div>
         </div>
     );
 }

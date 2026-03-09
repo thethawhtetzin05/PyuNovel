@@ -87,13 +87,13 @@ export default function Navbar() {
               </button>
 
               {/* Logo */}
-              <Link href="/" className="flex items-center gap-2 shrink-0">
+              <Link href="/" className="flex items-center gap-2 shrink-0 group">
                 <span
-                  className="text-xl font-extrabold tracking-tight"
+                  className="text-2xl font-black tracking-tighter transition-all group-hover:scale-105 active:scale-95"
                   style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
                 >
-                  <span className="gradient-text">Pyu</span>
-                  <span style={{ color: "var(--foreground)" }}>Novel</span>
+                  <span className="text-primary drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]">Pyu</span>
+                  <span className="text-foreground">Novel</span>
                 </span>
               </Link>
 

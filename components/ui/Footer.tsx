@@ -9,8 +9,9 @@ export default function Footer() {
     return (
         <footer className="border-t py-8 mt-4" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
             <div className="max-w-screen-xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <span className="text-sm font-semibold" style={{ fontFamily: "'Bricolage Grotesque', sans-serif", color: "var(--foreground)" }}>
-                    <span className="gradient-text">Pyu</span>Novel
+                <span className="text-xl font-black tracking-tighter" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
+                    <span className="text-primary">Pyu</span>
+                    <span className="text-foreground">Novel</span>
                 </span>
                 <div className="flex items-center gap-6 text-sm" style={{ color: "var(--text-muted)" }}>
                     <a href="/about" className="hover:text-[var(--foreground)] transition">About</a>
