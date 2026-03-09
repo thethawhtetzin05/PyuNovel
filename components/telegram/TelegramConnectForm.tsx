@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check, X, RefreshCw, Send, ShieldCheck } from "lucide-react";
+import { Copy, Check, X, RefreshCw, Send, ShieldCheck, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
