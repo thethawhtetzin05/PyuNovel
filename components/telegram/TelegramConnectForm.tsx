@@ -128,14 +128,14 @@ export default function TelegramConnectForm({
                             {!token ? (
                                 <div className="space-y-8">
                                     <p className="text-base text-muted-foreground leading-relaxed">
-                                        {t('telegramDesc')}. Publish novel chapters directly from Telegram by sending text or files to our bot.
+                                        {t('telegramGuide')}
                                     </p>
                                     <Button
                                         variant="premium"
                                         size="lg"
                                         onClick={generateToken}
                                         disabled={isLoading}
-                                        className="h-14 px-10 rounded-2xl shadow-xl shadow-blue-500/20 text-base"
+                                        className="w-full sm:w-auto h-14 px-6 sm:px-10 rounded-2xl shadow-xl shadow-blue-500/20 text-sm sm:text-base whitespace-nowrap"
                                     >
                                         {isLoading ? (
                                             <>

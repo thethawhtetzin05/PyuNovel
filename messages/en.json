@@ -20,7 +20,8 @@
         "generating": "Generating...",
         "openBot": "Open our Telegram Bot",
         "copyCode": "Copy the code below and send it to the bot.",
-        "codeExpiry": "Code expires in 5 minutes. Refresh after sending."
+        "codeExpiry": "Code expires in 5 minutes. Refresh after sending.",
+        "telegramGuide": "Publish novel chapters directly from Telegram. Send text or files to our bot and we'll handle the rest."
     },
     "Home": {
         "announcements": "Announcements",
