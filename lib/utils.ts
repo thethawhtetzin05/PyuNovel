@@ -108,3 +108,10 @@ export function parseChaptersFromText(raw: string, asHtml: boolean = true): Pars
 
   return chapters;
 }
+
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}

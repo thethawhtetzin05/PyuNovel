@@ -16,6 +16,7 @@ import Image from 'next/image';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from "@/db/schema"; // 👈 Schema import လုပ်ထားရမယ်
 import type { Metadata, ResolvingMetadata } from 'next';
+import { Button } from "@/components/ui/button";
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -202,16 +203,15 @@ export default async function NovelDetailsPage({ params }: Props) {
 
             {/* A. READ BUTTON (Primary Action) */}
             {firstChapter ? (
-              <Link
-                href={`/novel/${novel.slug}/${firstChapter.sortIndex}`}
-                className="w-full sm:w-auto h-12 px-8 rounded-xl bg-[var(--action)] hover:bg-[var(--action-hover)] text-white font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-[var(--action)]/20"
-              >
-                <span>📖 Read Now</span>
-              </Link>
+              <Button asChild variant="premium" size="lg" className="w-full sm:w-auto">
+                <Link href={`/novel/${novel.slug}/${firstChapter.sortIndex}`}>
+                  📖 Read Now
+                </Link>
+              </Button>
             ) : (
-              <button disabled className="w-full sm:w-auto h-12 px-8 rounded-xl bg-[var(--surface-2)] text-[var(--text-muted)] font-bold cursor-not-allowed flex items-center justify-center gap-2">
-                <span>🚫 No Chapters</span>
-              </button>
+              <Button disabled variant="secondary" size="lg" className="w-full sm:w-auto">
+                🚫 No Chapters
+              </Button>
             )}
 
             {/* B. COLLECT BUTTON (Secondary Action) */}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Button } from "@/components/ui/button";
 
 interface Props {
     novelId: number;
@@ -51,13 +52,12 @@ export default function CollectButton({ novelId, initialCollected, slug }: Props
     };
 
     return (
-        <button
+        <Button
+            variant={isCollected ? "default" : "outline"}
+            size="lg"
             onClick={handleToggle}
             disabled={isPending}
-            className={`w-full sm:w-auto h-12 px-6 rounded-xl font-bold border hover:border-[var(--action)] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm ${isCollected
-                ? "bg-[var(--surface)] text-[var(--action)] border-[var(--action)]"
-                : "bg-[var(--surface-2)] text-[var(--foreground)] border-[var(--border)] hover:text-[var(--action)] hover:bg-[var(--surface)]"
-                } ${isPending ? "opacity-70 cursor-not-allowed" : ""}`}
+            className={`w-full sm:w-auto ${isPending ? "opacity-70 cursor-not-allowed" : ""}`}
         >
             {isCollected ? (
                 // Filled SVG for Collected State
@@ -71,6 +71,6 @@ export default function CollectButton({ novelId, initialCollected, slug }: Props
                 </svg>
             )}
             <span>{isCollected ? "Collected" : "Collect"}</span>
-        </button>
+        </Button>
     );
 }
