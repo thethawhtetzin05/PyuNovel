@@ -54,7 +54,7 @@ export default function TelegramConnectForm({
         setIsLoading(true);
         try {
             await fetch(`${window.location.origin}/api/telegram/disconnect`, { method: 'POST' });
-            router.refresh(); 
+            router.refresh();
             setTimeout(() => window.location.reload(), 300);
         } catch (error) {
             console.error(error);
@@ -152,7 +152,7 @@ export default function TelegramConnectForm({
                                 </div>
                             ) : (
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <div className="grid gap-6 sm:grid-cols-2">
+                                    <div className="grid gap-6 sm:grid-cols-3">
                                         <div className="p-6 rounded-2xl bg-background/50 border border-border/50 space-y-3">
                                             <Badge className="bg-primary/10 text-primary border-none font-bold">Step 1</Badge>
                                             <p className="text-sm font-bold leading-relaxed">
@@ -161,6 +161,12 @@ export default function TelegramConnectForm({
                                         </div>
                                         <div className="p-6 rounded-2xl bg-background/50 border border-border/50 space-y-3">
                                             <Badge className="bg-primary/10 text-primary border-none font-bold">Step 2</Badge>
+                                            <p className="text-sm font-bold leading-relaxed">
+                                                {t('clickConnectAccount')}
+                                            </p>
+                                        </div>
+                                        <div className="p-6 rounded-2xl bg-background/50 border border-border/50 space-y-3">
+                                            <Badge className="bg-primary/10 text-primary border-none font-bold">Step 3</Badge>
                                             <p className="text-sm font-bold leading-relaxed">
                                                 {t('copyCode')}
                                             </p>
@@ -183,7 +189,7 @@ export default function TelegramConnectForm({
                                             </Button>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="flex items-center gap-3 text-sm text-muted-foreground bg-background/40 p-4 rounded-2xl border border-border/30">
                                         <Info size={18} className="text-primary shrink-0" />
                                         <span>{t('codeExpiry')}</span>

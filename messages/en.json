@@ -19,6 +19,7 @@
         "generateLink": "Generate Connection Link",
         "generating": "Generating...",
         "openBot": "Open our Telegram Bot",
+        "clickConnectAccount": "Click 'Connect Account'",
         "copyCode": "Copy the code below and send it to the bot.",
         "codeExpiry": "Code expires in 5 minutes. Refresh after sending.",
         "telegramGuide": "Publish novel chapters directly from Telegram. Send text or files to our bot and we'll handle the rest."
