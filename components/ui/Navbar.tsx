@@ -10,6 +10,7 @@ import ReportModal from "@/components/modals/ReportModal";
 import SearchModal from "@/components/modals/SearchModal";
 import { useTranslations } from 'next-intl';
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
 
 export default function Navbar() {
   const t = useTranslations('Navbar');
@@ -207,12 +208,11 @@ export default function Navbar() {
                   )}
                 </div>
               ) : (
-                <Link
-                  href="/sign-in"
-                  className="btn-primary px-5 py-2 text-sm"
-                >
-                  {t('signIn')}
-                </Link>
+                <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white rounded-full font-semibold text-sm px-6 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                  <Link href="/sign-in">
+                    {t('signIn')}
+                  </Link>
+                </Button>
               )}
             </div>
           </div>
