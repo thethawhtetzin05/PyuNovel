@@ -93,6 +93,16 @@ export default async function NovelDetailsPage({ params }: Props) {
   const session = sessionResult;
   const isOwner = session?.user?.id === novel.ownerId;
 
+  // ပထမဆုံး အခန်းကို ရှာထားမယ် (Read Button အတွက်)
+  const firstChapter = chapters.length > 0 ? chapters.sort((a, b) => a.sortIndex - b.sortIndex)[0] : null;
+
+  // ❗ Type Error မတက်အောင် chapters ကို NovelTabs လိုချင်တဲ့ ပုံစံပြောင်းမယ်
+  const formattedChapters = chapters.map((chapter) => ({
+    ...chapter,
+    id: chapter.id.toString(), // Number ကို String ပြောင်းမယ်
+    isPaid: chapter.isPaid ?? false, // null ဖြစ်နေရင် false သတ်မှတ်မယ်
+    volumeId: chapter.volumeId ?? null
+  }));
   // Tags စာရင်းကို Array ပြောင်းမယ် (ကော်မာ၊ Space တွေ ရှင်းမယ်)
   const tagsList = novel.tags
     ? novel.tags.split(',').map(tag => tag.trim()).filter(t => t.length > 0)
