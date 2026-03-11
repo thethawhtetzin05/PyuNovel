@@ -199,3 +199,56 @@ export const telegramDrafts = sqliteTable('telegram_drafts', {
   chaptersJson: text('chapters_json').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
+
+// ==========================================
+// 7. Coin Economy & Monetization
+// ==========================================
+
+export const coinTransactions = sqliteTable('coin_transactions', {
+  id: text('id').primaryKey(), // using uuid or similar
+  userId: text('user_id').references(() => user.id).notNull(),
+  amount: integer('amount').notNull(),
+  type: text('type', { enum: ['earn', 'spend', 'topup', 'refund'] }).notNull(),
+  status: text('status', { enum: ['pending', 'success', 'failed'] }).default('success').notNull(),
+  reference: text('reference'), // e.g. chapter_id, gift_id, or gateway_txn_id
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+}, (table) => ({
+  userIdx: index('coin_transaction_user_idx').on(table.userId),
+}));
+
+export const chapterUnlocks = sqliteTable('chapter_unlocks', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: text('user_id').references(() => user.id).notNull(),
+  chapterId: integer('chapter_id').references(() => chapters.id).notNull(),
+  coinsSpent: integer('coins_spent').notNull(),
+  giftedByUserId: text('gifted_by_user_id'), // if gifted by someone else
+  unlockedAt: integer('unlocked_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+}, (table) => ({
+  userChapterUnique: uniqueIndex('unlock_user_chapter_unique_idx').on(table.userId, table.chapterId),
+  userIdx: index('unlock_user_idx').on(table.userId),
+  chapterIdx: index('unlock_chapter_idx').on(table.chapterId),
+}));
+
+export const gifts = sqliteTable('gifts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  senderId: text('sender_id').references(() => user.id).notNull(),
+  writerId: text('writer_id').references(() => user.id).notNull(),
+  novelId: integer('novel_id').references(() => novels.id).notNull(),
+  giftType: text('gift_type').notNull(), // 'rose', 'chocolate', 'diamond', 'crown'
+  coinsSpent: integer('coins_spent').notNull(),
+  message: text('message'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+}, (table) => ({
+  writerIdx: index('gift_writer_idx').on(table.writerId),
+  novelIdx: index('gift_novel_idx').on(table.novelId),
+}));
+
+export const novelPasses = sqliteTable('novel_passes', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: text('user_id').references(() => user.id).notNull(),
+  novelId: integer('novel_id').references(() => novels.id).notNull(),
+  coinsSpent: integer('coins_spent').notNull(),
+  purchasedAt: integer('purchased_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+}, (table) => ({
+  userNovelPassUnique: uniqueIndex('pass_user_novel_unique_idx').on(table.userId, table.novelId),
+}));

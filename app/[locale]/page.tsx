@@ -14,6 +14,7 @@ import { NovelCard } from '@/components/novel/NovelCard';
 import { getTranslations } from 'next-intl/server';
 
 export const runtime = 'edge';
+export const revalidate = 60; // Cache at Cloudflare edge for 60s — huge speed boost
 
 interface Novel {
   id: number;
@@ -123,11 +124,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
             </div>
             <div className="grid grid-cols-2 min-[480px]:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-5 pb-4">
               {spotlightNovels.slice(0, 7).map((novel, idx) => (
-                <NovelCard 
-                  key={novel.slug} 
-                  novel={novel as any} 
-                  variant="ranked" 
-                  rank={idx + 1} 
+                <NovelCard
+                  key={novel.slug}
+                  novel={novel as any}
+                  variant="ranked"
+                  rank={idx + 1}
                 />
               ))}
             </div>
@@ -148,9 +149,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
           <div className="grid grid-cols-2 min-[480px]:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-5 pb-4">
             {latestNovels.slice(0, 14).map((novel) => (
-              <NovelCard 
-                key={novel.slug} 
-                novel={novel as any} 
+              <NovelCard
+                key={novel.slug}
+                novel={novel as any}
               />
             ))}
           </div>

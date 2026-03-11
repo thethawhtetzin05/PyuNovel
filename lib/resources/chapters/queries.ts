@@ -119,7 +119,13 @@ export async function getChapterForReader(db: DrizzleD1Database<any>, slug: stri
 
   return {
     chapter: result.chapter,
-    novel: { id: result.novel.id, title: result.novel.title, slug: result.novel.slug },
+    novel: {
+      id: result.novel.id,
+      title: result.novel.title,
+      slug: result.novel.slug,
+      ownerId: result.novel.ownerId,
+      chapterPrice: result.novel.chapterPrice
+    },
     prev: prevChapter,
     next: nextChapter
   };

@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { Home, Megaphone, Settings, Users, Settings2, LogOut } from 'lucide-react';
+import { Home, Megaphone, Settings, Users, Settings2, LogOut, Coins } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { logoutAdmin } from '../actions';
 
@@ -43,6 +43,10 @@ export default async function AdminLayout({
                         <Link href="/admin/users" className="flex items-center gap-3 px-4 py-3 text-[var(--text-muted)] hover:bg-[var(--surface-2)] rounded-xl transition">
                             <Users size={18} />
                             <span className="font-medium">Users Stats</span>
+                        </Link>
+                        <Link href="/admin/coins" className="flex items-center gap-3 px-4 py-3 text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-xl transition">
+                            <Coins size={18} />
+                            <span className="font-bold">Coin Management</span>
                         </Link>
                         <Link href="/admin/announcements" className="flex items-center gap-3 px-4 py-3 bg-[var(--action)]/10 text-[var(--action)] rounded-xl transition">
                             <Megaphone size={18} />

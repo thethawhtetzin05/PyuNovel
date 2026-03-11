@@ -19,7 +19,7 @@ import type { Metadata, ResolvingMetadata } from 'next';
 import { Button } from "@/components/ui/button";
 
 export const runtime = 'edge';
-export const dynamic = 'force-dynamic';
+export const revalidate = 30; // Cache novel page at CDN edge for 30s — eliminates DB queries for most readers
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -33,25 +33,22 @@ export async function generateMetadata(
   const { env } = getRequestContext();
   const db = drizzle(env.DB, { schema });
 
-  // React cache() ကြောင့် ဒုတိယအကြိမ် page component က ခေါ်ရင် DB ကို ထပ်မသွားတော့ပါဘူး
   const novel = await getNovelBySlug(db, slug);
 
   if (!novel) {
-    return {
-      title: 'Novel Not Found - nweoo',
-    };
+    return { title: 'Novel Not Found - PyuNovel' };
   }
 
   const previousImages = (await parent).openGraph?.images || [];
 
   return {
-    title: `${novel.title} - nweoo`,
-    description: novel.description || `Read ${novel.title} by ${novel.author} on nweoo.`,
+    title: `${novel.title} - PyuNovel`,
+    description: novel.description || `Read ${novel.title} by ${novel.author} on PyuNovel.`,
     openGraph: {
       title: novel.title,
-      description: novel.description || `Read ${novel.title} by ${novel.author} on nweoo.`,
-      url: `https://nweoo.com/novel/${novel.slug}`,
-      siteName: 'nweoo',
+      description: novel.description || `Read ${novel.title} by ${novel.author} on PyuNovel.`,
+      url: `https://pyunovel.pages.dev/novel/${novel.slug}`,
+      siteName: 'PyuNovel',
       images: novel.coverUrl
         ? [{ url: novel.coverUrl, width: 800, height: 1200, alt: novel.title }]
         : previousImages,
@@ -61,7 +58,7 @@ export async function generateMetadata(
     twitter: {
       card: 'summary_large_image',
       title: novel.title,
-      description: novel.description || `Read ${novel.title} by ${novel.author} on nweoo.`,
+      description: novel.description || `Read ${novel.title} by ${novel.author} on PyuNovel.`,
       images: novel.coverUrl ? [novel.coverUrl] : [],
     },
   };
@@ -71,50 +68,30 @@ export default async function NovelDetailsPage({ params }: Props) {
   const { env } = getRequestContext();
   const { slug } = await params;
 
-  // Database Connection (Schema ထည့်ပေးထားပါတယ်)
   const db = drizzle(env.DB, { schema });
 
-  // Novel Data ရှာမယ် (React cache ပါတဲ့အတွက် ပထမအကြိမ် metadata မှာ ခေါ်ထားရင် ချက်ချင်းရမယ်)
-  const novel = await getNovelBySlug(db, slug);
-
-  if (!novel) {
-    notFound();
-  }
-
-  // Chapters ရှာမယ်
-  const chapters = await getChaptersByNovelId(db, novel.id);
-  const volumes = await getVolumesByNovelId(db, novel.id);
-
-  // ပထမဆုံး အခန်းကို ရှာထားမယ် (Read Button အတွက်)
-  const firstChapter = chapters.length > 0 ? chapters.sort((a, b) => a.sortIndex - b.sortIndex)[0] : null;
-
-  // ❗ Type Error မတက်အောင် chapters ကို NovelTabs လိုချင်တဲ့ ပုံစံပြောင်းမယ်
-  const formattedChapters = chapters.map((chapter) => ({
-    ...chapter,
-    id: chapter.id.toString(), // Number ကို String ပြောင်းမယ်
-    isPaid: chapter.isPaid ?? false, // null ဖြစ်နေရင် false သတ်မှတ်မယ်
-    volumeId: chapter.volumeId ?? null
-  }));
-
-  // Session စစ်မယ် (Owner ဟုတ်မဟုတ် သိဖို့)
+  // ✅ STEP 1: Run session check + all public queries IN PARALLEL
   const auth = createAuth(env.DB);
-  const session = await auth.api.getSession({ headers: await headers() });
+  const [novel, sessionResult] = await Promise.all([
+    getNovelBySlug(db, slug),
+    auth.api.getSession({ headers: await headers() }),
+  ]);
+
+  if (!novel) notFound();
+
+  // ✅ STEP 2: Run all remaining queries IN PARALLEL (no more sequential waiting)
+  const userId = sessionResult?.user?.id;
+  const [chapters, volumes, reviews, collectorCount, isCollected, userReview] = await Promise.all([
+    getChaptersByNovelId(db, novel.id),
+    getVolumesByNovelId(db, novel.id),
+    getReviewsByNovelId(db, novel.id),
+    getCollectionCountByNovelId(db, novel.id),
+    userId ? isNovelCollected(db, userId, novel.id) : Promise.resolve(false),
+    userId ? getUserReview(db, novel.id, userId) : Promise.resolve(null),
+  ]);
+
+  const session = sessionResult;
   const isOwner = session?.user?.id === novel.ownerId;
-
-  // Collection Status စစ်မယ်
-  let isCollected = false;
-  let userReview = null;
-
-  if (session?.user) {
-    isCollected = await isNovelCollected(db, session.user.id, novel.id);
-    userReview = await getUserReview(db, novel.id, session.user.id);
-  }
-
-  // Reviews data ယူမယ်
-  const reviews = await getReviewsByNovelId(db, novel.id);
-
-  // Collector count ယူမယ်
-  const collectorCount = await getCollectionCountByNovelId(db, novel.id);
 
   // Tags စာရင်းကို Array ပြောင်းမယ် (ကော်မာ၊ Space တွေ ရှင်းမယ်)
   const tagsList = novel.tags

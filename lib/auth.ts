@@ -4,9 +4,14 @@ import { D1Database } from "@cloudflare/workers-types";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "../db/schema";
 
-// ⚠️ auth variable အစား Function ပြောင်းလိုက်ပါ
+// Cache the auth instance globally for the worker isolate to save CPU time.
+// Re-initializing betterAuth on every request consumes a lot of CPU ms (schema parsing, etc).
+let authInstance: ReturnType<typeof betterAuth> | null = null;
+
 export const createAuth = (dbBinding: D1Database) => {
-  return betterAuth({
+  if (authInstance) return authInstance;
+
+  authInstance = betterAuth({
     database: drizzleAdapter(drizzle(dbBinding), {
       provider: "sqlite",
       schema: schema,
@@ -21,4 +26,6 @@ export const createAuth = (dbBinding: D1Database) => {
       }
     }
   });
+
+  return authInstance;
 };
