@@ -1,0 +1,2 @@
+# Redirect custom domain traffic
+https://pyunovel.pages.dev/* https://pyunovel.com/:splat 301!
