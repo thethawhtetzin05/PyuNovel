@@ -19,6 +19,16 @@ export const createAuth = (dbBinding: D1Database) => {
     emailAndPassword: {
       enabled: true,
     },
+    // Add trustedOrigins so both .pages.dev and custom domain work seamlessly
+    trustedOrigins: [
+      "https://pyunovel.pages.dev",
+      process.env.NEXT_PUBLIC_APP_URL || ""
+    ].filter(Boolean),
+    advanced: {
+      crossSubDomainCookies: {
+        enabled: true
+      }
+    },
     user: {
       additionalFields: {
         role: { type: "string", defaultValue: "reader" },
