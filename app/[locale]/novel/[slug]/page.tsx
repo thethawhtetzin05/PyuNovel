@@ -19,7 +19,7 @@ import type { Metadata, ResolvingMetadata } from 'next';
 import { Button } from "@/components/ui/button";
 
 export const runtime = 'edge';
-export const revalidate = 30; // Cache novel page at CDN edge for 30s — eliminates DB queries for most readers
+export const dynamic = 'force-dynamic'; // Required: page uses headers() for session check
 
 type Props = {
   params: Promise<{ slug: string }>
