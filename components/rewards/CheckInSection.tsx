@@ -25,6 +25,7 @@ export default function CheckInSection({ initialExp, initialLevel, initialStreak
     const [checkedIn, setCheckedIn] = useState(hasCheckedInToday(lastCheckIn));
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState<{ expGained: number; leveledUp: boolean; newLevel: number; streak: number } | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const safeExp = isNaN(exp) ? 0 : exp;
     const safeLevel = isNaN(level) ? 0 : level;
@@ -36,6 +37,7 @@ export default function CheckInSection({ initialExp, initialLevel, initialStreak
 
     async function handleCheckIn() {
         setLoading(true);
+        setError(null);
         try {
             const result = await claimDailyCheckIn();
             if (result.success) {
@@ -45,7 +47,15 @@ export default function CheckInSection({ initialExp, initialLevel, initialStreak
                 setCheckedIn(true);
                 setToast({ expGained: result.expGained!, leveledUp: result.leveledUp!, newLevel: result.newLevel!, streak: result.streak! });
                 setTimeout(() => setToast(null), 4000);
+            } else {
+                console.error("[CheckIn] Failed:", result.error);
+                setError(result.error ?? "Check-in failed. Please try again.");
+                setTimeout(() => setError(null), 4000);
             }
+        } catch (e) {
+            console.error("[CheckIn] Exception:", e);
+            setError("Something went wrong. Please try again.");
+            setTimeout(() => setError(null), 4000);
         } finally {
             setLoading(false);
         }
@@ -53,7 +63,17 @@ export default function CheckInSection({ initialExp, initialLevel, initialStreak
 
     return (
         <div className="bg-[var(--surface)] rounded-3xl p-6 sm:p-8 border border-[var(--border)] shadow-lg mb-8">
-            {/* Toast / Notification */}
+            {/* Error Toast */}
+            {error && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] animate-fade-in">
+                    <div className="bg-white dark:bg-gray-900 border border-red-200 dark:border-red-800 rounded-2xl px-6 py-4 shadow-2xl text-center min-w-[240px]">
+                        <div className="text-3xl mb-1">❌</div>
+                        <p className="font-black text-red-500 text-base">{error}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Toast / Notification */}
             {toast && (
                 <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] animate-fade-in">
                     <div className="bg-white dark:bg-gray-900 border border-[var(--border)] rounded-2xl px-6 py-4 shadow-2xl text-center min-w-[240px]">

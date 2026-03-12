@@ -31,7 +31,7 @@ export async function claimDailyCheckIn() {
     if (user.lastCheckIn) {
         const lastCheckInDate = new Date(user.lastCheckIn);
         const lastCheckInUTC = new Date(Date.UTC(lastCheckInDate.getUTCFullYear(), lastCheckInDate.getUTCMonth(), lastCheckInDate.getUTCDate()));
-        if (lastCheckInDate >= todayUTC) {
+        if (lastCheckInUTC >= todayUTC) {
             return { success: false, error: "Already checked in today" };
         }
 
