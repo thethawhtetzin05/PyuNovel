@@ -1,5 +1,7 @@
 "use server";
 
+export const runtime = 'edge';
+
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
