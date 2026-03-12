@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Link } from '@/i18n/routing';
 import ProfileEditModal from "@/components/modals/ProfileEditModal";
-import TelegramConnectForm from "@/components/telegram/TelegramConnectForm";
+import CheckInSection from "@/components/rewards/CheckInSection";
 
 interface ProfileClientProps {
     user: any;
@@ -71,7 +71,15 @@ export default function ProfileClient({ user, userNovels, joinedDate }: ProfileC
                 </div>
             </div>
 
-            {/* 2. My Novels Section */}
+            {/* 2. Daily Check-in & EXP Section */}
+            <CheckInSection
+                initialExp={user.exp ?? 0}
+                initialLevel={user.level ?? 0}
+                initialStreak={user.checkInStreak ?? 0}
+                lastCheckIn={user.lastCheckIn ? new Date(user.lastCheckIn) : null}
+            />
+
+            {/* 3. My Novels Section */}
             <div className="mb-12">
                 <div className="flex justify-between items-end mb-8 border-b border-[var(--border)] pb-4">
                     <h2 className="text-2xl font-black text-[var(--foreground)]">
@@ -157,19 +165,6 @@ export default function ProfileClient({ user, userNovels, joinedDate }: ProfileC
                 onClose={() => setIsEditModalOpen(false)}
                 initialData={{ name: user.name, image: user.image }}
             />
-
-            {/* 3. Settings Section */}
-            <div className="border-t border-[var(--border)] pt-12 mt-4">
-                <h2 className="text-2xl font-black text-[var(--foreground)] mb-2">
-                    Integrations & Settings
-                </h2>
-                
-                <TelegramConnectForm
-                    isLinked={Boolean(user.telegramId && typeof user.telegramId === 'string' && user.telegramId.trim() !== "" && user.telegramId.trim() !== "null" && user.telegramId.trim() !== "undefined" && user.telegramId.trim() !== "telegram_id")}
-                    tgName={user.telegramName}
-                    tgUsername={user.telegramUsername}
-                />
-            </div>
         </div>
     );
 }

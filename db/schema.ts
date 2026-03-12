@@ -18,9 +18,15 @@ export const user = sqliteTable("user", {
   // Custom Fields
   role: text('role', { enum: ['admin', 'writer', 'reader'] }).default('reader').notNull(),
   coins: integer('coins').default(0),
-  telegramId: text('telegram_id'), // To store connected Telegram Chat ID
-  telegramUsername: text('telegram_username'), // e.g. @username
-  telegramName: text('telegram_name'), // e.g. John Doe
+  telegramId: text('telegram_id'),
+  telegramUsername: text('telegram_username'),
+  telegramName: text('telegram_name'),
+
+  // EXP & Leveling System
+  exp: integer('exp').default(0).notNull(),
+  level: integer('level').default(0).notNull(),
+  lastCheckIn: integer('last_check_in', { mode: 'timestamp' }), // nullable — no default
+  checkInStreak: integer('check_in_streak').default(0).notNull(),
 });
 
 export const session = sqliteTable("session", {

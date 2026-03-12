@@ -140,7 +140,7 @@ export default function Navbar() {
                 <div className="h-8 w-8 bg-[var(--surface-2)] rounded-full animate-pulse" />
               ) : session ? (
                 <div
-                  className="relative"
+                  className="relative hidden md:block"
                   onMouseEnter={handleMouseEnter}
                   onMouseLeave={handleMouseLeave}
                 >

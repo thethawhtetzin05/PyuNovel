@@ -4,6 +4,7 @@
         "ranking": "Ranking",
         "collection": "Collection",
         "create": "Create",
+        "integration": "Integration",
         "signIn": "Sign In",
         "search": "Search",
         "profile": "Profile",
@@ -115,5 +116,9 @@
         "editNovel": "✏️ Edit Novel",
         "delete": "🗑️ Delete",
         "deleting": "Deleting..."
+    },
+    "Integration": {
+        "title": "Integrations",
+        "desc": "Connect external accounts to PyuNovel for additional features like notifications and automated tasks."
     }
 }

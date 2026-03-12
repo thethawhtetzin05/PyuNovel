@@ -9,7 +9,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import Footer from "@/components/ui/Footer";
-
+import BottomNav from "@/components/ui/BottomNav";
 export const metadata: Metadata = {
   title: "PyuNovel – Read Epic Stories Online",
   description: "A premium novel reading platform. Discover thousands of stories across every genre.",
@@ -53,11 +53,12 @@ export default async function RootLayout({
               <Navbar />
               <ModalProvider /> {/* 👈 ModalUI နေရာ */}
               <CapacitorBackButton />
-              <main className="flex-1">
+              <main className="flex-1 pb-16 md:pb-0">
                 {children}
               </main>
 
               <Footer />
+              <BottomNav />
             </div>
           </ThemeProvider>
         </NextIntlClientProvider>
