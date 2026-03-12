@@ -54,8 +54,9 @@ export default function CheckInSection({ initialExp, initialLevel, initialStreak
             }
         } catch (e) {
             console.error("[CheckIn] Exception:", e);
-            setError("Something went wrong. Please try again.");
-            setTimeout(() => setError(null), 4000);
+            const errMsg = e instanceof Error ? e.message : String(e);
+            setError("Error: " + errMsg);
+            setTimeout(() => setError(null), 8000);
         } finally {
             setLoading(false);
         }
