@@ -1,29 +1,32 @@
-"use server";
-
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "@/db/schema";
 import { eq } from "drizzle-orm";
-
 import { calculateLevel, expForNextLevel } from "@/lib/leveling";
 
-export async function claimDailyCheckIn() {
+export const runtime = 'edge';
+
+export async function POST() {
     try {
         const { env } = getRequestContext();
         const db = drizzle(env.DB, { schema });
         const auth = createAuth(env.DB);
 
         const session = await auth.api.getSession({ headers: await headers() });
-        if (!session) return { success: false, error: "Not authenticated" };
+        if (!session) {
+            return Response.json({ success: false, error: "Not authenticated" }, { status: 401 });
+        }
 
         const userId = session.user.id;
         const user = await db.query.user.findFirst({
             where: (u, { eq }) => eq(u.id, userId),
         });
 
-        if (!user) return { success: false, error: "User not found" };
+        if (!user) {
+            return Response.json({ success: false, error: "User not found" }, { status: 404 });
+        }
 
         const now = new Date();
         const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -32,9 +35,14 @@ export async function claimDailyCheckIn() {
         let newStreak: number;
         if (user.lastCheckIn) {
             const lastCheckInDate = new Date(user.lastCheckIn);
-            const lastCheckInUTC = new Date(Date.UTC(lastCheckInDate.getUTCFullYear(), lastCheckInDate.getUTCMonth(), lastCheckInDate.getUTCDate()));
+            const lastCheckInUTC = new Date(Date.UTC(
+                lastCheckInDate.getUTCFullYear(),
+                lastCheckInDate.getUTCMonth(),
+                lastCheckInDate.getUTCDate()
+            ));
+
             if (lastCheckInUTC >= todayUTC) {
-                return { success: false, error: "Already checked in today" };
+                return Response.json({ success: false, error: "Already checked in today" }, { status: 400 });
             }
 
             // Check if the previous check-in was yesterday (to continue streak)
@@ -76,7 +84,7 @@ export async function claimDailyCheckIn() {
             })
             .where(eq(schema.user.id, userId));
 
-        return {
+        return Response.json({
             success: true,
             expGained,
             newExp,
@@ -84,10 +92,10 @@ export async function claimDailyCheckIn() {
             streak: newStreak,
             leveledUp,
             nextLevelExp: expForNextLevel(newLevel),
-        };
+        });
     } catch (e) {
         const errMsg = e instanceof Error ? e.message : String(e);
-        console.error("[claimDailyCheckIn] Error:", errMsg, e);
-        return { success: false, error: errMsg };
+        console.error("[POST /api/checkin] Error:", errMsg, e);
+        return Response.json({ success: false, error: errMsg }, { status: 500 });
     }
 }

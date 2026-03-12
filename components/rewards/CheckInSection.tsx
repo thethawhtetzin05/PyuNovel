@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { claimDailyCheckIn } from "@/app/[locale]/profile/actions";
 import { calculateLevel, expForNextLevel } from "@/lib/leveling";
 
 interface CheckInButtonProps {
@@ -39,7 +38,8 @@ export default function CheckInSection({ initialExp, initialLevel, initialStreak
         setLoading(true);
         setError(null);
         try {
-            const result = await claimDailyCheckIn();
+            const res = await fetch("/api/checkin", { method: "POST" });
+            const result = await res.json() as { success: boolean; error?: string; newExp?: number; newLevel?: number; streak?: number; expGained?: number; leveledUp?: boolean; nextLevelExp?: number };
             if (result.success) {
                 setExp(result.newExp!);
                 setLevel(result.newLevel!);
