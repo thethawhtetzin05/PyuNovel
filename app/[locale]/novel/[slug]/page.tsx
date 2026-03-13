@@ -154,7 +154,7 @@ export default async function NovelDetailsPage({ params }: Props) {
           </p>
 
           {/* Tags & Status Badges */}
-          <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-8">
+          <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-6">
             {/* Status Badge (❗ lowercase နဲ့ ပြောင်းစစ်ထားတယ်) */}
             <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider text-white shadow-sm ${novel.status === 'ongoing' ? 'bg-emerald-500' : 'bg-blue-600'}`}>
               {novel.status || 'Ongoing'}
@@ -185,44 +185,48 @@ export default async function NovelDetailsPage({ params }: Props) {
             ))}
           </div>
 
-          {/* ACTION BUTTONS */}
-          <div className="flex flex-col sm:flex-row gap-3 mt-auto w-full md:w-auto">
-
+          {/* ACTION BUTTONS - 50/50 SPLIT */}
+          <div className="flex flex-row gap-3 mt-auto w-full">
             {/* A. READ BUTTON (Primary Action) */}
-            {firstChapter ? (
-              <Button asChild variant="premium" size="lg" className="w-full sm:w-auto">
-                <Link href={`/novel/${novel.slug}/${firstChapter.sortIndex}`}>
-                  📖 Read Now
-                </Link>
-              </Button>
-            ) : (
-              <Button disabled variant="secondary" size="lg" className="w-full sm:w-auto">
-                🚫 No Chapters
-              </Button>
-            )}
+            <div className="flex-1">
+              {firstChapter ? (
+                <Button asChild variant="premium" size="lg" className="w-full text-sm md:text-base font-bold h-12">
+                  <Link href={`/novel/${novel.slug}/${firstChapter.sortIndex}`}>
+                    📖 Read Now
+                  </Link>
+                </Button>
+              ) : (
+                <Button disabled variant="secondary" size="lg" className="w-full text-sm md:text-base h-12 opacity-50">
+                  🚫 No Chapters
+                </Button>
+              )}
+            </div>
 
             {/* B. COLLECT BUTTON (Secondary Action) */}
-            {session?.user ? (
-              <CollectButton novelId={novel.id} initialCollected={isCollected} slug={novel.slug} />
-            ) : (
-              <Link href="/sign-in" className="w-full sm:w-auto h-12 px-6 rounded-xl bg-[var(--surface-2)] text-[var(--foreground)] font-bold border border-[var(--border)] hover:border-[var(--action)] hover:text-[var(--action)] hover:bg-[var(--surface)] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
-                </svg>
-                <span>Collect</span>
-              </Link>
-            )}
-
-            {/* C. DOWNLOAD BUTTON (App-only — hidden on web) */}
-            <DownloadButton slug={novel.slug} />
-
+            <div className="flex-1">
+              {session?.user ? (
+                <CollectButton novelId={novel.id} initialCollected={isCollected} slug={novel.slug} />
+              ) : (
+                <Button asChild variant="outline" size="lg" className="w-full h-12 text-[var(--foreground)] font-bold border-[var(--border)] hover:bg-[var(--surface-2)] transition-all flex items-center justify-center gap-2 shadow-sm text-sm md:text-base">
+                  <Link href="/sign-in">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 shrink-0">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+                    </svg>
+                    <span>Collect</span>
+                  </Link>
+                </Button>
+              )}
+            </div>
           </div>
+
+          {/* C. DOWNLOAD BUTTON (App-only — hidden on web) */}
+          <DownloadButton slug={novel.slug} />
 
         </div>
       </div>
 
       {/* TABS & CONTENT SECTION */}
-      <div className="mt-16 border-t border-[var(--border)] pt-8">
+      <div className="mt-10 border-t border-[var(--border)] pt-8">
         <NovelTabs
           novelSlug={novel.slug}
           novelId={novel.id}

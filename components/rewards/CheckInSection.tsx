@@ -17,6 +17,18 @@ function hasCheckedInToday(lastCheckIn: Date | null): boolean {
     return new Date(lastCheckIn) >= todayUTC;
 }
 
+function getTodayGain(streak: number, isCheckedIn: boolean): number {
+    if (!isCheckedIn) return 0;
+    let maxBonus: number;
+    if (streak >= 365) maxBonus = 90;
+    else if (streak >= 90) maxBonus = 50;
+    else if (streak >= 30) maxBonus = 30;
+    else maxBonus = 20;
+
+    const streakBonus = Math.min(Math.max(0, streak - 1) * 2, maxBonus);
+    return 10 + streakBonus;
+}
+
 export default function CheckInSection({ initialExp, initialLevel, initialStreak, lastCheckIn }: CheckInButtonProps) {
     const [exp, setExp] = useState(initialExp ?? 0);
     const [level, setLevel] = useState(initialLevel ?? 0);
@@ -92,8 +104,8 @@ export default function CheckInSection({ initialExp, initialLevel, initialStreak
                 <div>
                     <h3 className="text-lg font-black text-[var(--foreground)] flex items-center gap-2">
                         🧬 Level {safeLevel}
-                        <span className="text-xs font-bold px-2.5 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">
-                            {safeExp.toLocaleString()} EXP
+                        <span className="text-xs font-bold px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full">
+                            +{getTodayGain(streak, checkedIn)} EXP
                         </span>
                     </h3>
                     <p className="text-[var(--text-muted)] text-sm mt-0.5">

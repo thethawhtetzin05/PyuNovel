@@ -59,7 +59,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* ─── CONTINUE READING PORTAL ─────────────────────────────── */}
-      <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full pointer-events-none drop-shadow-2xl">
+      <div className="fixed md:bottom-6 bottom-[70px] right-6 z-50 max-w-sm w-full pointer-events-none drop-shadow-2xl">
         <div className="pointer-events-auto">
           <ContinueReadingBanner />
         </div>

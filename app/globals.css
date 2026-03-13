@@ -76,7 +76,7 @@
 
   /* ─── Global Base ────────────────────────────────────────────── */
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Myanmar Text', 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -94,7 +94,7 @@
   h3,
   h4,
   h5 {
-    font-family: 'Bricolage Grotesque', 'Inter', system-ui, sans-serif;
+    font-family: 'Bricolage Grotesque', 'Myanmar Text', 'Inter', system-ui, sans-serif;
     letter-spacing: -0.02em;
     line-height: 1.2;
   }

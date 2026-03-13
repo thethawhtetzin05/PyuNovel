@@ -59,12 +59,15 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
+  const isRankingPage = pathname.includes('/ranking');
+
   if (pathname?.includes('/admin')) return null;
 
   return (
     <>
       <nav
         className={`sticky top-0 z-50 w-full transition-all duration-300 ease-in-out
+          ${isRankingPage ? "hidden md:block" : "block"}
           ${isVisible ? "translate-y-0" : "-translate-y-full"}
           ${isScrolled
             ? "bg-[var(--surface)]/80 backdrop-blur-xl shadow-sm border-b border-border/10"

@@ -31,8 +31,10 @@ export default function ProfileClient({ user, userNovels, joinedDate }: ProfileC
                             className="w-32 h-32 rounded-full object-cover border-4 border-[var(--surface)] shadow-lg transition-transform group-hover:scale-105"
                         />
                     ) : (
-                        <div className="w-32 h-32 rounded-full bg-[var(--surface-2)] text-[var(--action)] flex items-center justify-center text-4xl font-bold border-4 border-[var(--surface)] shadow-lg transition-transform group-hover:scale-105">
-                            {user.name.charAt(0).toUpperCase()}
+                        <div className="w-32 h-32 rounded-full bg-[var(--surface-2)] text-[var(--action)] flex items-center justify-center text-4xl font-bold border-4 border-[var(--surface)] shadow-lg transition-transform group-hover:scale-105 leading-none">
+                            <span className="translate-y-1.5">
+                                {user.name.charAt(0).toUpperCase()}
+                            </span>
                         </div>
                     )}
                     <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

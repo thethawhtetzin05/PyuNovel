@@ -7,8 +7,17 @@ import { Home, Library, BookHeart, CircleUser } from "lucide-react";
 import Image from "next/image";
 
 export default function BottomNav() {
-    const pathname = usePathname();
     const { data: session } = useSession();
+    const pathname = usePathname();
+
+    // Hide BottomNav on Reader Page (e.g., /novel/[slug]/[chapterId])
+    // But show it on main novel page, edit pages, and create pages.
+    const isReaderPage = pathname.includes('/novel/') &&
+        pathname.split('/').filter(Boolean).length >= 4 &&
+        !pathname.includes('/edit') &&
+        !pathname.includes('/create');
+
+    if (isReaderPage) return null;
 
     const isActive = (path: string) => {
         return pathname === `/en${path}` || pathname === `/my${path}` || (path === '/' && (pathname === '/en' || pathname === '/my'));
@@ -34,8 +43,10 @@ export default function BottomNav() {
                     {session.user.image ? (
                         <Image src={session.user.image} alt="Profile" width={28} height={28} className="object-cover w-full h-full" />
                     ) : (
-                        <div className="w-full h-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xs">
-                            {session.user.name?.charAt(0).toUpperCase() || "U"}
+                        <div className="w-full h-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xs leading-none">
+                            <span className="translate-y-[0.5px]">
+                                {session.user.name?.charAt(0).toUpperCase() || "U"}
+                            </span>
                         </div>
                     )}
                 </div>

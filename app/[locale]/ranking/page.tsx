@@ -4,7 +4,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { getTopNovelsByViews, getLatestNovels, getRecentlyUpdatedNovels, getTopNovelsByCollectors } from '@/lib/resources/novels/queries';
 import RankingSpotlight from '@/components/novel/RankingSpotlight';
 import RankingRow from '@/components/novel/RankingRow';
-import { Link } from '@/i18n/routing';
+import RankingHeader from '@/components/novel/RankingHeader';
 
 export const runtime = 'edge';
 
@@ -49,47 +49,17 @@ export default async function RankingPage({
     const list = rankedNovels.slice(3);
 
     const tabs = [
-        { id: 'popular', label: 'Most Popular', icon: '🔥' },
-        { id: 'collector', label: 'Most Collected', icon: '🔖' },
-        { id: 'new', label: 'New Releases', icon: '✨' },
+        { id: 'popular', label: 'Popular', icon: '🔥' },
+        { id: 'collector', label: 'Collection', icon: '🔖' },
+        { id: 'new', label: 'New Release', icon: '✨' },
         { id: 'updated', label: 'Recently Updated', icon: '🔄' },
     ];
 
     return (
         <div className="min-h-screen bg-[var(--background)] pb-32">
-            {/* Header Section */}
-            <div className="relative pt-20 pb-16 px-4 overflow-hidden">
-                {/* Background Decor */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-full bg-[var(--action)]/5 blur-[120px] rounded-full -z-10" />
-
-                <div className="max-w-4xl mx-auto text-center">
-                    <h1 className="text-4xl md:text-6xl font-black text-[var(--foreground)] tracking-tight mb-4" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
-                        Pyu <span className="gradient-text">Ranking</span>
-                    </h1>
-                    <p className="text-[var(--text-muted)] text-base md:text-xl font-medium max-w-2xl mx-auto">
-                        Explore the best novels curated just for you. Real-time updates based on community activity.
-                    </p>
-                </div>
-            </div>
-
-            <main className="max-w-5xl mx-auto px-4">
-                {/* Category Navigation */}
-                <div className="flex flex-wrap justify-center gap-2 mb-12">
-                    {tabs.map((tab) => (
-                        <Link
-                            key={tab.id}
-                            href={`/ranking?type=${tab.id}`}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm md:text-base border transition-all duration-300 
-                                ${type === tab.id
-                                    ? "bg-[var(--action)] border-[var(--action)] text-white shadow-lg shadow-[var(--action)]/20"
-                                    : "bg-[var(--surface)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--action)]/50 hover:text-[var(--foreground)]"
-                                }`}
-                        >
-                            <span>{tab.icon}</span>
-                            {tab.label}
-                        </Link>
-                    ))}
-                </div>
+            <main className="max-w-5xl mx-auto md:px-4">
+                {/* Compact Header with Dropdown */}
+                <RankingHeader currentType={type} tabs={tabs} />
 
                 {rankedNovels.length === 0 ? (
                     <div className="py-20 text-center bg-[var(--surface)] rounded-3xl border border-dashed border-[var(--border)]">
@@ -98,9 +68,10 @@ export default async function RankingPage({
                 ) : (
                     <>
                         {/* Section Header */}
-                        <div className="flex flex-col mb-8">
+                        <div className="flex flex-col mb-8 px-4 md:px-0">
                             <h2 className="text-2xl font-black text-[var(--foreground)] flex items-center gap-3">
-                                {tabs.find(t => t.id === type)?.icon} {title}
+                                <span>{tabs.find(t => t.id === type)?.icon}</span>
+                                {title}
                             </h2>
                             <p className="text-[var(--text-muted)] text-sm font-medium mt-1">{subtitle}</p>
                         </div>
