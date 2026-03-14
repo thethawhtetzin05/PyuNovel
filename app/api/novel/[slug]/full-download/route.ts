@@ -21,7 +21,7 @@ export async function GET(
             return NextResponse.json({ success: false, error: "Unauthorized. Please login first." }, { status: 401 });
         }
 
-        const userAccount = session.user;
+        const userAccount = session.user as any;
 
         // ၂။ Secret Key သစ်ဆေးမယ် (X-App-SecretHeader ပါမှ ခွင့်ပြုမယ်)
         // Note: Production မှာ wrangler.toml သို့မဟုတ် Cloudflare Dashboard မှာ ADMIN_SECRET_KEY ထည့်ထားရမယ်

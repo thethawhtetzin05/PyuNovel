@@ -1,7 +1,7 @@
 import { checkChapterAccess } from '@/lib/resources/chapters/unlocks';
 import PaidChapterBlock from '@/components/reader/PaidChapterBlock';
 import { getRequestContext } from '@cloudflare/next-on-pages';
-import { getChapterForReader } from '@/lib/resources/chapters/queries';
+import { getChapterForReader, getChaptersByNovelId } from '@/lib/resources/chapters/queries';
 import { notFound } from 'next/navigation';
 import { Link } from '@/i18n/routing';
 import { drizzle } from 'drizzle-orm/d1';
@@ -11,6 +11,9 @@ import { saveReadingProgressAction } from '@/app/[locale]/collection/actions';
 import ViewTracker from '../view-tracker';
 import OfflineReaderWrapper from '@/components/reader/OfflineReaderWrapper';
 import ReadingTracker from '@/components/reader/ReadingTracker';
+import ChapterCommentsTrigger from '@/components/reader/ChapterCommentsTrigger';
+import { Button } from '@/components/ui/button';
+import ReaderNavigation from '@/components/reader/ReaderNavigation';
 
 export const runtime = 'edge';
 
@@ -30,6 +33,9 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
   if (!data || !data.chapter) {
     notFound();
   }
+
+  // Fetch chapters for TOC sidebar
+  const allChapters = await getChaptersByNovelId(db, data.novel.id);
 
   const session = sessionResult;
   const { chapter, prev, next, novel } = data;
@@ -112,44 +118,21 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
             formattedDate={formattedDate}
             prevChapterId={prev ? prev.sortIndex.toString() : null}
             nextChapterId={next ? next.sortIndex.toString() : null}
+            allChapters={allChapters}
+            novelSlug={novel.slug}
           />
         )}
       </div>
 
       {/* 3. FOOTER NAVIGATION */}
       <div className="w-full max-w-5xl mx-auto px-5 sm:px-8 md:px-12 py-8 mt-12 border-t border-current opacity-70">
-        <div className="flex justify-between items-center gap-4">
+        <ReaderNavigation
+          novelSlug={novel.slug}
+          prevIndex={prev ? prev.sortIndex.toString() : null}
+          nextIndex={next ? next.sortIndex.toString() : null}
+        />
 
-          {prev ? (
-            <Link
-              href={`/novel/${novel.slug}/${prev.sortIndex}`}
-              className="px-6 py-3 rounded-xl font-bold border border-current hover:opacity-100 opacity-80 transition-all text-sm md:text-base"
-            >
-              ← Prev
-            </Link>
-          ) : (
-            <button disabled className="px-6 py-3 rounded-xl font-bold border border-current opacity-30 cursor-not-allowed text-sm md:text-base">
-              Prev
-            </button>
-          )}
-
-          {next ? (
-            <Link
-              href={`/novel/${novel.slug}/${next.sortIndex}`}
-              className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 hover:shadow-lg transition-all text-sm md:text-base border-none"
-            >
-              Next →
-            </Link>
-          ) : (
-            <Link
-              href={`/novel/${novel.slug}`}
-              className="px-8 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-black hover:shadow-lg transition-all text-sm md:text-base border-none"
-            >
-              Finish ✓
-            </Link>
-          )}
-
-        </div>
+        <ChapterCommentsTrigger />
       </div>
 
     </div>

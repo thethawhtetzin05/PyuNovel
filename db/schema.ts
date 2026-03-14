@@ -1,6 +1,5 @@
-// ⚠️ boolean ကို import list ကနေ ဖြုတ်လိုက်ပါပြီ
-import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
-import { sql } from "drizzle-orm";
+import { sqliteTable, text, integer, real, index, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
+import { sql, relations } from "drizzle-orm";
 
 // ==========================================
 // 1. Authentication Tables (Better-Auth)
@@ -258,3 +257,76 @@ export const novelPasses = sqliteTable('novel_passes', {
 }, (table) => ({
   userNovelPassUnique: uniqueIndex('pass_user_novel_unique_idx').on(table.userId, table.novelId),
 }));
+
+// ==========================================
+// 8. Chapter Comments (Paragraph-level)
+// ==========================================
+
+export const chapterComments = sqliteTable('chapter_comments', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: text('user_id').references(() => user.id).notNull(),
+  chapterId: integer('chapter_id').references(() => chapters.id).notNull(),
+
+  // paragraphIndex is null for chapter-wide comments, or 0+ for specific paragraphs
+  paragraphIndex: integer('paragraph_index'),
+
+  parentCommentId: integer('parent_comment_id').references((): AnySQLiteColumn => chapterComments.id), // For replies
+
+  content: text('content').notNull(),
+
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+}, (table) => ({
+  chapterIdx: index('chapter_comment_chapter_idx').on(table.chapterId),
+  paragraphIdx: index('chapter_comment_paragraph_idx').on(table.chapterId, table.paragraphIndex),
+  userIdx: index('chapter_comment_user_idx').on(table.userId),
+  parentIdx: index('chapter_comment_parent_idx').on(table.parentCommentId),
+}));
+
+export const chapterCommentVotes = sqliteTable('chapter_comment_votes', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  commentId: integer('comment_id').references(() => chapterComments.id).notNull(),
+  userId: text('user_id').references(() => user.id).notNull(),
+  vote: integer('vote').notNull(), // 1 for upvote, -1 for downvote
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+}, (table) => ({
+  uniqueVote: uniqueIndex('unique_comment_vote_idx').on(table.commentId, table.userId),
+}));
+
+export const userRelations = relations(user, ({ many }) => ({
+  chapterComments: many(chapterComments),
+  commentVotes: many(chapterCommentVotes),
+}));
+
+export const chapterCommentsRelations = relations(chapterComments, ({ one, many }) => ({
+  user: one(user, {
+    fields: [chapterComments.userId],
+    references: [user.id],
+  }),
+  chapter: one(chapters, {
+    fields: [chapterComments.chapterId],
+    references: [chapters.id],
+  }),
+  parent: one(chapterComments, {
+    fields: [chapterComments.parentCommentId],
+    references: [chapterComments.id],
+    relationName: 'replies',
+  }),
+  replies: many(chapterComments, {
+    relationName: 'replies',
+  }),
+  votes: many(chapterCommentVotes),
+}));
+
+export const chapterCommentVotesRelations = relations(chapterCommentVotes, ({ one }) => ({
+  comment: one(chapterComments, {
+    fields: [chapterCommentVotes.commentId],
+    references: [chapterComments.id],
+  }),
+  user: one(user, {
+    fields: [chapterCommentVotes.userId],
+    references: [user.id],
+  }),
+}));
+
+

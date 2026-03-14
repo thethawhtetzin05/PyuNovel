@@ -36,6 +36,21 @@ export default function NovelForm({
 
     try {
       const formData = new FormData(e.currentTarget);
+
+      // 🚀 Optimize Image before upload (Method 1)
+      const coverFile = formData.get('coverImage') as File;
+      if (coverFile && coverFile.size > 0 && coverFile.name !== "undefined") {
+        try {
+          const { prepareImageForUpload } = await import('@/lib/client-utils');
+          const compressedBlob = await prepareImageForUpload(coverFile, 800, 0.8);
+          // Replace original with optimized one
+          formData.set('coverImage', compressedBlob, 'cover.webp');
+        } catch (imgError) {
+          console.error("Compression failed, using original:", imgError);
+          // Fallback to original if compression fails
+        }
+      }
+
       const endpoint = initialData ? '/api/novel/edit' : '/api/novel/create';
 
       const response = await fetch(endpoint, {

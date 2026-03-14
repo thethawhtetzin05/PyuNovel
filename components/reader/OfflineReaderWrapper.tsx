@@ -15,6 +15,8 @@ interface Props {
     formattedDate: string;
     prevChapterId: string | null;
     nextChapterId: string | null;
+    allChapters: any[];
+    novelSlug: string;
 }
 
 export default function OfflineReaderWrapper(props: Props) {
@@ -40,6 +42,11 @@ export default function OfflineReaderWrapper(props: Props) {
     // ၂။ Server Content ရှိရင် အဲဒါပဲ ပြမယ်
     // ဒီ Component က Server ကနေ Data ရမှ Render မှာဆိုတော့ Offline Error case ကို ဒီမှာ ဖြေရှင်းလို့မရဘူး
     // Offline Error case ကို error.tsx မှာ ဖြေရှင်းရမယ်
-    
-    return <ReaderView content={props.content} />;
+
+    return <ReaderView
+        content={props.content}
+        chapterId={props.chapterId}
+        allChapters={props.allChapters}
+        novelSlug={props.novelSlug}
+    />;
 }

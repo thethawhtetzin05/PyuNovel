@@ -53,11 +53,16 @@ export default function CollectButton({ novelId, initialCollected, slug }: Props
 
     return (
         <Button
-            variant={isCollected ? "default" : "outline"}
+            variant="outline"
             size="lg"
             onClick={handleToggle}
             disabled={isPending}
-            className={`w-full h-12 font-bold text-sm md:text-base ${isPending ? "opacity-70 cursor-not-allowed" : ""}`}
+            className={`w-full h-12 font-bold text-sm md:text-base transition-all duration-300 shadow-sm
+                ${isCollected
+                    ? "bg-gradient-to-r from-amber-400 to-amber-600 border-amber-500 text-black shadow-amber-500/20"
+                    : "bg-transparent border-amber-500/50 text-amber-600"
+                } 
+                ${isPending ? "opacity-70 cursor-not-allowed" : ""}`}
         >
             {isCollected ? (
                 // Filled SVG for Collected State

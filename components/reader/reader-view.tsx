@@ -2,15 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { Settings, Minus, Plus } from 'lucide-react';
-import DOMPurify from 'isomorphic-dompurify';
+import ParagraphReader from './ParagraphReader';
 
 interface ReaderViewProps {
   content: string;
+  chapterId: string;
+  allChapters: any[];
+  novelSlug: string;
 }
 
-export default function ReaderView({ content }: ReaderViewProps) {
+export default function ReaderView({ content, chapterId, allChapters, novelSlug }: ReaderViewProps) {
   const [fontSize, setFontSize] = useState(18);
   const [showSettings, setShowSettings] = useState(false);
+  const [cleanContent, setCleanContent] = useState(content);
 
   useEffect(() => {
     // Font Size ကိုပဲ သိမ်းတော့မယ်
@@ -19,15 +23,24 @@ export default function ReaderView({ content }: ReaderViewProps) {
       const parsed = JSON.parse(savedSettings);
       setFontSize(parsed.fontSize);
     }
-  }, []);
+
+    // Dynamic import to avoid SSR errors in Edge runtime
+    const sanitizeContent = async () => {
+      try {
+        const DOMPurify = (await import('isomorphic-dompurify')).default;
+        setCleanContent(DOMPurify.sanitize(content));
+      } catch (e) {
+        console.error("Sanitization error:", e);
+      }
+    };
+
+    sanitizeContent();
+  }, [content]);
 
   const updateFontSize = (newSize: number) => {
     setFontSize(newSize);
     localStorage.setItem('reader-font-settings', JSON.stringify({ fontSize: newSize }));
   };
-
-  // လုံခြုံရေးအတွက် HTML များကို Sanitize လုပ်ပြီးသားမှ ဖတ်မယ်
-  const cleanContent = DOMPurify.sanitize(content);
 
   return (
     // 💡 မျက်နှာပြင်အပြည့် (w-full) ဖြစ်ပါတယ်။ နောက်ခံအရောင်တွေ လုံးဝ မရေးထားတော့ပါဘူး။ 
@@ -43,11 +56,16 @@ export default function ReaderView({ content }: ReaderViewProps) {
       >
         <style dangerouslySetInnerHTML={{
           __html: `
-          .chapter-content-wrapper p { margin-bottom: 1.5em; }
+          .chapter-content-wrapper p { margin-bottom: 1.5em; position: relative; }
           .chapter-content-wrapper h1, .chapter-content-wrapper h2 { margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold; }
           .chapter-content-wrapper h3, .chapter-content-wrapper h4 { margin-top: 1.25em; margin-bottom: 0.5em; font-weight: bold; }
         `}} />
-        <div dangerouslySetInnerHTML={{ __html: cleanContent }} />
+        <ParagraphReader
+          content={cleanContent}
+          chapterId={chapterId}
+          allChapters={allChapters}
+          novelSlug={novelSlug}
+        />
       </div>
 
       {/* Settings အဖွင့်/အပိတ် ခလုတ် */}

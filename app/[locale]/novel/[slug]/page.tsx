@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getNovelBySlug } from '@/lib/resources/novels/queries';
 import { getChaptersByNovelId } from '@/lib/resources/chapters/queries';
@@ -22,7 +23,8 @@ export const runtime = 'edge';
 export const dynamic = 'force-dynamic'; // Required: page uses headers() for session check
 
 type Props = {
-  params: Promise<{ slug: string }>
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ tab?: string }>;
 };
 
 export async function generateMetadata(
@@ -64,9 +66,10 @@ export async function generateMetadata(
   };
 }
 
-export default async function NovelDetailsPage({ params }: Props) {
+export default async function NovelDetailsPage({ params, searchParams }: Props) {
   const { env } = getRequestContext();
   const { slug } = await params;
+  const { tab } = await searchParams;
 
   const db = drizzle(env.DB, { schema });
 
@@ -237,6 +240,7 @@ export default async function NovelDetailsPage({ params }: Props) {
           reviews={reviews as any}
           userReview={userReview}
           isLoggedIn={!!session?.user}
+          defaultTab={tab || 'about'}
         />
       </div>
 

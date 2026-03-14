@@ -62,10 +62,11 @@ export async function POST(request: NextRequest) {
         });
 
         // Auto-upgrade Role to Writer
-        if (newNovel && session.user.role === 'reader') {
+        const user = session.user as any;
+        if (newNovel && user.role === 'reader') {
             await db.update(schema.user)
                 .set({ role: 'writer', updatedAt: new Date() })
-                .where(eq(schema.user.id, session.user.id))
+                .where(eq(schema.user.id, user.id))
                 .run();
         }
 

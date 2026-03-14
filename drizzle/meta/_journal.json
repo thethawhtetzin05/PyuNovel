@@ -64,6 +64,20 @@
       "when": 1773128658494,
       "tag": "0008_daily_sandman",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1773476047132,
+      "tag": "0009_plain_red_shift",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1773476387282,
+      "tag": "0010_secret_rick_jones",
+      "breakpoints": true
     }
   ]
 }

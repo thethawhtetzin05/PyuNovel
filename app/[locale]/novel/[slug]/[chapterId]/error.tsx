@@ -17,7 +17,7 @@ export default function Error({
   const params = useParams();
   const chapterId = params.chapterId as string;
   const slug = params.slug as string;
-  
+
   const [offlineData, setOfflineData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +44,7 @@ export default function Error({
 
   if (offlineData) {
     const formattedDate = new Date(offlineData.saved_at || Date.now()).toLocaleDateString();
-    
+
     // Offline Content ကို HTML ပုံစံ ပြန်ဖွဲ့စည်းမယ်
     const htmlContent = `
          <div class="mb-12 px-4 md:px-0 border-b border-current opacity-70 pb-6 text-center md:text-left">
@@ -73,21 +73,26 @@ export default function Error({
 
         {/* READER */}
         <div className="flex-grow w-full">
-          <ReaderView content={htmlContent} />
+          <ReaderView
+            content={htmlContent}
+            chapterId={chapterId}
+            allChapters={[]}
+            novelSlug={slug}
+          />
         </div>
 
         {/* FOOTER NAV */}
         <div className="w-full max-w-5xl mx-auto px-5 sm:px-8 md:px-12 py-8 mt-12 border-t border-current opacity-70">
           <div className="flex justify-between items-center gap-4">
-             {offlineData.prev_chapter_id ? (
-                <Link href={`/novel/${slug}/${offlineData.prev_chapter_id}`} className="px-6 py-3 rounded-xl font-bold border border-current hover:opacity-100 opacity-80">← Prev</Link>
-             ) : <div/>}
-             
-             {offlineData.next_chapter_id ? (
-                <Link href={`/novel/${slug}/${offlineData.next_chapter_id}`} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold">Next →</Link>
-             ) : (
-                <Link href={`/novel/${slug}`} className="px-8 py-3 bg-gray-900 text-white rounded-xl font-bold">Finish</Link>
-             )}
+            {offlineData.prev_chapter_id ? (
+              <Link href={`/novel/${slug}/${offlineData.prev_chapter_id}`} className="px-6 py-3 rounded-xl font-bold border border-current hover:opacity-100 opacity-80">← Prev</Link>
+            ) : <div />}
+
+            {offlineData.next_chapter_id ? (
+              <Link href={`/novel/${slug}/${offlineData.next_chapter_id}`} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold">Next →</Link>
+            ) : (
+              <Link href={`/novel/${slug}`} className="px-8 py-3 bg-gray-900 text-white rounded-xl font-bold">Finish</Link>
+            )}
           </div>
         </div>
       </div>

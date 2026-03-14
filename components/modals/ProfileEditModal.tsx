@@ -44,8 +44,17 @@ export default function ProfileEditModal({ isOpen, onClose, initialData }: Props
         try {
             const formData = new FormData();
             formData.append("name", name);
+
             if (imageFile) {
-                formData.append("image", imageFile);
+                try {
+                    const { prepareImageForUpload } = await import('@/lib/client-utils');
+                    // For profile pics, 400px is more than enough
+                    const compressedBlob = await prepareImageForUpload(imageFile, 400, 0.8);
+                    formData.append("image", compressedBlob, 'avatar.webp');
+                } catch (imgError) {
+                    console.error("Avatar compression failed:", imgError);
+                    formData.append("image", imageFile);
+                }
             }
 
             const response = await fetch("/api/profile/update", {

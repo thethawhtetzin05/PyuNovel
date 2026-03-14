@@ -52,6 +52,7 @@ interface NovelTabsProps {
   reviews?: Review[];
   userReview?: Record<string, unknown> | null;
   isLoggedIn?: boolean;
+  defaultTab?: string;
 }
 
 export default function NovelTabs({
@@ -63,10 +64,12 @@ export default function NovelTabs({
   isOwner = false,
   reviews = [],
   userReview = null,
-  isLoggedIn = false
+  isLoggedIn = false,
+  defaultTab,
 }: NovelTabsProps) {
   const router = useRouter();
   const t = useTranslations('Navbar');
+  const [activeTab, setActiveTab] = useState(defaultTab || 'about');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [chapterToDelete, setChapterToDelete] = useState<Chapter | null>(null);
   const [alertMsg, setAlertMsg] = useState('');
@@ -116,18 +119,10 @@ export default function NovelTabs({
         href={`/novel/${novelSlug}/${chapter.sortIndex}`}
         className="flex-1 flex items-center gap-4 min-w-0 cursor-pointer"
       >
-        <span className="text-sm font-bold text-muted-foreground bg-muted px-3 py-1.5 rounded-lg min-w-[3.5rem] text-center group-hover:bg-primary/10 group-hover:text-primary transition-colors border border-border">
-          #{chapter.sortIndex}
-        </span>
-
         <div className="min-w-0">
           <h4 className="font-bold text-foreground group-hover:text-primary transition-colors text-lg truncate pr-4">
             {chapter.title}
           </h4>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-            <Calendar size={12} />
-            <span>{new Date(chapter.createdAt || new Date()).toLocaleDateString()}</span>
-          </div>
         </div>
       </Link>
 
@@ -147,13 +142,13 @@ export default function NovelTabs({
               </Link>
             </Button>
 
-            <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-9 w-9 rounded-full hover:text-destructive hover:bg-destructive/10"
-                onClick={(e) => handleDelete(e, chapter)}
-                disabled={isDeleting === chapter.id}
-                title="Delete Chapter"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full hover:text-destructive hover:bg-destructive/10"
+              onClick={(e) => handleDelete(e, chapter)}
+              disabled={isDeleting === chapter.id}
+              title="Delete Chapter"
             >
               {isDeleting === chapter.id ? (
                 <div className="w-4 h-4 border-2 border-destructive border-t-transparent rounded-full animate-spin"></div>
@@ -176,18 +171,18 @@ export default function NovelTabs({
   return (
     <>
       <div className="mt-8">
-        <Tabs defaultValue="about" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full justify-start bg-transparent border-b border-border rounded-none h-auto p-0 mb-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
-            <TabsTrigger 
-                value="about" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 text-lg font-bold transition-all gap-2"
+            <TabsTrigger
+              value="about"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 text-lg font-bold transition-all gap-2"
             >
               <Info size={18} />
               About
             </TabsTrigger>
-            <TabsTrigger 
-                value="chapters" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 text-lg font-bold transition-all gap-2"
+            <TabsTrigger
+              value="chapters"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 text-lg font-bold transition-all gap-2"
             >
               <BookOpen size={18} />
               Chapters
@@ -195,9 +190,9 @@ export default function NovelTabs({
                 {chapters.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger 
-                value="reviews" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 text-lg font-bold transition-all gap-2"
+            <TabsTrigger
+              value="reviews"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 text-lg font-bold transition-all gap-2"
             >
               <MessageSquare size={18} />
               Reviews
@@ -248,9 +243,9 @@ export default function NovelTabs({
                       </div>
                     )}
                     {(!volumes.length || !expandedVolumes['unassigned']) && (
-                        <div className="space-y-3">
-                            {unassignedChapters.map(renderChapter)}
-                        </div>
+                      <div className="space-y-3">
+                        {unassignedChapters.map(renderChapter)}
+                      </div>
                     )}
                   </div>
                 )}
@@ -268,15 +263,15 @@ export default function NovelTabs({
                         onClick={() => toggleVolume(volume.id.toString())}
                       >
                         <div className="flex items-center gap-3">
-                            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                                <Folder size={20} />
-                            </div>
-                            <h3 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">
-                                {volume.name}
-                            </h3>
-                            <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground border-border">
-                                {volumeChapters.length} Chapters
-                            </Badge>
+                          <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                            <Folder size={20} />
+                          </div>
+                          <h3 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">
+                            {volume.name}
+                          </h3>
+                          <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground border-border">
+                            {volumeChapters.length} Chapters
+                          </Badge>
                         </div>
                         {isExpanded ? (
                           <ChevronUp size={20} className="text-muted-foreground group-hover:text-primary" />
@@ -285,7 +280,7 @@ export default function NovelTabs({
                         )}
                       </div>
                       <Separator className="bg-border/60" />
-                      
+
                       <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[5000px] opacity-100 mt-2' : 'max-h-0 opacity-0 mb-0'}`}>
                         <div className="grid gap-3 pb-2 pt-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1">
                           {volumeChapters.map(renderChapter)}
@@ -298,7 +293,7 @@ export default function NovelTabs({
             ) : (
               <div className="bg-muted/30 rounded-2xl p-16 text-center border-2 border-dashed border-border">
                 <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <BookOpen size={32} className="text-muted-foreground" />
+                  <BookOpen size={32} className="text-muted-foreground" />
                 </div>
                 <h3 className="text-xl font-bold text-foreground">No chapters yet</h3>
                 <p className="text-muted-foreground mt-2 max-w-xs mx-auto">New chapters coming soon! Check back later or follow the novel.</p>
