@@ -23,7 +23,8 @@
         "clickConnectAccount": "Click 'Connect Account'",
         "copyCode": "Copy the code below and send it to the bot.",
         "codeExpiry": "Code expires in 5 minutes. Refresh after sending.",
-        "telegramGuide": "Publish novel chapters directly from Telegram. Send text or files to our bot and we'll handle the rest."
+        "telegramGuide": "Publish novel chapters directly from Telegram. Send text or files to our bot and we'll handle the rest.",
+        "userManual": "User Manual"
     },
     "Home": {
         "announcements": "Announcements",
@@ -32,6 +33,110 @@
         "newReleases": "New Releases",
         "latestChapters": "Latest Chapters",
         "noFeaturedNovels": "No featured novels"
+    },
+    "Manual": {
+        "title": "User Manual",
+        "description": "Welcome to your ultimate guide to using PyuNovel. Find everything you need to start your reading journey here.",
+        "viewMode": "View Mode",
+        "mobile": "Mobile View",
+        "desktop": "Desktop View",
+        "sections": {
+            "auth": {
+                "title": "1. Authentication",
+                "step1": "Click \"Sign In\" on the Navbar or Profile Menu.",
+                "step2": "If you don't have an account, click \"Sign up\" and provide your name, email, and password.",
+                "step3": "If you already have an account, enter your credentials and click \"Sign In\"."
+            },
+            "reading": {
+                "title": "2. Browsing & Reading",
+                "browsing": "Explore novels through the Home page or Ranking lists.",
+                "steps": "Click a novel cover and tap \"📖 Read Now\" to begin.",
+                "mobile": {
+                    "nav": "Easy Navigation - Use the blue Prev, Contents, Next buttons at the bottom.",
+                    "toc": "TOC Sidebar - Tap Contents to open the sidebar and switch chapters easily.",
+                    "comment": "Paragraph Comment - Tap the 💬 icon next to paragraphs to leave specific feedback."
+                },
+                "desktop": {
+                    "nav": "Navigation - Use the Prev, Contents, Next buttons at the bottom.",
+                    "toc": "Table of Contents - Tapping Contents takes you back to the Chapters Tab.",
+                    "wide": "Wide View - Enjoy a broader reading experience on Desktop."
+                }
+            },
+            "collection": {
+                "title": "3. My Collection",
+                "desc": "Save novels with the \"🔖 Collect\" button. Access them anytime from the \"Collection\" menu."
+            },
+            "daily": {
+                "title": "4. Daily Rewards",
+                "step1": "Go to your Profile and click \"Daily Check-in\".",
+                "step2": "Earn EXP to level up. Frequent check-ins lead to faster level progression."
+            },
+            "writers": {
+                "title": "5. Detailed Writer's Guide",
+                "novels": {
+                    "title": "Managing Novels",
+                    "create": {
+                        "title": "How to Create a New Novel",
+                        "steps": [
+                            "Click the \"Create\" button on the Navbar.",
+                            "Once on the Author Dashboard, click the \"+ New Novel\" button.",
+                            "Fill in the Novel Title and URL Slug (English only).",
+                            "Add Genres (Tags) separated by commas.",
+                            "Write a Synopsis and upload a Cover Image.",
+                            "Click \"Create Novel\" to publish your project."
+                        ]
+                    },
+                    "edit": {
+                        "title": "How to Edit Novel Details",
+                        "steps": [
+                            "Go to your novel's detail page.",
+                            "Click \"✏️ Edit Novel\" from the menu.",
+                            "Make your changes and click \"Save Changes\"."
+                        ]
+                    },
+                    "delete": {
+                        "title": "How to Delete a Novel",
+                        "steps": [
+                            "Click \"🗑️ Delete\" from the novel's menu.",
+                            "Confirm the deletion. Warning: This will remove all chapters and cannot be undone."
+                        ]
+                    }
+                },
+                "chapters": {
+                    "title": "Managing Chapters",
+                    "add": {
+                        "title": "How to Add a New Chapter",
+                        "steps": [
+                            "Click the \"✍️ Add Chapter\" button on your novel page.",
+                            "Create a Volume first using \"+ Add New Volume\" if needed.",
+                            "Enter the Chapter Title and paste your content.",
+                            "Click \"Publish\" to make it live for readers."
+                        ]
+                    },
+                    "edit": {
+                        "title": "How to Edit Existing Chapters",
+                        "steps": [
+                            "Navigate to the Chapters Tab on your novel page.",
+                            "Click the pencil icon (✏️) next to the chapter.",
+                            "Update the content and click \"Save Changes\"."
+                        ]
+                    },
+                    "delete": {
+                        "title": "How to Delete a Chapter",
+                        "steps": [
+                            "Click the trash icon (🗑️) next to the chapter in the list.",
+                            "Confirm deletion to permanently remove the content."
+                        ]
+                    }
+                }
+            },
+            "telegram": {
+                "title": "6. Telegram Integration",
+                "step1": "Go to Integration and generate a Connection Code.",
+                "step2": "Send the code to our Telegram Bot to publish chapters directly from Telegram."
+            }
+        },
+        "footerNote": "Need help? Contact us via \"Report Issue\"!"
     },
     "ChapterForm": {
         "back": "Back",

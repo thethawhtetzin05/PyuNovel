@@ -108,6 +108,7 @@ export default function Navbar() {
                   { href: "/ranking", label: t('ranking') },
                   { href: "/collection", label: t('collection') },
                   { href: "/writer", label: t('create') },
+                  { href: "/manual", label: t('userManual') },
                 ].map((link) => (
                   <Link
                     key={link.href}
