@@ -3,6 +3,7 @@ import { getNovelsByUserId } from '@/lib/resources/novels/queries';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect, Link } from '@/i18n/routing';
+import { getTranslations } from 'next-intl/server';
 import NovelMenu from './novel-menu'; // ခုနက Client Component
 import { drizzle } from 'drizzle-orm/d1';
 
@@ -24,6 +25,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
   const db = drizzle(env.DB);
   const myNovels = await getNovelsByUserId(db, session.user.id);
+  const t = await getTranslations('Writer');
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
@@ -31,14 +33,14 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
       {/* Header Area */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-[var(--foreground)]">Author Dashboard</h1>
-          <p className="text-[var(--text-muted)] mt-1">Manage your stories and chapters.</p>
+          <h1 className="text-3xl font-extrabold text-[var(--foreground)]">{t('title')}</h1>
+          <p className="text-[var(--text-muted)] mt-1">{t('description')}</p>
         </div>
         <Link
           href="/novel/create"
           className="btn-primary px-5 py-2.5 rounded-xl font-bold transition-transform active:scale-95 text-sm inline-block"
         >
-          + New Novel
+          {t('newNovel')}
         </Link>
       </div>
 
@@ -64,7 +66,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
               {/* Content */}
               <div className="flex-1 min-w-0 flex flex-col gap-1">
-                
+
                 {/* Title & Badge Row */}
                 <div className="flex flex-row items-center gap-2 min-w-0">
                   <Link href={`/novel/${novel.slug}`} className="text-base sm:text-lg font-bold text-[var(--foreground)] truncate hover:text-[var(--action)] transition-colors min-w-0 flex-shrink">
@@ -87,10 +89,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
                   <span>📅 {new Date(novel.createdAt || Date.now()).toLocaleDateString()}</span>
                   <span>👁️ 0 Views</span>
                 </div>
-                
+
                 {/* Action Buttons Row */}
                 <div className="flex flex-row items-center gap-3">
-                  <Link 
+                  <Link
                     href={`/novel/${novel.slug}/create`}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--action)]/10 text-[var(--action)] hover:bg-[var(--action)] hover:text-white transition-colors rounded-lg text-xs font-bold whitespace-nowrap shrink-0"
                   >
@@ -108,8 +110,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
         ) : (
           /* ဝတ္ထု မရှိသေးရင် ပြမယ့်နေရာ */
           <div className="text-center py-20 bg-[var(--surface-2)] rounded-3xl border border-dashed border-[var(--border)]">
-            <p className="text-[var(--text-muted)] font-medium mb-4">You haven't written any novels yet.</p>
-            <Link href="/novel/create" className="text-[var(--action)] font-bold hover:underline">Start Writing Now &rarr;</Link>
+            <p className="text-[var(--text-muted)] font-medium mb-4">{t('noNovels')}</p>
+            <Link href="/novel/create" className="text-[var(--action)] font-bold hover:underline">{t('startWriting')}</Link>
           </div>
         )}
       </div>

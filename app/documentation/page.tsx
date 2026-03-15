@@ -2,7 +2,7 @@
 export const runtime = 'edge';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { documentationData } from '@/data/documentationData';
 import {
     Smartphone,
     Monitor,
@@ -27,7 +27,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 export default function ManualPage() {
-    const t = useTranslations('Manual');
+    const d = documentationData;
     const [viewMode, setViewMode] = useState<'mobile' | 'desktop'>('mobile');
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -94,13 +94,13 @@ export default function ManualPage() {
                 {/* Header Section */}
                 <div className="text-center mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
                     <Badge variant="outline" className="mb-4 px-4 py-1 rounded-full border-primary/30 text-primary font-bold">
-                        PYUNOVEL GUIDE
+                        PYUNOVEL အသုံးပြုနည်းလမ်းညွှန်
                     </Badge>
                     <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter bg-gradient-to-b from-foreground to-foreground/70 bg-clip-text text-transparent">
-                        {t('title')}
+                        {d.title}
                     </h1>
                     <p className="text-muted-foreground text-xl max-w-2xl mx-auto leading-relaxed">
-                        {t('description')}
+                        {d.description}
                     </p>
                 </div>
 
@@ -111,9 +111,9 @@ export default function ManualPage() {
                             {viewMode === 'mobile' ? <Smartphone size={32} /> : <Monitor size={32} />}
                         </div>
                         <div>
-                            <h3 className="font-black text-xl mb-1">{t('viewMode')}</h3>
+                            <h3 className="font-black text-xl mb-1">{d.viewMode}</h3>
                             <p className="text-sm text-muted-foreground font-medium">
-                                Detected: <span className="text-primary uppercase tracking-wider">{viewMode}</span>
+                                Detected: <span className="text-primary uppercase tracking-wider">{viewMode === 'mobile' ? 'ဖုန်း' : 'ကွန်ပျူတာ'}</span>
                             </p>
                         </div>
                     </div>
@@ -126,13 +126,13 @@ export default function ManualPage() {
                             <SelectItem value="mobile" className="py-4 rounded-xl cursor-pointer">
                                 <div className="flex items-center gap-3">
                                     <Smartphone size={18} />
-                                    {t('mobile')}
+                                    {d.mobile}
                                 </div>
                             </SelectItem>
                             <SelectItem value="desktop" className="py-4 rounded-xl cursor-pointer">
                                 <div className="flex items-center gap-3">
                                     <Monitor size={18} />
-                                    {t('desktop')}
+                                    {d.desktop}
                                 </div>
                             </SelectItem>
                         </SelectContent>
@@ -143,38 +143,38 @@ export default function ManualPage() {
                 <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-200">
 
                     {/* 1. Auth */}
-                    <SectionCard icon={User} title={t('sections.auth.title')} colorClass="bg-blue-500/5">
+                    <SectionCard icon={User} title={d.sections.auth.title} colorClass="bg-blue-500/5">
                         <div className="grid gap-6">
-                            <StepItem text={t('sections.auth.step1')} />
-                            <StepItem text={t('sections.auth.step2')} />
-                            <StepItem text={t('sections.auth.step3')} />
+                            <StepItem text={d.sections.auth.step1} />
+                            <StepItem text={d.sections.auth.step2} />
+                            <StepItem text={d.sections.auth.step3} />
                         </div>
                     </SectionCard>
 
                     {/* 2. Reading */}
-                    <SectionCard icon={BookOpen} title={t('sections.reading.title')} colorClass="bg-primary/5">
+                    <SectionCard icon={BookOpen} title={d.sections.reading.title} colorClass="bg-primary/5">
                         <div className="space-y-8">
                             <div className="p-6 bg-muted/50 rounded-3xl border border-border/50">
                                 <p className="text-lg font-bold text-primary mb-2 flex items-center gap-2">
                                     <Info size={20} />
-                                    Quick Start
+                                    အမြန်လမ်းညွှန်
                                 </p>
-                                <p className="text-lg opacity-90">{t('sections.reading.browsing')}</p>
-                                <p className="text-lg mt-2 opacity-90">{t('sections.reading.steps')}</p>
+                                <p className="text-lg opacity-90">{d.sections.reading.browsing}</p>
+                                <p className="text-lg mt-2 opacity-90">{d.sections.reading.steps}</p>
                             </div>
 
                             <div className="grid gap-6">
                                 {viewMode === 'mobile' ? (
                                     <>
-                                        <StepItem text={t('sections.reading.mobile.nav')} />
-                                        <StepItem text={t('sections.reading.mobile.toc')} />
-                                        <StepItem text={t('sections.reading.mobile.comment')} />
+                                        <StepItem text={d.sections.reading.mobile.nav} />
+                                        <StepItem text={d.sections.reading.mobile.toc} />
+                                        <StepItem text={d.sections.reading.mobile.comment} />
                                     </>
                                 ) : (
                                     <>
-                                        <StepItem text={t('sections.reading.desktop.nav')} />
-                                        <StepItem text={t('sections.reading.desktop.toc')} />
-                                        <StepItem text={t('sections.reading.desktop.wide')} />
+                                        <StepItem text={d.sections.reading.desktop.nav} />
+                                        <StepItem text={d.sections.reading.desktop.toc} />
+                                        <StepItem text={d.sections.reading.desktop.wide} />
                                     </>
                                 )}
                             </div>
@@ -182,52 +182,38 @@ export default function ManualPage() {
                     </SectionCard>
 
                     {/* 3. Collection */}
-                    <SectionCard icon={Bookmark} title={t('sections.collection.title')} colorClass="bg-amber-500/5">
-                        <StepItem text={t('sections.collection.desc')} />
+                    <SectionCard icon={Bookmark} title={d.sections.collection.title} colorClass="bg-amber-500/5">
+                        <StepItem text={d.sections.collection.desc} />
                     </SectionCard>
 
                     {/* 4. Daily */}
-                    <SectionCard icon={Zap} title={t('sections.daily.title')} colorClass="bg-yellow-500/5">
+                    <SectionCard icon={Zap} title={d.sections.daily.title} colorClass="bg-yellow-500/5">
                         <div className="grid gap-6">
-                            <StepItem text={t('sections.daily.step1')} />
-                            <StepItem text={t('sections.daily.step2')} />
+                            <StepItem text={d.sections.daily.step1} />
+                            <StepItem text={d.sections.daily.step2} />
                         </div>
                     </SectionCard>
 
                     {/* 5. Detailed Writers Guide */}
-                    <SectionCard icon={PenTool} title={t('sections.writers.title')} colorClass="bg-purple-500/5">
+                    <SectionCard icon={PenTool} title={d.sections.writers.title} colorClass="bg-purple-500/5">
                         <div className="space-y-10">
                             {/* Novels Management */}
                             <div className="space-y-6">
                                 <h3 className="text-xl font-black bg-purple-500/10 text-purple-600 px-6 py-2 rounded-full w-fit">
-                                    {t('sections.writers.novels.title')}
+                                    {d.sections.writers.novels.title}
                                 </h3>
                                 <div className="grid gap-6 ml-2">
                                     <SubSection
-                                        title={t('sections.writers.novels.create.title')}
-                                        steps={[
-                                            t('sections.writers.novels.create.steps.0'),
-                                            t('sections.writers.novels.create.steps.1'),
-                                            t('sections.writers.novels.create.steps.2'),
-                                            t('sections.writers.novels.create.steps.3'),
-                                            t('sections.writers.novels.create.steps.4'),
-                                            t('sections.writers.novels.create.steps.5')
-                                        ]}
+                                        title={d.sections.writers.novels.create.title}
+                                        steps={d.sections.writers.novels.create.steps}
                                     />
                                     <SubSection
-                                        title={t('sections.writers.novels.edit.title')}
-                                        steps={[
-                                            t('sections.writers.novels.edit.steps.0'),
-                                            t('sections.writers.novels.edit.steps.1'),
-                                            t('sections.writers.novels.edit.steps.2')
-                                        ]}
+                                        title={d.sections.writers.novels.edit.title}
+                                        steps={d.sections.writers.novels.edit.steps}
                                     />
                                     <SubSection
-                                        title={t('sections.writers.novels.delete.title')}
-                                        steps={[
-                                            t('sections.writers.novels.delete.steps.0'),
-                                            t('sections.writers.novels.delete.steps.1')
-                                        ]}
+                                        title={d.sections.writers.novels.delete.title}
+                                        steps={d.sections.writers.novels.delete.steps}
                                     />
                                 </div>
                             </div>
@@ -237,32 +223,20 @@ export default function ManualPage() {
                             {/* Chapters Management */}
                             <div className="space-y-6">
                                 <h3 className="text-xl font-black bg-blue-500/10 text-blue-600 px-6 py-2 rounded-full w-fit">
-                                    {t('sections.writers.chapters.title')}
+                                    {d.sections.writers.chapters.title}
                                 </h3>
                                 <div className="grid gap-6 ml-2">
                                     <SubSection
-                                        title={t('sections.writers.chapters.add.title')}
-                                        steps={[
-                                            t('sections.writers.chapters.add.steps.0'),
-                                            t('sections.writers.chapters.add.steps.1'),
-                                            t('sections.writers.chapters.add.steps.2'),
-                                            t('sections.writers.chapters.add.steps.3')
-                                        ]}
+                                        title={d.sections.writers.chapters.add.title}
+                                        steps={d.sections.writers.chapters.add.steps}
                                     />
                                     <SubSection
-                                        title={t('sections.writers.chapters.edit.title')}
-                                        steps={[
-                                            t('sections.writers.chapters.edit.steps.0'),
-                                            t('sections.writers.chapters.edit.steps.1'),
-                                            t('sections.writers.chapters.edit.steps.2')
-                                        ]}
+                                        title={d.sections.writers.chapters.edit.title}
+                                        steps={d.sections.writers.chapters.edit.steps}
                                     />
                                     <SubSection
-                                        title={t('sections.writers.chapters.delete.title')}
-                                        steps={[
-                                            t('sections.writers.chapters.delete.steps.0'),
-                                            t('sections.writers.chapters.delete.steps.1')
-                                        ]}
+                                        title={d.sections.writers.chapters.delete.title}
+                                        steps={d.sections.writers.chapters.delete.steps}
                                     />
                                 </div>
                             </div>
@@ -270,10 +244,10 @@ export default function ManualPage() {
                     </SectionCard>
 
                     {/* 6. Telegram */}
-                    <SectionCard icon={Send} title={t('sections.telegram.title')} colorClass="bg-sky-500/5">
+                    <SectionCard icon={Send} title={d.sections.telegram.title} colorClass="bg-sky-500/5">
                         <div className="grid gap-6">
-                            <StepItem text={t('sections.telegram.step1')} />
-                            <StepItem text={t('sections.telegram.step2')} />
+                            <StepItem text={d.sections.telegram.step1} />
+                            <StepItem text={d.sections.telegram.step2} />
                         </div>
                     </SectionCard>
 
@@ -282,9 +256,9 @@ export default function ManualPage() {
                         <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
                             <CheckCircle2 size={120} />
                         </div>
-                        <h3 className="text-2xl font-black mb-4 tracking-tight">Happy Reading! 📖✨</h3>
+                        <h3 className="text-2xl font-black mb-4 tracking-tight">ပျော်ရွှင်စွာ ဖတ်ရှုနိုင်ပါစေ! 📖✨</h3>
                         <p className="text-lg font-medium text-muted-foreground italic leading-relaxed">
-                            {t('footerNote')}
+                            {d.footerNote}
                         </p>
                     </div>
                 </div>

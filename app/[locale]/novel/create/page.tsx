@@ -29,7 +29,7 @@ export default async function CreateNovelPage({ params }: { params: Promise<{ lo
 
       {/* Form ကို သပ်သပ်ခွဲထုတ်လိုက်တဲ့အတွက် ကုဒ်က ရှင်းသွားပါပြီ */}
       <NovelForm
-        submitLabel="Create Novel"
+        submitLabel={t('createNovel')}
       />
 
     </div>

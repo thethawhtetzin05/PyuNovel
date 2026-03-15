@@ -8,13 +8,14 @@ export function escapeHtml(text: string): string {
 }
 
 export function generateSlug(title: string, maxLength: number = 100): string {
-  return title
+  const slug = title
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, '') // အထူးအက္ခရာများ ဖယ်မယ်
-    .replace(/[\s_-]+/g, '-') // Space တွေကို Dash ပြောင်းမယ်
-    .replace(/^-+|-+$/g, '') // ရှေ့နောက် Dash တွေကို ဖယ်မယ်
-    .substring(0, maxLength); // Length ကန့်သတ်မယ်
+    .replace(/[^\w\s\u1040-\u1049-]/gu, '') // Remove special characters, keep Burmese digits
+    .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with dashes
+    .replace(/^-+|-+$/g, ''); // Trim leading/trailing dashes
+
+  return slug.substring(0, maxLength).replace(/-+$/, ''); // Truncate and trim trailing dash again
 }
 
 /**
