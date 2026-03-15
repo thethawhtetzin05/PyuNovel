@@ -2,7 +2,7 @@
 export const runtime = 'edge';
 
 import { useState, useEffect } from 'react';
-import { documentationData } from '@/data/documentationData';
+import { documentationData } from '../../../data/documentationData';
 import {
     Smartphone,
     Monitor,
@@ -23,8 +23,8 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+} from "../../../components/ui/select";
+import { Badge } from "../../../components/ui/badge";
 
 export default function ManualPage() {
     const d = documentationData;
