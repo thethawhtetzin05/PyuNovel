@@ -3,7 +3,6 @@ import "../globals.css";
 import Navbar from "@/components/ui/Navbar";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { ModalProvider } from "@/components/providers/modal-provider"; // 👈 Provider အသစ်
-import { CapacitorBackButton } from "@/components/providers/CapacitorBackButton";
 import Script from "next/script";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -52,7 +51,6 @@ export default async function RootLayout({
             <div className="min-h-screen flex flex-col">
               <Navbar />
               <ModalProvider /> {/* 👈 ModalUI နေရာ */}
-              <CapacitorBackButton />
               <main className="flex-1 pb-16 md:pb-0">
                 {children}
               </main>

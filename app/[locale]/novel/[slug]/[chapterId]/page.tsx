@@ -9,7 +9,7 @@ import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { saveReadingProgressAction } from '@/app/[locale]/collection/actions';
 import ViewTracker from '../view-tracker';
-import OfflineReaderWrapper from '@/components/reader/OfflineReaderWrapper';
+import ReaderView from '@/components/reader/reader-view';
 import ReadingTracker from '@/components/reader/ReadingTracker';
 import ChapterCommentsTrigger from '@/components/reader/ChapterCommentsTrigger';
 import { Button } from '@/components/ui/button';
@@ -108,16 +108,9 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
             sortIndex={chapter.sortIndex.toString()}
           />
         ) : (
-          <OfflineReaderWrapper
-            chapterId={chapter.id.toString()}
-            novelId={novel.id}
-            novelTitle={novel.title}
-            chapterTitle={chapter.title}
+          <ReaderView
             content={htmlContent}
-            rawContent={chapter.content}
-            formattedDate={formattedDate}
-            prevChapterId={prev ? prev.sortIndex.toString() : null}
-            nextChapterId={next ? next.sortIndex.toString() : null}
+            chapterId={chapter.id.toString()}
             allChapters={allChapters}
             novelSlug={novel.slug}
           />

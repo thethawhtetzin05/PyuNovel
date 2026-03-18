@@ -10,7 +10,6 @@ import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import NovelTabs from './novel-tabs';
 import CollectButton from './collect-button';
-import DownloadButton from '@/components/novel/OfflineDownloadButton';
 import ViewTracker from './view-tracker';
 import { Link } from '@/i18n/routing';
 import Image from 'next/image';
@@ -221,9 +220,6 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
               )}
             </div>
           </div>
-
-          {/* C. DOWNLOAD BUTTON (App-only — hidden on web) */}
-          <DownloadButton slug={novel.slug} />
 
         </div>
       </div>
