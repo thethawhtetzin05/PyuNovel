@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerContext } from "@/lib/server-context";
 import { createNovel } from "@/lib/resources/novels/mutations";
-import { CreateNovelSchema } from "@/lib/schemas/novel";
+import { CreateNovelSchema } from "@shared/schemas/novel";
 import { processTags } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
-import * as schema from "@/db/schema";
 
 export const runtime = 'edge';
 

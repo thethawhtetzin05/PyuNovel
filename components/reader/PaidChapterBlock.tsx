@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { unlockChapterAction } from '@/app/[locale]/novel/[slug]/[chapterId]/actions';
+
 
 interface PaidChapterBlockProps {
     chapterId: number;
@@ -26,7 +26,23 @@ export default function PaidChapterBlock({
         try {
             setLoading(true);
             setError(null);
-            const res = await unlockChapterAction(chapterId, novelId, chapterPrice, slug, sortIndex);
+
+            const response = await fetch('/api/novel/chapter/unlock', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    chapterId,
+                    novelId,
+                    chapterPrice,
+                    slug,
+                    sortIndex
+                }),
+            });
+
+            const res = await response.json() as { success: boolean, error?: string };
+
             if (!res.success) {
                 setError(res.error || 'Failed to unlock');
             }

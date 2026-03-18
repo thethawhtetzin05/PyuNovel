@@ -34,7 +34,13 @@ export const createAuth = (dbBinding: D1Database) => {
         role: { type: "string", defaultValue: "reader" },
         coins: { type: "number", defaultValue: 0 }
       }
-    }
+    },
+    plugins: [
+      {
+        id: "bearer",
+        bearer: {}
+      }
+    ]
   });
 
   return authInstance;

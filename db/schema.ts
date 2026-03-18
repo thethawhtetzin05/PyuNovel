@@ -127,12 +127,24 @@ export const chapters = sqliteTable('chapters', {
 
   // ✅ Fix: $defaultFn ensures current time on insert
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   deletedAt: integer('deleted_at', { mode: 'timestamp' }),
 
 }, (table) => ({
   novelSortIdx: uniqueIndex('novel_sort_idx').on(table.novelId, table.sortIndex),
   volumeIdx: index('chapter_volume_idx').on(table.volumeId),
+  updatedAtIdx: index('chapter_updated_at_idx').on(table.updatedAt),
 }));
+
+// ==========================================
+// 9. System / Internal Tables
+// ==========================================
+
+export const rateLimits = sqliteTable('rate_limits', {
+  id: text('id').primaryKey(), // Combination of endpoint and identifier (IP/UserID)
+  hits: integer('hits').default(0).notNull(),
+  resetAt: integer('reset_at', { mode: 'timestamp' }).notNull(),
+});
 
 // ==========================================
 // 3. User Interactions (Collections, Progress & Reviews)

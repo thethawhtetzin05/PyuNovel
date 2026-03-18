@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerContext } from "@/lib/server-context";
 import { updateChapter } from "@/lib/resources/chapters/mutations";
 import { revalidatePath } from "next/cache";
+import { ChapterSchema } from "@shared/schemas/chapter";
 
 export const runtime = 'edge';
 
@@ -14,32 +15,61 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
         }
 
-        const formData = await request.formData();
-        const chapterId = formData.get('chapterId') as string;
-        const novelSlug = formData.get('novelSlug') as string;
-        const title = formData.get('title') as string;
-        const content = formData.get('content') as string;
-        const isPaid = formData.get('isPaid') === 'on';
-        const sortIndexRaw = formData.get('sortIndex');
-        const sortIndex = sortIndexRaw ? Number(sortIndexRaw) : undefined;
-        const volumeIdRaw = formData.get('volumeId');
-        const volumeId = volumeIdRaw ? Number(volumeIdRaw) : null;
+        const contentType = request.headers.get("content-type") || "";
+        let data: any;
 
-        if (!chapterId || !novelSlug || !title || !content) {
-            return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+        if (contentType.includes("application/json")) {
+            data = await request.json();
+        } else {
+            const formData = await request.formData();
+            data = {
+                chapterId: formData.get('chapterId') as string,
+                novelSlug: formData.get('novelSlug') as string,
+                novelId: formData.get('novelId') ? Number(formData.get('novelId')) : undefined,
+                title: formData.get('title') as string,
+                content: formData.get('content') as string,
+                isPaid: formData.get('isPaid') === 'on' || formData.get('isPaid') === 'true',
+                sortIndex: formData.get('sortIndex') ? Number(formData.get('sortIndex')) : undefined,
+                volumeId: formData.get('volumeId') ? Number(formData.get('volumeId')) : null,
+            };
         }
 
-        await updateChapter(db, chapterId, {
-            title,
-            content,
-            isPaid: !!isPaid, // Ensure proper boolean for Drizzle mapping
-            sortIndex,
-            volumeId: volumeId || null,
-            updatedAt: new Date()
+        const validation = ChapterSchema.safeParse(data);
+        if (!validation.success) {
+            return NextResponse.json({
+                success: false,
+                error: validation.error.issues[0].message
+            }, { status: 400 });
+        }
+
+        const validatedData = validation.data;
+        const chapterId = validatedData.chapterId;
+
+        if (!chapterId) {
+            return NextResponse.json({ success: false, error: "Missing chapterId" }, { status: 400 });
+        }
+
+        const updatedChapter = await updateChapter(db, chapterId, {
+            title: validatedData.title,
+            content: validatedData.content,
+            isPaid: validatedData.isPaid,
+            sortIndex: validatedData.sortIndex,
+            volumeId: validatedData.volumeId || null,
+            updatedAt: validatedData.updatedAt || new Date() // Use client-side timestamp if available for LWW
         }, session.user.id);
 
-        revalidatePath(`/novel/${novelSlug}`);
-        return NextResponse.json({ success: true, sortIndex, slug: novelSlug });
+        let novelSlug = validatedData.novelSlug;
+        if (!novelSlug) {
+            const novel = await db.query.novels.findFirst({
+                where: (novels, { eq }) => eq(novels.id, validatedData.novelId)
+            });
+            novelSlug = novel?.slug;
+        }
+
+        if (novelSlug) {
+            revalidatePath(`/novel/${novelSlug}`);
+        }
+        return NextResponse.json({ success: true, sortIndex: validatedData.sortIndex, slug: novelSlug });
 
     } catch (error) {
         const message = error instanceof Error ? error.message : "Internal Server Error";

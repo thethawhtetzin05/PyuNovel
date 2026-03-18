@@ -3,9 +3,10 @@ import { getRequestContext } from "@cloudflare/next-on-pages";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "@/db/schema";
 import { createAuth } from "@/lib/auth";
-import { createReview, updateReview, deleteReview } from "@/lib/resources/reviews/mutations";
+import { createReview } from "@/lib/resources/reviews/mutations";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { notifyWriter } from "@/lib/telegram";
 
 export const runtime = 'edge';
 
@@ -40,14 +41,27 @@ export async function POST(request: NextRequest) {
 
         const data = validation.data;
 
+        // Get novel to find writerId
+        const novel = await db.query.novels.findFirst({
+            where: (novels, { eq }) => eq(novels.id, data.novelId),
+            columns: { ownerId: true, title: true }
+        });
+
         await createReview(db, {
             novelId: data.novelId,
             rating: data.rating,
             comment: data.comment
         }, session.user.id);
 
-        revalidatePath(`/novel/${data.novelSlug}`);
+        if (novel && novel.ownerId) {
+            const stars = "⭐".repeat(data.rating);
+            const notificationMsg = `⭐️ <b>ဝေဖန်ချက်အသစ် ရရှိပါသည်!</b>\n\nဝတ္ထု: <i>${novel.title}</i>\nအမှတ်: ${stars} (${data.rating}/5)\n\n"<i>${data.comment || "စာသားမပါရှိပါ"}</i>"`;
+            
+            // Fire and forget notification
+            notifyWriter(db, env, novel.ownerId, notificationMsg).catch(console.error);
+        }
 
+        revalidatePath(`/novel/${data.novelSlug}`);
         return NextResponse.json({ success: true });
 
     } catch (error: any) {

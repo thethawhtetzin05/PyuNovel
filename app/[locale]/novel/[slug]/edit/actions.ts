@@ -8,16 +8,7 @@ import { redirect } from '@/i18n/routing';
 import { getLocale } from 'next-intl/server';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from "@/db/schema";
-import { z } from 'zod';
-
-const UpdateNovelSchema = z.object({
-  novelId: z.string().min(1, "Novel ID is required"),
-  oldImageUrl: z.string().optional().default(""),
-  title: z.string().min(1, "Title is required"),
-  englishTitle: z.string().min(1, "English Title is required"),
-  description: z.string().optional().default(""),
-  tags: z.string().optional().default(""),
-});
+import { UpdateNovelSchema } from "@shared/schemas/novel";
 
 export async function updateNovelAction(formData: FormData) {
   const { env } = getRequestContext();

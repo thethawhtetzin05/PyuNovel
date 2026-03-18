@@ -6,7 +6,7 @@ import { getLocale } from 'next-intl/server';
 import { headers } from 'next/headers';
 
 import { getServerContext } from '@/lib/server-context';
-import { CreateNovelSchema } from '@/lib/schemas/novel';
+import { CreateNovelSchema } from '@shared/schemas/novel';
 import { createNovel } from '@/lib/resources/novels/mutations';
 
 export async function addNovelAction(formData: FormData) {

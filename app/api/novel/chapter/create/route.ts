@@ -2,19 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerContext } from "@/lib/server-context";
 import { createChapter } from "@/lib/resources/chapters/mutations";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import { ChapterSchema } from "@shared/schemas/chapter";
 
 export const runtime = 'edge';
-
-const chapterSchema = z.object({
-    title: z.string().min(1, "ခေါင်းစဉ် မပါမဖြစ် ပါရပါမယ်"),
-    content: z.string().min(1, "စာသား တိုလွန်းပါတယ်"),
-    sortIndex: z.coerce.number(),
-    isPaid: z.boolean().default(false),
-    novelSlug: z.string(),
-    novelId: z.coerce.number(),
-    volumeId: z.coerce.number().nullable().optional(),
-});
 
 export async function POST(request: NextRequest) {
     try {
@@ -26,7 +16,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const validation = chapterSchema.safeParse(body);
+        const validation = ChapterSchema.safeParse(body);
 
         if (!validation.success) {
             return NextResponse.json({
@@ -54,7 +44,7 @@ export async function POST(request: NextRequest) {
             isPaid: data.isPaid,
         }, session.user.id);
 
-        revalidatePath(`/novel/${data.novelSlug}`);
+        revalidatePath(`/novel/${novel.slug}`);
         return NextResponse.json({ success: true, sortIndex: data.sortIndex });
 
     } catch (error) {
