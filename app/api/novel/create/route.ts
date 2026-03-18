@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
 
         revalidatePath('/writer', 'page');
         revalidatePath('/', 'page');
-        return NextResponse.json({ success: true, slug: newNovel.slug });
+        return NextResponse.json({ success: true, slug: newNovel.slug, novelId: newNovel.id });
 
     } catch (error) {
         const message = error instanceof Error ? error.message : "Internal Server Error";

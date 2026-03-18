@@ -46,8 +46,31 @@ export async function processSyncQueue() {
             if (response?.data?.success) {
                 // Success! Remove from queue and update draft status
                 await db.runAsync("DELETE FROM sync_queue WHERE id = ?", [item.id]);
-                const tableName = item.action === "create_novel" ? "draft_novels" : "draft_chapters";
-                await db.runAsync(`UPDATE ${tableName} SET status = 'synced', serverUpdatedAt = CURRENT_TIMESTAMP WHERE id = ?`, [item.recordId]);
+
+                if (item.action === "create_novel") {
+                    const serverNovelId = response.data.novelId;
+                    // RE-MAP IDs: Update all local chapters that used the local temporary ID
+                    await db.runAsync(
+                        "UPDATE draft_chapters SET novelId = ? WHERE novelId = ?",
+                        [serverNovelId, item.recordId]
+                    );
+                    // Also update any other pending sync items for these chapters
+                    const pendingChapters = await db.getAllAsync<{ id: number; payload: string }>(
+                        "SELECT id, payload FROM sync_queue WHERE tableName = 'chapters' AND action IN ('create_chapter', 'update_chapter')"
+                    );
+                    
+                    for (const pending of pendingChapters) {
+                        const pPayload = JSON.parse(pending.payload);
+                        if (String(pPayload.novelId) === String(item.recordId)) {
+                            pPayload.novelId = serverNovelId;
+                            await db.runAsync("UPDATE sync_queue SET payload = ? WHERE id = ?", [JSON.stringify(pPayload), pending.id]);
+                        }
+                    }
+
+                    await db.runAsync("UPDATE draft_novels SET status = 'synced', serverUpdatedAt = CURRENT_TIMESTAMP WHERE id = ?", [item.recordId]);
+                } else {
+                    await db.runAsync("UPDATE draft_chapters SET status = 'synced', serverUpdatedAt = CURRENT_TIMESTAMP WHERE id = ?", [item.recordId]);
+                }
             } else {
                 throw new Error(response?.data?.error || "Unknown server error");
             }
