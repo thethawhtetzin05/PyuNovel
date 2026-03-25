@@ -21,7 +21,7 @@ export default function Navbar() {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<any>(null);
   const pathname = usePathname();
 
   const handleMouseEnter = () => {
@@ -30,7 +30,7 @@ export default function Navbar() {
   };
 
   const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => {
+    timeoutRef.current = window.setTimeout(() => {
       setIsProfileOpen(false);
     }, 300); // 300ms delay before it disappears
   };
@@ -60,6 +60,7 @@ export default function Navbar() {
   }, [lastScrollY]);
 
   const isRankingPage = pathname.includes('/ranking');
+  const isWriterPage = pathname.includes('/writer');
 
   if (pathname?.includes('/admin')) return null;
 
@@ -67,7 +68,7 @@ export default function Navbar() {
     <>
       <nav
         className={`sticky top-0 z-50 w-full transition-all duration-300 ease-in-out
-          ${isRankingPage ? "hidden md:block" : "block"}
+          ${isRankingPage || isWriterPage ? "hidden md:block" : "block"}
           ${isVisible ? "translate-y-0" : "-translate-y-full"}
           ${isScrolled
             ? "bg-[var(--surface)]/80 backdrop-blur-xl shadow-sm border-b border-border/10"

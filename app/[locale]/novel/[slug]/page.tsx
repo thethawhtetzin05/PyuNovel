@@ -209,7 +209,7 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
               {session?.user ? (
                 <CollectButton novelId={novel.id} initialCollected={isCollected} slug={novel.slug} />
               ) : (
-                <Button asChild variant="outline" size="lg" className="w-full h-12 text-[var(--foreground)] font-bold border-[var(--border)] hover:bg-[var(--surface-2)] transition-all flex items-center justify-center gap-2 shadow-sm text-sm md:text-base">
+                <Button asChild variant="outline" size="lg" className="w-full h-12 bg-primary/5 dark:bg-primary/10 text-primary shadow-xl border-primary/30 hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary font-bold flex items-center justify-center gap-2 transition-none text-sm md:text-base">
                   <Link href="/sign-in">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 shrink-0">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />

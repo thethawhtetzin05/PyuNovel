@@ -49,20 +49,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
   }
 
   // Pre-generate HTML content for initial server render
-  const htmlContent = `
-       <div class="mb-12 px-4 md:px-0 border-b border-current opacity-70 pb-6 text-center md:text-left">
-         <h1 class="text-3xl md:text-4xl font-black mt-2 mb-3 leading-tight text-inherit">
-             ${chapter.title}
-         </h1>
-         <div class="flex items-center justify-center md:justify-start gap-2 text-inherit opacity-60 text-sm font-sans">
-             <span>${formattedDate}</span>
-         </div>
-       </div>
-       
-       <div class="chapter-content">
-         ${chapter.content}
-       </div>
-   `;
+  const htmlContent = chapter.content;
 
   // Paid Chapter Check
   const isOwner = session?.user?.id === novel.ownerId;
@@ -80,23 +67,23 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col pb-12">
-      <ViewTracker slug={slug} />
+    <div className="min-h-screen w-full flex flex-col pb-12 overflow-x-hidden">
+      {/* 🛠️ Reader Mode: Hide site header/footer ONLY on Mobile */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @media (max-width: 768px) {
+            nav, footer, .bottom-nav { display: none !important; }
+            main { padding-bottom: 0 !important; }
+          }
+        `}} />
+
+      <ViewTracker slug={slug} chapterId={chapterId} />
       <ReadingTracker
         slug={slug}
         chapterId={chapterId}
         novelTitle={novel.title}
         chapterTitle={chapter.title}
       />
-
-      <div className="w-full max-w-5xl mx-auto px-5 sm:px-8 md:px-12 py-4 flex justify-between items-center opacity-70">
-        <Link
-          href={`/novel/${novel.slug}`}
-          className="font-bold text-sm hover:underline flex items-center gap-1"
-        >
-          ← {novel.title}
-        </Link>
-      </div>
 
       <div className="flex-grow w-full">
         {isLocked ? (
@@ -113,21 +100,29 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
             chapterId={chapter.id.toString()}
             allChapters={allChapters}
             novelSlug={novel.slug}
+            novelTitle={novel.title}
+            title={chapter.title}
+            date={formattedDate}
+            prevIndex={prev?.sortIndex.toString() || null}
+            nextIndex={next?.sortIndex.toString() || null}
           />
         )}
       </div>
 
-      {/* 3. FOOTER NAVIGATION */}
-      <div className="w-full max-w-5xl mx-auto px-5 sm:px-8 md:px-12 py-8 mt-12 border-t border-current opacity-70">
+      {/* 3. FOOTER NAVIGATION - Normal Desktop Experience */}
+      <div className="hidden md:block w-full max-w-5xl mx-auto px-5 sm:px-8 md:px-12 py-8 mt-12 border-t border-current opacity-70">
         <ReaderNavigation
           novelSlug={novel.slug}
           prevIndex={prev ? prev.sortIndex.toString() : null}
           nextIndex={next ? next.sortIndex.toString() : null}
         />
-
         <ChapterCommentsTrigger />
       </div>
 
+      {/* Mobile only Comments trigger if we want it separate */}
+      <div className="md:hidden w-full max-w-5xl mx-auto px-5 py-8 mt-4 border-t border-current opacity-70">
+        <ChapterCommentsTrigger />
+      </div>
     </div>
   );
 }

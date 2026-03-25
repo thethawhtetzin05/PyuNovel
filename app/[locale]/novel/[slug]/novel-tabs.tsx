@@ -3,12 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Link } from '@/i18n/routing';
-import { Calendar, Crown, Folder, Pencil, Trash2, ChevronRight, UploadCloud, ChevronDown, ChevronUp, MessageSquare, BookOpen, Info } from "lucide-react";
+import { Calendar, Crown, Folder, ChevronRight, ChevronDown, ChevronUp, MessageSquare, BookOpen, Info } from "lucide-react";
 import { useTranslations } from 'next-intl';
-import dynamic from 'next/dynamic';
-import { ConfirmModal, AlertModal } from '@/components/ui/Modals';
-
-const BulkUploadModal = dynamic(() => import('./bulk-upload-modal'), { ssr: false });
 import ReviewSection from '@/components/novel/review-section';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -67,53 +63,17 @@ export default function NovelTabs({
   isLoggedIn = false,
   defaultTab,
 }: NovelTabsProps) {
-  const router = useRouter();
-  const t = useTranslations('Navbar');
   const [activeTab, setActiveTab] = useState(defaultTab || 'about');
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [chapterToDelete, setChapterToDelete] = useState<Chapter | null>(null);
-  const [alertMsg, setAlertMsg] = useState('');
-  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [expandedVolumes, setExpandedVolumes] = useState<Record<string, boolean>>({});
 
   const toggleVolume = (volumeId: string) => {
     setExpandedVolumes(prev => ({ ...prev, [volumeId]: !prev[volumeId] }));
   };
 
-  const handleDelete = (e: React.MouseEvent, chapter: Chapter) => {
-    e.preventDefault();
-    setChapterToDelete(chapter);
-  };
-
-  const confirmDelete = async () => {
-    if (!chapterToDelete) return;
-
-    setIsDeleting(chapterToDelete.id);
-    try {
-      const response = await fetch('/api/novel/chapter/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chapterId: chapterToDelete.id, novelSlug }),
-      });
-      const res = await response.json() as { success: boolean; error?: string };
-      if (res.success) {
-        router.refresh();
-      } else {
-        setAlertMsg(res.error || "Failed to delete chapter");
-      }
-    } catch {
-      setAlertMsg("An error occurred while deleting the chapter");
-    } finally {
-      setIsDeleting(null);
-      setChapterToDelete(null);
-    }
-  };
-
   const renderChapter = (chapter: Chapter) => (
     <div
       key={chapter.id}
-      className={`group relative flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:border-primary/50 hover:shadow-md transition-all ${isDeleting === chapter.id ? "opacity-50 pointer-events-none" : ""
-        }`}
+      className={`group relative flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:border-primary/50 hover:shadow-md transition-all`}
     >
       <Link
         href={`/novel/${novelSlug}/${chapter.sortIndex}`}
@@ -133,35 +93,7 @@ export default function NovelTabs({
             VIP
           </Badge>
         )}
-
-        {isOwner && (
-          <div className="flex items-center gap-1">
-            <Button asChild variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:text-primary hover:bg-primary/10">
-              <Link href={`/novel/${novelSlug}/${chapter.sortIndex}/edit`} title="Edit Chapter">
-                <Pencil size={18} />
-              </Link>
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full hover:text-destructive hover:bg-destructive/10"
-              onClick={(e) => handleDelete(e, chapter)}
-              disabled={isDeleting === chapter.id}
-              title="Delete Chapter"
-            >
-              {isDeleting === chapter.id ? (
-                <div className="w-4 h-4 border-2 border-destructive border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <Trash2 size={18} />
-              )}
-            </Button>
-          </div>
-        )}
-
-        {!isOwner && (
-          <ChevronRight className="text-muted-foreground group-hover:text-primary transition-colors" size={20} />
-        )}
+        <ChevronRight className="text-muted-foreground group-hover:text-primary transition-colors" size={20} />
       </div>
     </div>
   );
@@ -172,31 +104,28 @@ export default function NovelTabs({
     <>
       <div className="mt-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full justify-start bg-transparent border-b border-border rounded-none h-auto p-0 mb-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
+          <TabsList className="inline-flex h-14 items-center justify-start rounded-xl bg-muted/50 p-1 text-muted-foreground mb-8 overflow-x-auto whitespace-nowrap w-full sm:w-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scrollbar-hide">
             <TabsTrigger
               value="about"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 text-lg font-bold transition-all gap-2"
+              className="inline-flex h-full items-center justify-center whitespace-nowrap rounded-lg px-6 text-base font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:border data-[state=active]:border-primary/10 gap-2"
             >
-              <Info size={18} />
-              About
+              Synopsis
             </TabsTrigger>
             <TabsTrigger
               value="chapters"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 text-lg font-bold transition-all gap-2"
+              className="inline-flex h-full items-center justify-center whitespace-nowrap rounded-lg px-6 text-base font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:border data-[state=active]:border-primary/10 gap-2"
             >
-              <BookOpen size={18} />
               Chapters
-              <Badge variant="secondary" className="ml-1 px-2 py-0 h-5 font-black bg-muted text-foreground border-none">
+              <Badge variant="secondary" className="ml-1 px-2 py-0 h-5 font-black bg-primary/10 text-primary border-none">
                 {chapters.length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger
               value="reviews"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-4 text-lg font-bold transition-all gap-2"
+              className="inline-flex h-full items-center justify-center whitespace-nowrap rounded-lg px-6 text-base font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:border data-[state=active]:border-primary/10 gap-2"
             >
-              <MessageSquare size={18} />
               Reviews
-              <Badge variant="secondary" className="ml-1 px-2 py-0 h-5 font-black bg-muted text-foreground border-none">
+              <Badge variant="secondary" className="ml-1 px-2 py-0 h-5 font-black bg-primary/10 text-primary border-none">
                 {reviews.length}
               </Badge>
             </TabsTrigger>
@@ -211,15 +140,6 @@ export default function NovelTabs({
           </TabsContent>
 
           <TabsContent value="chapters" className="mt-0 focus-visible:outline-none space-y-6">
-            {/* Upload File button for owners */}
-            {isOwner && (
-              <div className="flex justify-end">
-                <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm" className="gap-2 font-bold rounded-xl border-primary/30 hover:bg-primary/5 hover:text-primary">
-                  <UploadCloud size={16} />
-                  {t('bulkUpload')}
-                </Button>
-              </div>
-            )}
 
             {chapters.length > 0 ? (
               <div className="space-y-8">
@@ -315,39 +235,6 @@ export default function NovelTabs({
         </Tabs>
       </div>
 
-      {/* Bulk Upload Modal */}
-      {showBulkUpload && (
-        <BulkUploadModal
-          novelId={novelId}
-          novelSlug={novelSlug}
-          volumes={volumes}
-          onClose={() => setShowBulkUpload(false)}
-        />
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {chapterToDelete && (
-        <ConfirmModal
-          isOpen={!!chapterToDelete}
-          onClose={() => setChapterToDelete(null)}
-          onConfirm={confirmDelete}
-          title="Delete Chapter"
-          message={`Are you sure you want to delete "${chapterToDelete.title}"? This action cannot be undone.`}
-          confirmText={isDeleting ? "Deleting..." : "Delete"}
-          isDestructive={true}
-        />
-      )}
-
-      {/* Alert Modal for Errors */}
-      {alertMsg && (
-        <AlertModal
-          isOpen={!!alertMsg}
-          onClose={() => setAlertMsg('')}
-          title="Error"
-          message={alertMsg}
-          type="error"
-        />
-      )}
     </>
   );
 }

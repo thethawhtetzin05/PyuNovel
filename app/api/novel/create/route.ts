@@ -5,19 +5,23 @@ import { CreateNovelSchema } from "@shared/schemas/novel";
 import { processTags } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
+import * as schema from "@/db/schema";
 
 export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
     try {
         const { db, auth, env } = getServerContext();
+        if (!auth) {
+            return NextResponse.json({ success: false, error: "Auth configuration is missing" }, { status: 500 });
+        }
         const session = await auth.api.getSession({ headers: request.headers });
 
         if (!session) {
             return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
         }
 
-        const formData = await request.formData();
+        const formData = (await request.formData()) as any;
         const validatedFields = CreateNovelSchema.safeParse({
             englishTitle: formData.get('englishTitle'),
             title: formData.get('title'),
@@ -34,7 +38,7 @@ export async function POST(request: NextRequest) {
         }
 
         const { englishTitle, title, description, tags } = validatedFields.data;
-        const coverFile = formData.get('coverImage') as File;
+        const coverFile = (formData as any).get('coverImage') as File;
 
         let imageUrl = "/placeholder-cover.jpg";
 

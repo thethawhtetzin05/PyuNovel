@@ -10,6 +10,7 @@ interface ParagraphReaderProps {
     chapterId: string;
     allChapters: any[];
     novelSlug: string;
+    novelTitle: string;
 }
 
 interface Vote {
@@ -49,7 +50,7 @@ function getBubbleHtml(count: number, index: number): string {
     return `<span id="${id}" data-bubble="${index}" class="para-bubble-empty" style="display:inline-flex;align-items:center;justify-content:center;margin-left:4px;padding:0 5px;height:16px;min-width:20px;border-radius:9999px;font-size:10px;font-family:sans-serif;font-weight:500;background:transparent;color:transparent;cursor:pointer;vertical-align:baseline;position:relative;top:-1px;white-space:nowrap;transition:all 0.15s;">💬</span>`;
 }
 
-export default function ParagraphReader({ content, chapterId, allChapters, novelSlug }: ParagraphReaderProps) {
+export default function ParagraphReader({ content, chapterId, allChapters, novelSlug, novelTitle }: ParagraphReaderProps) {
     const [paragraphTexts, setParagraphTexts] = useState<string[]>([]);
     const [commentCounts, setCommentCounts] = useState<Record<number, number>>({});
     const [selectedParagraph, setSelectedParagraph] = useState<number | null>(null);
@@ -290,11 +291,16 @@ export default function ParagraphReader({ content, chapterId, allChapters, novel
                 flex flex-col
             `}>
                 <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-900">
-                    <div className="flex items-center gap-2">
-                        <BookOpen size={20} className="text-indigo-600" />
-                        <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">Table of Contents</h3>
+                    <div className="flex items-center gap-2 overflow-hidden">
+                        <BookOpen size={20} className="text-indigo-600 flex-shrink-0" />
+                        <Link
+                            href={`/novel/${novelSlug}`}
+                            className="text-base font-bold text-gray-900 dark:text-gray-100 truncate hover:text-indigo-600 transition-colors"
+                        >
+                            {novelTitle}
+                        </Link>
                     </div>
-                    <button onClick={() => setShowTOCSidebar(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                    <button onClick={() => setShowTOCSidebar(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0">
                         <X size={18} />
                     </button>
                 </div>
@@ -313,7 +319,7 @@ export default function ParagraphReader({ content, chapterId, allChapters, novel
                                     `}
                                     onClick={() => setShowTOCSidebar(false)}
                                 >
-                                    <span className={`text-sm font-medium truncate ${isCurrent ? 'text-indigo-700 dark:text-indigo-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
+                                    <span className={`text-lg font-medium truncate ${isCurrent ? 'text-indigo-700 dark:text-indigo-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
                                         {ch.title}
                                     </span>
                                 </Link>

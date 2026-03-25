@@ -236,13 +236,13 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
 
           {/* Left: Back & Chapter Info */}
           <div className="flex flex-wrap items-center gap-4">
-            <Link
-              href={`/novel/${slug}`}
-              className="group flex items-center gap-1 text-gray-400 hover:text-[var(--foreground)] transition-colors"
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="group flex items-center justify-center w-9 h-9 rounded-full bg-[var(--surface-2)] border border-[var(--border)] text-gray-400 hover:text-[var(--foreground)] hover:border-[var(--action)] transition-all active:scale-90"
             >
-              <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-              <span className="font-medium text-sm">{t('back')}</span>
-            </Link>
+              <ChevronLeft size={22} className="group-hover:-translate-x-0.5 transition-transform" />
+            </button>
 
             <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
 
@@ -352,38 +352,6 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
 
           {/* Right: Premium & Publish */}
           <div className="flex items-center gap-4 sm:gap-6 self-end md:self-auto">
-
-            {/* ✨ Premium Toggle Switch ✨ */}
-            <label className="cursor-pointer flex items-center gap-2 sm:gap-3 group select-none">
-              <div className="flex items-center gap-1.5 text-[var(--text-muted)] group-hover:text-yellow-600 transition-colors">
-                <Crown size={16} />
-                <span className="text-sm font-medium hidden sm:block">{t('premium')}</span>
-              </div>
-
-              <div className="relative inline-flex items-center">
-                <input
-                  type="checkbox"
-                  name="isPaid"
-                  className="sr-only peer"
-                  // ✅ Edit Mode အတွက် defaultChecked ထည့်ပေးရမယ်
-                  defaultChecked={initialData?.isPaid || false}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--surface)] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500 shadow-inner"></div>
-              </div>
-            </label>
-
-            {/* 🚀 Bulk Upload Button (Visible only in Create mode for now, or always if desired) */}
-            {!initialData && (
-              <button
-                type="button"
-                onClick={() => setShowBulkUpload(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold bg-[var(--surface-2)] text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--action)] hover:text-[var(--action)] transition-all active:scale-95 shadow-sm"
-              >
-                <UploadCloud size={16} />
-                <span>{tNav('bulkUpload')}</span>
-              </button>
-            )}
-
             {/* 🚀 Publish / Save Button */}
             <button
               disabled={loading}

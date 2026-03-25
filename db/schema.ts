@@ -83,7 +83,7 @@ export const novels = sqliteTable('novels', {
   coverUrl: text('cover_url'),
   tags: text('tags').notNull(), // Note: You might need to JSON.stringify arrays before storing here
 
-  status: text('status', { enum: ['ongoing', 'completed', 'hiatus'] }).default('ongoing'),
+  status: text('status', { enum: ['ongoing', 'completed', 'hiatus', 'dropped'] }).default('ongoing'),
 
   views: integer('views').default(0).notNull(),
   chapterPrice: integer('price').default(0),

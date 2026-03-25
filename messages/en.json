@@ -38,6 +38,7 @@
         "back": "Back",
         "noVolume": "No Volume",
         "addVolume": "+ Add New Volume",
+        "addNewVolume": "+ Add New Volume",
         "orderNo": "Order.No",
         "premium": "Premium",
         "chapterTitlePlaceholder": "Chapter Title",
@@ -79,7 +80,8 @@
         "namePlaceholder": "Your Name",
         "signingUp": "Creating Account...",
         "hasAccount": "Already have an account?",
-        "loginLink": "Log in"
+        "loginLink": "Log in",
+        "loginFailed": "Login Failed"
     },
     "NovelForm": {
         "coverImage": "Cover Image",
@@ -102,7 +104,8 @@
         "createTitle": "Start a New Journey ✍️",
         "createDesc": "Create a new novel and share your imagination.",
         "editTitle": "Edit Your Novel ✏️",
-        "editDesc": "Update details, cover image, and more."
+        "editDesc": "Update details, cover image, and more.",
+        "requiredField": "This field is required."
     },
     "Modal": {
         "deleteNovelTitle": "Delete Novel?",
@@ -128,5 +131,41 @@
     "Integration": {
         "title": "Integrations",
         "desc": "Connect external accounts to PyuNovel for additional features like notifications and automated tasks."
+    },
+    "NovelManagement": {
+        "overview": "Overview",
+        "chapters": "Chapters",
+        "settings": "Settings",
+        "totalViews": "Total Views",
+        "collectors": "Collectors",
+        "publishedChapters": "Published Chapters",
+        "novelStatus": "Novel Status",
+        "recentPerformance": "Recent Performance",
+        "viewPublic": "View Public",
+        "addChapter": "+ Add Chapter",
+        "editChapter": "Edit",
+        "deleteChapter": "Delete",
+        "saveChanges": "Save Changes",
+        "discardChanges": "Discard",
+        "novelTitle": "Novel Title",
+        "authorName": "Author Name",
+        "synopsis": "Synopsis",
+        "tags": "Tags",
+        "dangerZone": "Danger Zone",
+        "deleteNovel": "Delete Novel",
+        "successTitle": "Success",
+        "successUpdate": "Novel details updated successfully",
+        "statuses": {
+            "ongoing": "Ongoing",
+            "completed": "Completed",
+            "hiatus": "Hiatus",
+            "dropped": "Dropped"
+        },
+        "deletePermanently": "Delete Permanently",
+        "deleteConfirmTitle": "Delete Novel Permanently?",
+        "deleteConfirmDesc": "This action cannot be undone. All database records (chapters, favorites, views) will be lost forever.",
+        "deleteConfirmPlaceholder": "Enter your password to confirm",
+        "invalidPassword": "Invalid password. Deletion cancelled.",
+        "deletingSubmitting": "Deleting..."
     }
 }

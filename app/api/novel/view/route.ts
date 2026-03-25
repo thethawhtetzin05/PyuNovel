@@ -11,24 +11,36 @@ export async function POST(request: NextRequest) {
     try {
         const { db } = getServerContext({ withAuth: false });
 
-        const body = await request.json() as { slug?: string };
+        const body = await request.json() as { slug?: string; chapterId?: string };
         const slug = body?.slug;
+        const chapterId = body?.chapterId || "default";
 
         if (!slug || typeof slug !== 'string') {
             return NextResponse.json({ success: false, error: "slug မပါဘူး" }, { status: 400 });
         }
 
-        // Rate Limiting: 10 views per hour per IP/Slug combination
+        // Rate Limiting: 1 view per chapter per hour per IP
         const ip = request.headers.get("cf-connecting-ip") || "anonymous";
-        const limitKey = `view:${slug}:${ip}`;
-        const { success, remaining, resetAt } = await rateLimit(db, limitKey, 10, 3600);
+        const isLocal = ip === "127.0.0.1" || ip === "::1" || ip === "anonymous" || process.env.NODE_ENV !== "production";
 
-        if (!success) {
-            return NextResponse.json({ 
-                success: false, 
-                error: "Rate limit exceeded",
-                resetAt 
-            }, { 
+        const limitKey = `view:${slug}:${chapterId}:${ip}`;
+        let allowed = true;
+        let remaining = 1;
+        let resetAt = new Date();
+
+        if (!isLocal) {
+            const result = await rateLimit(db, limitKey, 1, 3600);
+            allowed = result.success;
+            remaining = result.remaining;
+            resetAt = result.resetAt;
+        }
+
+        if (!allowed) {
+            return NextResponse.json({
+                success: false,
+                error: "Rate limit exceeded (1 view per chapter/hour)",
+                resetAt
+            }, {
                 status: 429,
                 headers: {
                     "Retry-After": Math.ceil((resetAt.getTime() - Date.now()) / 1000).toString()

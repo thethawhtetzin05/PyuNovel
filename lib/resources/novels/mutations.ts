@@ -13,7 +13,7 @@ export async function createNovel(
     title: string;
     description: string;
     imageUrl: string | null;
-    status: 'ongoing' | 'completed' | 'hiatus';
+    status: 'ongoing' | 'completed' | 'hiatus' | 'dropped';
     author?: string; // Optional ဖြစ်နိုင်
     tags?: string;
   }

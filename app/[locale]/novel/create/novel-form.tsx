@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Link, useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
 
 // ✅ Props လက်ခံနိုင်အောင် Interface ဆောက်လိုက်ပါတယ်
 interface NovelFormProps {
@@ -24,19 +25,35 @@ export default function NovelForm({
 }: NovelFormProps) {
   const router = useRouter();
   const t = useTranslations('NovelForm');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [preview, setPreview] = useState<string | null>(initialData?.coverUrl || null);
-
-  // Default submit label translation fallback
   const finalSubmitLabel = submitLabel || (initialData ? t('saveChanges') : t('createNovel'));
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setErrors({});
+
+    const formData = new FormData(e.currentTarget);
+    const title = formData.get('title') as string;
+    const englishTitle = formData.get('englishTitle') as string;
+
+    // Custom Validation
+    const newErrors: Record<string, string> = {};
+    if (!title?.trim()) newErrors.title = t('requiredField');
+    if (!englishTitle?.trim()) newErrors.englishTitle = t('requiredField');
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      // Scroll to first error for accessibility
+      const firstErrorKey = Object.keys(newErrors)[0];
+      document.getElementsByName(firstErrorKey)[0]?.focus();
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const formData = new FormData(e.currentTarget);
-
       // 🚀 Optimize Image before upload (Method 1)
       const coverFile = formData.get('coverImage') as File;
       if (coverFile && coverFile.size > 0 && coverFile.name !== "undefined") {
@@ -59,9 +76,9 @@ export default function NovelForm({
       });
 
       const res = await response.json() as { success: boolean; slug?: string; error?: string };
-      if (res.success && res.slug) {
-        // success ရရင် detail page ကိုသွားမယ် (Edit ရော Create ရော အတူတူပဲ)
-        router.push(`/novel/${res.slug}`);
+      if (res.success) {
+        // success ရရင် Author Dashboard ကို ပြန်သွားပါမယ်
+        router.push('/writer');
         router.refresh();
       } else {
         alert(res.error || "Failed to save novel");
@@ -86,6 +103,7 @@ export default function NovelForm({
       onSubmit={handleSubmit}
       method="POST"
       encType="multipart/form-data"
+      noValidate // Disable browser validation tooltips
       className="space-y-6 bg-[var(--surface)] p-8 rounded-2xl shadow-sm border border-[var(--border)]"
     >
 
@@ -143,11 +161,16 @@ export default function NovelForm({
         <label className="block text-sm font-bold text-[var(--foreground)] mb-1">{t('novelTitle')}</label>
         <input
           name="title"
-          required
           defaultValue={initialData?.title}
           placeholder={t('novelTitlePlaceholder')}
-          className="w-full border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--action)] focus:border-transparent outline-none transition-shadow"
+          className={`w-full border bg-[var(--surface)] text-[var(--foreground)] px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--action)] focus:border-transparent outline-none transition-all ${errors.title ? 'border-red-500 bg-red-50/10' : 'border-[var(--border)]'
+            }`}
         />
+        {errors.title && (
+          <p className="text-red-500 text-xs mt-1 font-medium animate-in fade-in slide-in-from-top-1">
+            ⚠️ {errors.title}
+          </p>
+        )}
       </div>
 
       {/* English Title */}
@@ -161,7 +184,6 @@ export default function NovelForm({
         </div>
         <input
           name="englishTitle"
-          required
           defaultValue={initialData?.englishTitle}
           placeholder={t('englishTitlePlaceholder')}
           onChange={(e) => {
@@ -178,8 +200,14 @@ export default function NovelForm({
               }
             }
           }}
-          className="w-full border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--action)] focus:border-transparent outline-none transition-shadow"
+          className={`w-full border bg-[var(--surface)] text-[var(--foreground)] px-4 py-3 rounded-xl focus:ring-2 focus:ring-[var(--action)] focus:border-transparent outline-none transition-all ${errors.englishTitle ? 'border-red-500 bg-red-50/10' : 'border-[var(--border)]'
+            }`}
         />
+        {errors.englishTitle && (
+          <p className="text-red-500 text-xs mt-1 font-medium animate-in fade-in slide-in-from-top-1">
+            ⚠️ {errors.englishTitle}
+          </p>
+        )}
         <p className="text-[11px] text-[var(--text-muted)] mt-1 pl-1">
           {t('slugWarning')}
         </p>
@@ -211,22 +239,22 @@ export default function NovelForm({
         />
       </div>
 
-      <div className="pt-4 flex flex-col sm:flex-row justify-end gap-3">
+      <div className="pt-4 flex flex-row items-center justify-center gap-3 w-full sm:max-w-sm mx-auto">
         {/* Cancel နှိပ်ရင် Edit Mode ဆို မူရင်း Novel ဆီပြန်မယ်၊ Create Mode ဆို Home ပြန်မယ် */}
-        <Link
-          href={initialData ? `/novel/${initialData.englishTitle}` : "/"}
-          className="px-6 py-2.5 rounded-xl font-medium text-[var(--text-muted)] hover:bg-[var(--surface-2)] flex items-center justify-center transition"
-        >
-          {t('cancel')}
-        </Link>
+        <Button asChild variant="ghost" className="rounded-full flex-1 sm:w-40 border border-[var(--border)]">
+          <Link href={initialData ? `/novel/${initialData.englishTitle}` : "/"}>
+            {t('cancel')}
+          </Link>
+        </Button>
 
-        <button
+        <Button
           type="submit"
+          variant="premium"
           disabled={isSubmitting}
-          className="btn-primary w-full sm:w-auto px-8 py-2.5 rounded-xl font-bold transition-transform active:scale-95 text-center disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-full flex-1 sm:w-40 font-bold shadow-lg"
         >
           {isSubmitting ? t('saving') : finalSubmitLabel}
-        </button>
+        </Button>
       </div>
 
     </form>

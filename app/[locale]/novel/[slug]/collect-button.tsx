@@ -57,10 +57,10 @@ export default function CollectButton({ novelId, initialCollected, slug }: Props
             size="lg"
             onClick={handleToggle}
             disabled={isPending}
-            className={`w-full h-12 font-bold text-sm md:text-base transition-all duration-300 shadow-sm
+            className={`w-full h-12 font-bold text-sm md:text-base border-primary/30 shadow-xl transition-none
                 ${isCollected
-                    ? "bg-gradient-to-r from-amber-400 to-amber-600 border-amber-500 text-black shadow-amber-500/20"
-                    : "bg-transparent border-amber-500/50 text-amber-600"
+                    ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground shadow-primary/20"
+                    : "bg-primary/5 dark:bg-primary/10 text-primary hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary"
                 } 
                 ${isPending ? "opacity-70 cursor-not-allowed" : ""}`}
         >

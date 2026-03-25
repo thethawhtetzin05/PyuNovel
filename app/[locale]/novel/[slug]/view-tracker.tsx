@@ -2,19 +2,19 @@
 
 import { useEffect, useRef } from 'react';
 
-export default function ViewTracker({ slug }: { slug: string }) {
+export default function ViewTracker({ slug, chapterId }: { slug: string, chapterId: string }) {
   const hasViewed = useRef(false); // ၂ ခါ မတိုးအောင် ကာကွယ်မယ်
 
   useEffect(() => {
-    console.log("[TRACKER] Starting timer for:", slug);
+    console.log("[TRACKER] Starting timer for:", slug, "chapter:", chapterId);
     const timer = setTimeout(async () => {
       if (!hasViewed.current) {
         try {
-          console.log("[TRACKER] Calling /api/novel/view for:", slug);
+          console.log("[TRACKER] Calling /api/novel/view for:", slug, "chapter:", chapterId);
           const res = await fetch('/api/novel/view', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ slug }),
+            body: JSON.stringify({ slug, chapterId }),
           });
           const data = await res.json() as { success: boolean; error?: string };
           if (data.success) {
@@ -30,7 +30,7 @@ export default function ViewTracker({ slug }: { slug: string }) {
     }, 1000); // ၁ စက္ကန့် ကြာမှ တိုး (မကြာမီ ထွက်သွားရင် view မတိုးဘူး)
 
     return () => clearTimeout(timer);
-  }, [slug]);
+  }, [slug, chapterId]);
 
   return null; // UI မှာ ဘာမှ မပြဘူး
 }

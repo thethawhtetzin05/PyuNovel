@@ -38,6 +38,7 @@
         "back": "နောက်သို့",
         "noVolume": "အပိုင်းမရှိပါ",
         "addVolume": "+ အပိုင်းသစ် ထည့်မယ်",
+        "addNewVolume": "+ အတွဲသစ် ထည့်မယ်",
         "orderNo": "No.",
         "premium": "ပရီမီယံ",
         "chapterTitlePlaceholder": "အခန်းခေါင်းစဉ်",
@@ -70,6 +71,7 @@
         "joinPyuNovel": "PyuNovel သို့ ဝင်ရောက်ပါ 🧞‍♂️",
         "signUpDesc": "ဒီနေ့ပဲ စာဖတ်ခရီးကို လျှောက်လှမ်းလိုက်ပါ။",
         "name": "နာမည်",
+        "namePlaceholder": "နာမည် အပြည့်အစုံ",
         "passwordPlaceholder": "••••••••",
         "confirmPassword": "စကားဝှက်ကို အတည်ပြုမယ်",
         "passwordMismatch": "စကားဝှက်များကို ပြန်စစ်ပါ။ မတူညီပါ။",
@@ -77,8 +79,10 @@
         "signIn": "အကောင့်ဝင်မယ်",
         "signUp": "အကောင့် ဖွင့်မယ်",
         "signingIn": "ဝင်နေသည်...",
+        "signingUp": "အကောင့်သစ် ဖွင့်နေသည်...",
         "hasAccount": "အကောင့် ရှိပြီးသားလား",
-        "loginLink": "အကောင့်ဝင်မယ်"
+        "loginLink": "အကောင့်ဝင်မယ်",
+        "loginFailed": "အကောင့်ဝင်ရန် မအောင်မြင်ပါ"
     },
     "NovelForm": {
         "coverImage": "မျက်နှာဖုံးပုံ",
@@ -101,7 +105,8 @@
         "createTitle": "ခရီးစဉ်သစ်ကို လျှောက်လှမ်းလိုက်ပါ ✍️",
         "createDesc": "ဝတ္ထုများရေးသားပြီး သင့်စိတ်ကူးများကို မျှဝေလိုက်ပါ။",
         "editTitle": "ဝတ္ထုကို ပြင်မယ် ✏️",
-        "editDesc": "အချက်အလက်များ ဒါမှမဟုတ် မျက်နှာဖုံးကို ပြင်မယ်။"
+        "editDesc": "အချက်အလက်များ ဒါမှမဟုတ် မျက်နှာဖုံးကို ပြင်မယ်။",
+        "requiredField": "ဤနေရာမှာ ဖြည့်စွက်ပေးရန် လိုအပ်ပါသည်။"
     },
     "Modal": {
         "deleteNovelTitle": "ဝတ္ထုကို ဖျက်မှာလား?",
@@ -119,7 +124,7 @@
         "startWriting": "အခုပဲ စာစရေးမယ် →"
     },
     "NovelMenu": {
-        "addChapter": "✍️ အခန်းသစ် ထည့်မယ်",
+        "addChapter": "✍️ အခန်းသစ် ရေးမယ်",
         "editNovel": "✏️ ဝတ္ထုကို ပြင်မယ်",
         "delete": "🗑️ ဖျက်မယ်",
         "deleting": "ဖျက်နေသည်..."
@@ -127,5 +132,41 @@
     "Integration": {
         "title": "ချိတ်ဆက်မှုများ",
         "desc": "PyuNovel နဲ့ အခြားဝန်ဆောင်မှုများကို ချိတ်ဆက်ပြီး အလိုအလျောက်စနစ်နဲ့ အကြောင်းကြားချက်များ ရယူနိုင်ပါတယ်"
+    },
+    "NovelManagement": {
+        "overview": "သင်ပုန်း",
+        "chapters": "အခန်း",
+        "settings": "ဆက်တင်",
+        "totalViews": "ဝင်ကြည့်သူ",
+        "collectors": "သိမ်းဆည်းသူ",
+        "publishedChapters": "တင်ပြီးသားအခန်းများ",
+        "novelStatus": "ဝတ္ထုအခြေအနေ",
+        "recentPerformance": "လတ်တလော စွမ်းဆောင်ရည်",
+        "viewPublic": "အများမြင် စာမျက်နှာ",
+        "addChapter": "+ အခန်းသစ် ရေးမယ်",
+        "editChapter": "ပြင်ဆင်မယ်",
+        "deleteChapter": "ဖျက်မယ်",
+        "saveChanges": "သိမ်းဆည်းမယ်",
+        "discardChanges": "မလုပ်တော့ပါ",
+        "novelTitle": "ဝတ္ထုခေါင်းစဉ်",
+        "authorName": "စာရေးဆရာအမည်",
+        "synopsis": "အကျဉ်းချုပ်",
+        "tags": "အမျိုးအစား (Tags)",
+        "dangerZone": "အန္တရာယ်",
+        "deleteNovel": "ဝတ္ထုကို ဖျက်မည်",
+        "successTitle": "အောင်မြင်သည်",
+        "successUpdate": "ဝတ္ထုအချက်အလက်ကို ပြင်ဆင်ပြီးပါပြီ",
+        "statuses": {
+            "ongoing": "ရေးဆဲ",
+            "completed": "ဇာတ်သိမ်း",
+            "hiatus": "ခဏနား",
+            "dropped": "ရပ်ဆိုင်း"
+        },
+        "deletePermanently": "အပြီးဖျက်မယ်",
+        "deleteConfirmTitle": "ဝတ္ထုကို တကယ်ဖျက်မှာလား။",
+        "deleteConfirmDesc": "ဒီအလုပ်ကို ပြန်ပြင်လို့ မရပါဘူး။ ဝတ္ထုနဲ့ ပတ်သက်တဲ့ အချက်အလက်အားလုံး (chapters, favorites, views) ပျက်သွားမှာ ဖြစ်ပါတယ်။",
+        "deleteConfirmPlaceholder": "အတည်ပြုဖို့ password ကို ရိုက်ထည့်ပါ",
+        "invalidPassword": "လျှို့ဝှက်နံပါတ် မှားနေပါတယ်။ မဖျက်နိုင်ပါဘူး။",
+        "deletingSubmitting": "ဖျက်နေသည်..."
     }
 }

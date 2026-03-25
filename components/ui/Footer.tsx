@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 
 export default function Footer() {
     const pathname = usePathname();
-    if (pathname?.includes('/admin')) return null;
+    if (pathname?.includes('/admin') || pathname?.includes('/create') || pathname?.includes('/edit')) return null;
 
     return (
         <footer className="border-t py-8 mt-4" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>

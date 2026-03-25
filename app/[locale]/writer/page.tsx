@@ -6,6 +6,7 @@ import { redirect, Link } from '@/i18n/routing';
 import { getTranslations } from 'next-intl/server';
 import NovelMenu from './novel-menu'; // ခုနက Client Component
 import { drizzle } from 'drizzle-orm/d1';
+import { Button } from '@/components/ui/button';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -36,12 +37,11 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
           <h1 className="text-3xl font-extrabold text-[var(--foreground)]">{t('title')}</h1>
           <p className="text-[var(--text-muted)] mt-1">{t('description')}</p>
         </div>
-        <Link
-          href="/novel/create"
-          className="btn-primary px-5 py-2.5 rounded-xl font-bold transition-transform active:scale-95 text-sm inline-block"
-        >
-          {t('newNovel')}
-        </Link>
+        <Button asChild variant="premium" size="default" className="font-sans rounded-full">
+          <Link href="/novel/create">
+            {t('newNovel')}
+          </Link>
+        </Button>
       </div>
 
       {/* Novel List */}
@@ -69,7 +69,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
                 {/* Title & Badge Row */}
                 <div className="flex flex-row items-center gap-2 min-w-0">
-                  <Link href={`/novel/${novel.slug}`} className="text-base sm:text-lg font-bold text-[var(--foreground)] truncate hover:text-[var(--action)] transition-colors min-w-0 flex-shrink">
+                  <Link href={`/writer/novels/${novel.slug}`} className="text-base sm:text-lg font-bold text-[var(--foreground)] truncate hover:text-[var(--action)] transition-colors min-w-0 flex-shrink">
                     {novel.title}
                   </Link>
                   <span className={`px-2 py-0.5 rounded text-[8px] sm:text-[10px] font-bold uppercase tracking-wide shrink-0 ${novel.status === 'ongoing' ? 'bg-green-100/10 text-green-600' : 'bg-blue-100/10 text-[var(--action)]'

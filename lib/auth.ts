@@ -24,6 +24,7 @@ export const createAuth = (dbBinding: D1Database) => {
       "https://pyunovel.pages.dev",
       process.env.NEXT_PUBLIC_APP_URL || ""
     ].filter(Boolean),
+    baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
     advanced: {
       crossSubDomainCookies: {
         enabled: true
