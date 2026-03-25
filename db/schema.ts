@@ -98,6 +98,8 @@ export const novels = sqliteTable('novels', {
   createdAtIdx: index('novels_created_at_idx').on(table.createdAt),
   updatedAtIdx: index('novels_updated_at_idx').on(table.updatedAt),
   viewsIdx: index('novels_views_idx').on(table.views),
+  authorIdx: index('novels_author_idx').on(table.author),
+  statusIdx: index('novels_status_idx').on(table.status),
 }));
 
 export const volumes = sqliteTable('volumes', {
@@ -134,6 +136,7 @@ export const chapters = sqliteTable('chapters', {
   novelSortIdx: uniqueIndex('novel_sort_idx').on(table.novelId, table.sortIndex),
   volumeIdx: index('chapter_volume_idx').on(table.volumeId),
   updatedAtIdx: index('chapter_updated_at_idx').on(table.updatedAt),
+  novelIdIdx: index('chapter_novel_id_idx').on(table.novelId),
 }));
 
 // ==========================================
@@ -185,6 +188,7 @@ export const collections = sqliteTable('collections', {
   // Performance optimizations for D1
   userIdx: index('collection_user_idx').on(table.userId),
   novelIdx: index('collection_novel_idx').on(table.novelId),
+  userNovelIdx: index('collection_user_novel_idx').on(table.userId, table.novelId),
 }));
 
 // ==========================================

@@ -1,16 +1,17 @@
 import { getRequestContext } from '@cloudflare/next-on-pages';
-import { getNovelsByUserId } from '@/lib/resources/novels/queries';
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect, Link } from '@/i18n/routing';
 import { getTranslations } from 'next-intl/server';
-import NovelMenu from './novel-menu'; // ခုနက Client Component
 import { drizzle } from 'drizzle-orm/d1';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { novels, collections, chapters } from '@/db/schema';
+import { eq, count, desc, sql } from 'drizzle-orm';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
-
 
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
   const { env } = getRequestContext();
@@ -25,8 +26,33 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   }
 
   const db = drizzle(env.DB);
-  const myNovels = await getNovelsByUserId(db, session.user.id);
   const t = await getTranslations('Writer');
+
+  /**
+   * 🛠️ OPTIMIZATION: Priority 1 - Fix N+1 Queries
+   * Instead of scalar subqueries which run O(N) times, we use a single query with LEFT JOINs and GROUP BY.
+   * This reduces row reads from O(N * (Chapters + Collections)) to O(Novels + Chapters_Scan + Collections_Scan).
+   */
+  const myNovels = await db
+    .select({
+      id: novels.id,
+      title: novels.title,
+      slug: novels.slug,
+      status: novels.status,
+      coverUrl: novels.coverUrl,
+      views: novels.views,
+      updatedAt: novels.updatedAt,
+      // Aggregates with subqueries removed for inner joins to avoid cross-product overhead
+      collectorCount: sql<number>`CAST(count(distinct ${collections.id}) AS INTEGER)`,
+      chapterCount: sql<number>`CAST(count(distinct ${chapters.id}) AS INTEGER)`,
+    })
+    .from(novels)
+    .leftJoin(collections, eq(collections.novelId, novels.id))
+    .leftJoin(chapters, eq(chapters.novelId, novels.id))
+    .where(eq(novels.ownerId, session.user.id))
+    .groupBy(novels.id)
+    .orderBy(desc(novels.updatedAt))
+    .all();
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
@@ -48,64 +74,70 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
       <div className="flex flex-col gap-4 w-full max-w-full">
         {myNovels.length > 0 ? (
           myNovels.map((novel) => (
-            <div
-              key={novel.id}
-              className="group bg-[var(--surface)] p-4 rounded-2xl border border-[var(--border)] shadow-sm hover:shadow-md transition-all flex flex-row items-center gap-4 hover:border-[var(--accent)] w-full relative"
-            >
-              {/* Cover Image (Thumbnail) */}
-              <div className="w-16 h-24 shrink-0 bg-[var(--surface-2)] rounded-lg overflow-hidden border border-[var(--border)] relative">
-                {novel.coverUrl && novel.coverUrl !== "/placeholder-cover.jpg" ? (
-                  <img src={novel.coverUrl} alt={novel.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-[var(--text-muted)] bg-[var(--surface-2)]">
-                    <span className="text-xl mb-1">📚</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">No Cover</span>
+            <Link key={novel.id} href={`/writer/novels/${novel.slug}`}>
+              <Card className="overflow-hidden border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)] hover:shadow-md transition-all duration-200 group">
+                <CardContent className="p-4 flex flex-row items-center gap-4">
+                  {/* Cover Image (Thumbnail) */}
+                  <div className="w-16 h-24 shrink-0 bg-[var(--surface-2)] rounded-lg overflow-hidden border border-[var(--border)] relative shadow-sm">
+                    {novel.coverUrl && novel.coverUrl !== "/placeholder-cover.jpg" ? (
+                      <img src={novel.coverUrl} alt={novel.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-[var(--text-muted)] bg-[var(--surface-2)]">
+                        <span className="text-xl mb-1">📚</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">No Cover</span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Content */}
-              <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 flex flex-col gap-2">
+                    {/* Title & Badge Row */}
+                    <div className="flex flex-row items-center justify-between gap-2 min-w-0">
+                      <h3 className="text-base sm:text-lg font-bold text-[var(--foreground)] truncate group-hover:text-[var(--action)] transition-colors">
+                        {novel.title}
+                      </h3>
+                      <Badge variant="outline" className={`text-xs sm:text-sm uppercase font-bold tracking-wide border-0 py-1 px-3 shrink-0 ${novel.status === 'ongoing' ? 'bg-green-500/10 text-green-600' :
+                        novel.status === 'completed' ? 'bg-blue-500/10 text-blue-600' :
+                          'bg-orange-500/10 text-orange-600'
+                        }`}>
+                        {novel.status}
+                      </Badge>
+                    </div>
 
-                {/* Title & Badge Row */}
-                <div className="flex flex-row items-center gap-2 min-w-0">
-                  <Link href={`/writer/novels/${novel.slug}`} className="text-base sm:text-lg font-bold text-[var(--foreground)] truncate hover:text-[var(--action)] transition-colors min-w-0 flex-shrink">
-                    {novel.title}
-                  </Link>
-                  <span className={`px-2 py-0.5 rounded text-[8px] sm:text-[10px] font-bold uppercase tracking-wide shrink-0 ${novel.status === 'ongoing' ? 'bg-green-100/10 text-green-600' : 'bg-blue-100/10 text-[var(--action)]'
-                    }`}>
-                    {novel.status}
-                  </span>
-                </div>
+                    {/* Stats Grid - General View WITHOUT Icons */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-2 border-y border-[var(--border)]/50">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-bold">Views</span>
+                        <div className="text-sm font-bold text-[var(--foreground)]">
+                          {novel.views.toLocaleString()}
+                        </div>
+                      </div>
 
-                {/* Description */}
-                <p className="text-xs sm:text-sm text-[var(--text-muted)] truncate min-w-0">
-                  {novel.description || "No description provided."}
-                </p>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-bold">Collections</span>
+                        <div className="text-sm font-bold text-[var(--foreground)]">
+                          {novel.collectorCount.toLocaleString()}
+                        </div>
+                      </div>
 
-                {/* Stats */}
-                {/* Date & Views Row */}
-                <div className="flex flex-row items-center gap-4 text-xs text-[var(--text-muted)] font-medium min-w-0 truncate mb-2">
-                  <span>📅 {new Date(novel.createdAt || Date.now()).toLocaleDateString()}</span>
-                  <span>👁️ 0 Views</span>
-                </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-bold">Chapters</span>
+                        <div className="text-sm font-bold text-[var(--foreground)]">
+                          {novel.chapterCount}
+                        </div>
+                      </div>
 
-                {/* Action Buttons Row */}
-                <div className="flex flex-row items-center gap-3">
-                  <Link
-                    href={`/novel/${novel.slug}/create`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--action)]/10 text-[var(--action)] hover:bg-[var(--action)] hover:text-white transition-colors rounded-lg text-xs font-bold whitespace-nowrap shrink-0"
-                  >
-                    ✍️ Add Chapter
-                  </Link>
-                </div>
-              </div>
-
-              {/* Action Menu (3 Dots) */}
-              <div className="shrink-0 flex items-center justify-center">
-                <NovelMenu slug={novel.slug} novelId={novel.id.toString()} />
-              </div>
-            </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-bold">Last Update</span>
+                        <div className="text-sm font-bold text-[var(--foreground)]">
+                          {new Date(novel.updatedAt || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))
         ) : (
           /* ဝတ္ထု မရှိသေးရင် ပြမယ့်နေရာ */

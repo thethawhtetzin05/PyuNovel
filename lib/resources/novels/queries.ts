@@ -59,7 +59,22 @@ export const getTopNovelsByViews = cache(async (db: DrizzleD1Database<Record<str
 // ၂။ Slug နဲ့ ရှာမည့် Function (Novel Detail Page အတွက်)
 export const getNovelBySlug = cache(async (db: DrizzleD1Database<Record<string, unknown>>, slug: string) => {
   return await db
-    .select() // .select() ဆိုရင် Column အားလုံး (tags အပါအဝင်) ကို အလိုလို ယူပေးပါတယ်
+    .select({
+      id: novels.id,
+      slug: novels.slug,
+      title: novels.title,
+      englishTitle: novels.englishTitle,
+      author: novels.author,
+      description: novels.description,
+      coverUrl: novels.coverUrl,
+      tags: novels.tags,
+      status: novels.status,
+      views: novels.views,
+      chapterPrice: novels.chapterPrice,
+      ownerId: novels.ownerId,
+      createdAt: novels.createdAt,
+      updatedAt: novels.updatedAt,
+    })
     .from(novels)
     .where(eq(novels.slug, slug))
     .get();
@@ -68,7 +83,16 @@ export const getNovelBySlug = cache(async (db: DrizzleD1Database<Record<string, 
 // ၃။ User ID နဲ့ ရှာမည့် Function (Admin Dashboard အတွက်)
 export async function getNovelsByUserId(db: DrizzleD1Database<Record<string, unknown>>, userId: string) {
   return await db
-    .select()
+    .select({
+      id: novels.id,
+      title: novels.title,
+      slug: novels.slug,
+      status: novels.status,
+      coverUrl: novels.coverUrl,
+      views: novels.views,
+      createdAt: novels.createdAt,
+      updatedAt: novels.updatedAt,
+    })
     .from(novels)
     .where(eq(novels.ownerId, userId))
     .orderBy(desc(novels.createdAt))
@@ -78,7 +102,16 @@ export async function getNovelsByUserId(db: DrizzleD1Database<Record<string, unk
 // ၅။ Ranking Page - အသစ်ထွက် ဝတ္ထုများ
 export const getLatestNovels = cache(async (db: DrizzleD1Database<Record<string, unknown>>, limit: number = 20) => {
   return await db
-    .select()
+    .select({
+      id: novels.id,
+      title: novels.title,
+      slug: novels.slug,
+      author: novels.author,
+      coverUrl: novels.coverUrl,
+      status: novels.status,
+      views: novels.views,
+      createdAt: novels.createdAt,
+    })
     .from(novels)
     .orderBy(desc(novels.createdAt))
     .limit(limit)
@@ -88,7 +121,16 @@ export const getLatestNovels = cache(async (db: DrizzleD1Database<Record<string,
 // ၆။ Ranking Page - Update အဖြစ်ဆုံး ဝတ္ထုများ
 export const getRecentlyUpdatedNovels = cache(async (db: DrizzleD1Database<Record<string, unknown>>, limit: number = 20) => {
   return await db
-    .select()
+    .select({
+      id: novels.id,
+      title: novels.title,
+      slug: novels.slug,
+      author: novels.author,
+      coverUrl: novels.coverUrl,
+      status: novels.status,
+      views: novels.views,
+      updatedAt: novels.updatedAt,
+    })
     .from(novels)
     .orderBy(desc(novels.updatedAt))
     .limit(limit)
@@ -137,4 +179,4 @@ export const getTopNovelsByCollectors = cache(async (db: DrizzleD1Database<Recor
     .orderBy(desc(count(collections.id)), desc(novels.views))
     .limit(limit)
     .all();
-});
+});
