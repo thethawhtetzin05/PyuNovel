@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+// @ts-ignore
 import { setupDevPlatform } from '@cloudflare/next-on-pages/next-dev';
 import createNextIntlPlugin from 'next-intl/plugin';
 import { withSentryConfig } from "@sentry/nextjs";
@@ -27,7 +28,7 @@ const nextConfig: NextConfig = {
 if (process.env.NODE_ENV === 'development') {
   setupDevPlatform({
     configPath: './wrangler.toml',
-  }).catch((e) => console.error(e));
+  }).catch((e: unknown) => console.error(e));
 }
 
 export default withSentryConfig(withNextIntl(nextConfig), {
