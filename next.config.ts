@@ -31,27 +31,20 @@ if (process.env.NODE_ENV === 'development') {
   }).catch((e: unknown) => console.error(e));
 }
 
-export default withSentryConfig(withNextIntl(nextConfig), {
-  // For all available options, see:
-  // https://github.com/getsentry/sentry-webpack-plugin#options
-
+const sentryConfig = {
   org: "pyunovel",
   project: "pyunovel-nextjs",
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
 
-  // For all available options, see:
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
-
   // Upload a larger set of source maps for prettier stack traces (increases build time)
   widenClientFileUpload: true,
 
   // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
-  // This can increase your server load as well as your Sentry bill.
   tunnelRoute: "/monitoring",
 
-  // Disable auto-instrumentation that causes duplicated identifier errors with next-on-pages
+  // Disable auto-instrumentation that causes duplicated identifiers with next-on-pages
   autoInstrumentMiddleware: false,
   autoInstrumentServerFunctions: false,
   autoInstrumentAppDirectory: false,
@@ -66,4 +59,12 @@ export default withSentryConfig(withNextIntl(nextConfig), {
     },
     automaticVercelMonitors: true,
   }
-});
+};
+
+// Cloudflare Pages sets CF_PAGES=1 automatically during builds.
+// Sentry's webpack plugin creates duplicate identifiers that crash next-on-pages,
+// so we skip it entirely when building for Cloudflare.
+const baseConfig = withNextIntl(nextConfig);
+export default process.env.CF_PAGES
+  ? baseConfig
+  : withSentryConfig(baseConfig, sentryConfig);
