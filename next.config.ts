@@ -59,5 +59,8 @@ export default withSentryConfig(withNextIntl(nextConfig), {
       removeDebugLogging: true,
     },
     automaticVercelMonitors: true,
+    autoInstrumentMiddleware: false,
+    autoInstrumentAppDirectory: false,
+    autoInstrumentServerFunctions: false,
   }
 });
