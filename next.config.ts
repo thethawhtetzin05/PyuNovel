@@ -51,6 +51,11 @@ export default withSentryConfig(withNextIntl(nextConfig), {
   // This can increase your server load as well as your Sentry bill.
   tunnelRoute: "/monitoring",
 
+  // Disable auto-instrumentation that causes duplicated identifier errors with next-on-pages
+  autoInstrumentMiddleware: false,
+  autoInstrumentServerFunctions: false,
+  autoInstrumentAppDirectory: false,
+
   // New Sentry webpack options for Next.js 15+
   webpack: {
     reactComponentAnnotation: {
@@ -60,8 +65,5 @@ export default withSentryConfig(withNextIntl(nextConfig), {
       removeDebugLogging: true,
     },
     automaticVercelMonitors: true,
-    autoInstrumentMiddleware: false,
-    autoInstrumentAppDirectory: false,
-    autoInstrumentServerFunctions: false,
   }
 });
