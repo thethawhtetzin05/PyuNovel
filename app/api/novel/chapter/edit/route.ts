@@ -9,6 +9,9 @@ export const runtime = 'edge';
 export async function POST(request: NextRequest) {
     try {
         const { db, auth } = getServerContext();
+        if (!auth) {
+            return NextResponse.json({ success: false, error: "Auth not initialized" }, { status: 500 });
+        }
         const session = await auth.api.getSession({ headers: request.headers });
 
         if (!session) {
@@ -21,16 +24,20 @@ export async function POST(request: NextRequest) {
         if (contentType.includes("application/json")) {
             data = await request.json();
         } else {
-            const formData = await request.formData();
+            const formData = await request.formData() as any;
+            const volumeIdRaw = formData.get('volumeId');
+            const novelIdRaw = formData.get('novelId');
+            const sortIndexRaw = formData.get('sortIndex');
+
             data = {
                 chapterId: formData.get('chapterId') as string,
                 novelSlug: formData.get('novelSlug') as string,
-                novelId: formData.get('novelId') ? Number(formData.get('novelId')) : undefined,
+                novelId: novelIdRaw ? Number(novelIdRaw) : undefined,
                 title: formData.get('title') as string,
                 content: formData.get('content') as string,
                 isPaid: formData.get('isPaid') === 'on' || formData.get('isPaid') === 'true',
-                sortIndex: formData.get('sortIndex') ? Number(formData.get('sortIndex')) : undefined,
-                volumeId: formData.get('volumeId') ? Number(formData.get('volumeId')) : null,
+                sortIndex: sortIndexRaw ? Number(sortIndexRaw) : undefined,
+                volumeId: (volumeIdRaw && volumeIdRaw !== "") ? Number(volumeIdRaw) : null,
             };
         }
 

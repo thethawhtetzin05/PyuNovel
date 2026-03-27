@@ -2,6 +2,7 @@
 
 import { Link } from "@/i18n/routing";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import { useSession } from "@/lib/auth-client";
 import { Home, Library, BookHeart, CircleUser } from "lucide-react";
 import Image from "next/image";
@@ -9,6 +10,13 @@ import Image from "next/image";
 export default function BottomNav() {
     const { data: session } = useSession();
     const pathname = usePathname();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const showProfile = mounted && session?.user;
 
     // Hide BottomNav on Reader Page (e.g., /novel/[slug]/[chapterId])
     // But show it on main novel page, edit pages, and create pages.
@@ -38,7 +46,7 @@ export default function BottomNav() {
         },
         {
             // If logged in, show user image inside a ring; else show user icon
-            icon: session?.user ? (
+            icon: showProfile ? (
                 <div className="w-7 h-7 rounded-full overflow-hidden border border-gray-200 dark:border-gray-800 shrink-0">
                     {session.user.image ? (
                         <Image src={session.user.image} alt="Profile" width={28} height={28} className="object-cover w-full h-full" />
@@ -53,7 +61,7 @@ export default function BottomNav() {
             ) : (
                 <CircleUser className="w-7 h-7 text-current transition-colors" strokeWidth={1.5} />
             ),
-            href: session?.user ? '/profile' : '/sign-in',
+            href: showProfile ? '/profile' : '/sign-in',
         },
     ];
 

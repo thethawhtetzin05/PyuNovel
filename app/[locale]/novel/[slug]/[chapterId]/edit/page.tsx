@@ -57,9 +57,7 @@ export default async function EditChapterPage({ params }: { params: Promise<{ sl
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-gray-900">Edit Chapter ✏️</h1>
-      </div>
+
 
       <ChapterForm
         initialData={initialData}

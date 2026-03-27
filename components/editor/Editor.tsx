@@ -4,9 +4,11 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
-import { memo, useEffect } from "react";
+import { memo, useEffect, useState } from "react";
 
 const Editor = ({ onChange, initialContent }: { onChange: (html: string) => void; initialContent?: string }) => {
+  const [isSelectionActive, setIsSelectionActive] = useState(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -18,6 +20,9 @@ const Editor = ({ onChange, initialContent }: { onChange: (html: string) => void
     shouldRerenderOnTransaction: false, // ✅ မြန်မာစာအတွက် အသက်
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
+    },
+    onSelectionUpdate: ({ editor }) => {
+      setIsSelectionActive(!editor.state.selection.empty);
     },
     editorProps: {
       attributes: {
@@ -37,45 +42,49 @@ const Editor = ({ onChange, initialContent }: { onChange: (html: string) => void
   if (!editor) return null;
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Static Toolbar */}
-      <div className="sticky top-[80px] z-20 flex flex-wrap gap-2 p-2 bg-gray-50 border border-gray-200 rounded-xl shadow-sm">
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${editor.isActive('bold') ? 'bg-indigo-600 text-white shadow' : 'text-gray-700 hover:bg-gray-200'}`}
-        >
-          Bold
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={`px-3 py-1.5 rounded-lg text-sm italic transition-colors ${editor.isActive('italic') ? 'bg-indigo-600 text-white shadow' : 'text-gray-700 hover:bg-gray-200'}`}
-        >
-          Italic
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={`px-3 py-1.5 rounded-lg text-sm underline transition-colors ${editor.isActive('underline') ? 'bg-indigo-600 text-white shadow' : 'text-gray-700 hover:bg-gray-200'}`}
-        >
-          Underline
-        </button>
-        <div className="w-px bg-gray-300 mx-1 my-1"></div>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-indigo-600 text-white shadow' : 'text-gray-700 hover:bg-gray-200'}`}
-        >
-          H2
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${editor.isActive('heading', { level: 3 }) ? 'bg-indigo-600 text-white shadow' : 'text-gray-700 hover:bg-gray-200'}`}
-        >
-          H3
-        </button>
+    <div className="flex flex-col gap-6 relative">
+      {/* Selection-Triggered Toolbar (Static position at top for stability) */}
+      <div className={`sticky top-0 z-20 flex items-center justify-center transition-all duration-300 ${isSelectionActive ? 'opacity-100 translate-y-0 h-auto mb-4' : 'opacity-0 -translate-y-4 h-0 pointer-events-none overflow-hidden'}`}>
+        <div className="flex items-center gap-1 p-1 bg-slate-900 text-white rounded-xl shadow-2xl border border-slate-800">
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${editor.isActive('bold') ? 'bg-indigo-600' : 'hover:bg-slate-800'}`}
+          >
+            Bold
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            className={`px-3 py-2 rounded-lg text-xs italic transition-all ${editor.isActive('italic') ? 'bg-indigo-600' : 'hover:bg-slate-800'}`}
+          >
+            Italic
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            className={`px-3 py-2 rounded-lg text-xs underline transition-all ${editor.isActive('underline') ? 'bg-indigo-600' : 'hover:bg-slate-800'}`}
+          >
+            Underline
+          </button>
+
+          <div className="w-px h-4 bg-slate-700 mx-1"></div>
+
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${editor.isActive('heading', { level: 2 }) ? 'bg-indigo-600' : 'hover:bg-slate-800'}`}
+          >
+            H2
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${editor.isActive('heading', { level: 3 }) ? 'bg-indigo-600' : 'hover:bg-slate-800'}`}
+          >
+            H3
+          </button>
+        </div>
       </div>
 
       <div

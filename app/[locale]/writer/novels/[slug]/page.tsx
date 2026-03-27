@@ -96,6 +96,12 @@ export default async function NovelManagementPage({
                     deleteConfirmPlaceholder: tManagement('deleteConfirmPlaceholder'),
                     invalidPassword: tManagement('invalidPassword'),
                     deletingSubmitting: tManagement('deletingSubmitting'),
+                    paidSettings: tManagement('paidSettings'),
+                    pricePerChapter: tManagement('pricePerChapter'),
+                    paidRange: tManagement('paidRange'),
+                    fromChapter: tManagement('fromChapter'),
+                    toChapter: tManagement('toChapter'),
+                    editNovelDetail: tManagement('editNovelDetail'),
                 }}
             />
         </div>

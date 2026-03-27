@@ -166,6 +166,12 @@
         "deleteConfirmDesc": "This action cannot be undone. All database records (chapters, favorites, views) will be lost forever.",
         "deleteConfirmPlaceholder": "Enter your password to confirm",
         "invalidPassword": "Invalid password. Deletion cancelled.",
-        "deletingSubmitting": "Deleting..."
+        "deletingSubmitting": "Deleting...",
+        "paidSettings": "Paid Settings",
+        "pricePerChapter": "Price Per Chapter",
+        "paidRange": "Paid Range",
+        "fromChapter": "From Chapter",
+        "toChapter": "To Chapter",
+        "editNovelDetail": "Edit Novel Detail"
     }
 }

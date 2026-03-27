@@ -88,10 +88,9 @@ export default function NovelTabs({
 
       <div className="flex items-center gap-3 shrink-0 pl-4 border-l border-border ml-4">
         {chapter.isPaid && (
-          <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30 gap-1 font-bold">
-            <Crown size={12} fill="currentColor" />
-            VIP
-          </Badge>
+          <div className="w-9 h-9 flex items-center justify-center text-amber-600 bg-amber-500/10 rounded-xl border border-amber-500/20 shadow-sm" title="VIP Chapter">
+            <Crown size={16} fill="currentColor" />
+          </div>
         )}
         <ChevronRight className="text-muted-foreground group-hover:text-primary transition-colors" size={20} />
       </div>

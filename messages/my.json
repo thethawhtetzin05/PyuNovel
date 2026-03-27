@@ -167,6 +167,12 @@
         "deleteConfirmDesc": "ဒီအလုပ်ကို ပြန်ပြင်လို့ မရပါဘူး။ ဝတ္ထုနဲ့ ပတ်သက်တဲ့ အချက်အလက်အားလုံး (chapters, favorites, views) ပျက်သွားမှာ ဖြစ်ပါတယ်။",
         "deleteConfirmPlaceholder": "အတည်ပြုဖို့ password ကို ရိုက်ထည့်ပါ",
         "invalidPassword": "လျှို့ဝှက်နံပါတ် မှားနေပါတယ်။ မဖျက်နိုင်ပါဘူး။",
-        "deletingSubmitting": "ဖျက်နေသည်..."
+        "deletingSubmitting": "ဖျက်နေသည်...",
+        "paidSettings": "ငွေပေးချေမှု ဆက်တင်များ",
+        "pricePerChapter": "တစ်ခန်းချင်း ဈေးနှုန်း",
+        "paidRange": "အခန်းအပိုင်းအခြား",
+        "fromChapter": "မည်သည့်အခန်းမှ",
+        "toChapter": "မည်သည့်အခန်းအထိ",
+        "editNovelDetail": "ဝတ္ထုအချက်အလက်ပြင်မယ်"
     }
 }

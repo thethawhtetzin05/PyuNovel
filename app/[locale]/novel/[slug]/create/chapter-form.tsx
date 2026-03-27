@@ -227,11 +227,13 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
       {/* ✅ Edit Mode ဆိုရင် ID ကို Hidden Input အနေနဲ့ ထည့်ပေးပေးရမယ် */}
       {initialData && <input type="hidden" name="chapterId" value={initialData.id} />}
       <input type="hidden" name="novelSlug" value={slug} />
+      <input type="hidden" name="novelId" value={novelId} />
+      <input type="hidden" name="volumeId" value={selectedVolume} />
 
       {/* ========================
-          1. Top Navigation Bar 
+          1. Top Navigation Bar (Non-Sticky)
          ======================== */}
-      <div className="sticky top-0 z-30 bg-[var(--surface)]/80 backdrop-blur-md border-b border-[var(--border)] px-6 py-4 flex-wrap">
+      <div className="bg-[var(--surface)] border-b border-[var(--border)] px-6 py-8 mb-8">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
 
           {/* Left: Back & Chapter Info */}

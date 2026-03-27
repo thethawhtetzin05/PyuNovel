@@ -61,8 +61,9 @@ export default function Navbar() {
 
   const isRankingPage = pathname.includes('/ranking');
   const isWriterPage = pathname.includes('/writer');
+  const isEditOrCreatePage = pathname.includes('/novel/') && (pathname.includes('/edit') || pathname.includes('/create'));
 
-  if (pathname?.includes('/admin')) return null;
+  if (pathname?.includes('/admin') || isEditOrCreatePage) return null;
 
   return (
     <>

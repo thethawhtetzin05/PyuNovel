@@ -74,22 +74,67 @@ export async function PATCH(
         }
 
         // Update fields
-        const updated = await db.update(novels)
-            .set({
-                title: body.title ?? existing.title,
-                author: body.author ?? existing.author,
-                description: body.description ?? existing.description,
-                tags: body.tags ?? existing.tags,
-                status: body.status ?? existing.status,
-                updatedAt: new Date()
-            })
+        // Cloudflare D1 uses .batch() for atomic updates instead of .transaction()
+        const batchOperations: any[] = [];
+
+        // 1. Update Novel Settings
+        const novelUpdateData: any = {
+            title: body.title ?? existing.title,
+            author: body.author ?? existing.author,
+            description: body.description ?? existing.description,
+            tags: body.tags ?? existing.tags,
+            status: body.status ?? existing.status,
+            updatedAt: new Date()
+        };
+
+        if (typeof body.chapterPrice === 'number') {
+            novelUpdateData.chapterPrice = body.chapterPrice;
+        }
+
+        const updateNovelStmt = db.update(novels)
+            .set(novelUpdateData)
             .where(eq(novels.id, existing.id))
-            .returning()
-            .get();
+            .returning();
+
+        batchOperations.push(updateNovelStmt);
+
+        // 2. Update Chapters Paid Status if range is provided
+        if (typeof body.paidFrom === 'number' && typeof body.paidTo === 'number') {
+            const { chapters } = await import("@/db/schema");
+            const { gte, lte, or, lt, gt } = await import("drizzle-orm");
+
+            // Mark within range as Paid
+            const updatePaidStmt = db.update(chapters)
+                .set({ isPaid: true })
+                .where(and(
+                    eq(chapters.novelId, existing.id),
+                    gte(chapters.sortIndex, body.paidFrom),
+                    lte(chapters.sortIndex, body.paidTo)
+                ));
+
+            batchOperations.push(updatePaidStmt);
+
+            // Mark outside range as Free
+            const updateFreeStmt = db.update(chapters)
+                .set({ isPaid: false })
+                .where(and(
+                    eq(chapters.novelId, existing.id),
+                    or(
+                        lt(chapters.sortIndex, body.paidFrom),
+                        gt(chapters.sortIndex, body.paidTo)
+                    )
+                ));
+
+            batchOperations.push(updateFreeStmt);
+        }
+
+        const results = await db.batch(batchOperations as any);
+        // results[0] is the array return from .returning()
+        const updatedNovel = Array.isArray(results[0]) ? results[0][0] : results[0];
 
         return NextResponse.json({
             success: true,
-            data: updated
+            data: updatedNovel
         });
 
     } catch (error: any) {
