@@ -4,8 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from '@/i18n/routing';
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Crown, Sparkles, Save, Folder, Edit2, Trash2, MoreVertical, ChevronDown, UploadCloud } from "lucide-react";
+import { ChevronLeft, Crown, Sparkles, Save, Folder, Edit2, Trash2, MoreVertical, ChevronDown, UploadCloud, Loader2 } from "lucide-react";
 import { useTranslations } from 'next-intl';
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 // Bulk Upload Import
 const BulkUploadModal = dynamic(() => import('../bulk-upload-modal'), { ssr: false });
@@ -200,14 +202,10 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
 
       const res = await response.json() as { success: boolean; sortIndex?: number; error?: string };
       if (res.success) {
-        // Edit mode ဆိုရင် novel page ကို ပြန်သွားမယ်၊ Create mode ဆိုရင် အခန်းထဲ တန်းဝင်မယ်
-        if (initialData) {
-          router.push(`/novel/${slug}`);
-        } else {
-          const finalSortIndex = res.sortIndex || sortIndex;
-          router.push(`/novel/${slug}/${finalSortIndex}`);
-        }
-        router.refresh(); // ဒေတာအသစ်ပေါ်အောင် refresh လုပ်ပေးမယ်
+        // Redirection logic: Go back to the previous page (like a browser back button)
+        router.back();
+        // We still call refresh to ensure the previous page shows updated data when it mounts
+        setTimeout(() => router.refresh(), 100);
       } else {
         alert(res.error || "Failed to save chapter");
       }
@@ -231,41 +229,43 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
       <input type="hidden" name="volumeId" value={selectedVolume} />
 
       {/* ========================
-          1. Top Navigation Bar (Non-Sticky)
+          1. Top Navigation Bar (Sticky with Glassmorphism)
          ======================== */}
-      <div className="bg-[var(--surface)] border-b border-[var(--border)] px-6 py-8 mb-8">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/50 px-6 py-4 mb-12">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
 
           {/* Left: Back & Chapter Info */}
-          <div className="flex flex-wrap items-center gap-4">
-            <button
+          <div className="flex items-center gap-3">
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => router.back()}
-              className="group flex items-center justify-center w-9 h-9 rounded-full bg-[var(--surface-2)] border border-[var(--border)] text-gray-400 hover:text-[var(--foreground)] hover:border-[var(--action)] transition-all active:scale-90"
+              className="rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-all active:scale-90"
             >
-              <ChevronLeft size={22} className="group-hover:-translate-x-0.5 transition-transform" />
-            </button>
+              <ChevronLeft size={20} />
+            </Button>
 
-            <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
+            <Separator orientation="vertical" className="h-6 mx-1 bg-border/50" />
 
             <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 text-sm bg-[var(--surface-2)] hover:bg-gray-100 border border-transparent focus:border-gray-300 rounded px-3 py-1.5 transition-all text-[var(--foreground)] font-semibold"
+                className="flex items-center gap-2 text-sm bg-muted/50 hover:bg-muted border border-border/50 rounded-xl px-4 py-2 transition-all text-foreground font-bold"
               >
-                <Folder size={16} className="text-gray-400" />
-                <span className="truncate max-w-[120px]">
+                <Folder size={16} className="text-primary/70" />
+                <span className="truncate max-w-[150px]">
                   {selectedVolume
                     ? localVolumes.find(v => v.id.toString() === selectedVolume)?.name || t('unknownVolume')
                     : t('noVolume')}
                 </span>
-                <ChevronDown size={14} className={`text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={14} className={`text-muted-foreground transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="p-1.5 flex flex-col gap-0.5 rounded-t-xl">
+                <div className="absolute top-full left-0 mt-2 w-64 bg-background border border-border rounded-2xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                  <div className="p-2 flex flex-col gap-1">
                     {/* No Volume Option */}
                     {localVolumes.length === 0 && (
                       <button
@@ -274,7 +274,7 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
                           setSelectedVolume("");
                           setIsDropdownOpen(false);
                         }}
-                        className={`flex items-center px-3 py-2 text-sm rounded-lg hover:bg-[var(--surface-2)] transition-colors text-left ${selectedVolume === "" ? "bg-[var(--action)]/10 text-[var(--action)] font-bold" : "text-gray-600 font-medium"}`}
+                        className={`flex items-center px-4 py-2.5 text-sm rounded-xl hover:bg-muted/50 transition-colors text-left ${selectedVolume === "" ? "bg-primary/10 text-primary font-bold" : "text-muted-foreground font-semibold"}`}
                       >
                         {t('noVolume')}
                       </button>
@@ -282,34 +282,29 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
 
                     {/* Volumes List */}
                     {localVolumes.map((v) => (
-                      <div key={v.id} className={`group flex items-center justify-between px-2 py-1.5 text-sm rounded-lg hover:bg-[var(--surface-2)] transition-colors ${selectedVolume === v.id.toString() ? "bg-[var(--action)]/10" : ""}`}>
+                      <div key={v.id} className={`group flex items-center justify-between px-2 py-1.5 text-sm rounded-xl hover:bg-muted/50 transition-colors ${selectedVolume === v.id.toString() ? "bg-primary/10" : ""}`}>
                         <button
                           type="button"
                           onClick={() => {
                             setSelectedVolume(v.id.toString());
                             setIsDropdownOpen(false);
                           }}
-                          className={`flex-1 text-left truncate pr-2 ${selectedVolume === v.id.toString() ? "text-[var(--action)] font-bold" : "text-gray-600 font-medium"}`}
+                          className={`flex-1 text-left truncate px-2 py-1 ${selectedVolume === v.id.toString() ? "text-primary font-bold" : "text-muted-foreground font-semibold"}`}
                         >
                           {v.name}
                         </button>
 
-                        {/* 3 dots menu inside the row */}
-                        <div className="relative flex items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <div className="relative flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="group/menu relative">
-                            <button type="button" className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition-colors">
+                            <button type="button" className="p-1.5 rounded-lg hover:bg-background border border-transparent hover:border-border text-muted-foreground">
                               <MoreVertical size={14} />
                             </button>
-
-                            {/* Actions Dropdown */}
-                            {/* Actions Dropdown */}
-                            {/* Inner wrapper uses pl-1 to create an invisible hover bridge, preventing instant menu close */}
-                            <div className="absolute left-full top-0 pl-1 hidden group-hover/menu:block hover:block z-[60] min-w-[124px]">
-                              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-lg overflow-hidden">
-                                <button type="button" onClick={() => { setEditingVolume({ id: v.id.toString(), name: v.name }); setShowEditModal(true); setIsDropdownOpen(false); }} className="w-full text-left px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-[var(--surface-2)] flex items-center gap-2">
+                            <div className="absolute left-full top-0 pl-1 hidden group-hover/menu:block hover:block z-[60] min-w-[140px]">
+                              <div className="bg-background border border-border rounded-xl shadow-xl overflow-hidden py-1">
+                                <button type="button" onClick={() => { setEditingVolume({ id: v.id.toString(), name: v.name }); setShowEditModal(true); setIsDropdownOpen(false); }} className="w-full text-left px-4 py-2 text-xs font-bold text-muted-foreground hover:bg-muted/50 flex items-center gap-2">
                                   <Edit2 size={12} /> {t('editName')}
                                 </button>
-                                <button type="button" onClick={() => handleDeleteVolume(v.id.toString())} className="w-full text-left px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 flex items-center gap-2">
+                                <button type="button" onClick={() => handleDeleteVolume(v.id.toString())} className="w-full text-left px-4 py-2 text-xs font-bold text-destructive hover:bg-destructive/10 flex items-center gap-2">
                                   <Trash2 size={12} /> {t('delete')}
                                 </button>
                               </div>
@@ -320,14 +315,14 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
                     ))}
                   </div>
 
-                  <div className="p-1.5 border-t border-[var(--border)] bg-[var(--surface-2)]/50 rounded-b-xl">
+                  <div className="p-2 border-t border-border bg-muted/30">
                     <button
                       type="button"
                       onClick={() => {
                         setShowVolumeModal(true);
                         setIsDropdownOpen(false);
                       }}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-bold text-blue-600 hover:bg-blue-100/50 rounded-lg transition-colors"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-black text-primary hover:bg-primary/10 rounded-xl transition-colors"
                     >
                       + {t('addNewVolume')}
                     </button>
@@ -336,44 +331,34 @@ export default function ChapterForm({ slug, novelId, suggestedIndex, volumes = [
               )}
             </div>
 
-            <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
+            <Separator orientation="vertical" className="h-6 mx-1 bg-border/50" />
 
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-[var(--text-muted)] font-medium uppercase tracking-wide text-xs">{t('orderNo')}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Order</span>
               <input
                 name="sortIndex"
                 type="number"
-                // ✅ Edit ဆိုရင် အဟောင်းပြမယ်၊ New ဆိုရင် အသစ်ပြမယ်
                 defaultValue={initialData?.sortIndex ?? suggestedIndex}
                 step="0.1"
-                className="w-16 bg-[var(--surface-2)] hover:bg-gray-100 focus:bg-[var(--surface)] border border-transparent focus:border-gray-300 rounded px-2 py-1 font-bold text-[var(--foreground)] outline-none text-center transition-all"
+                className="w-16 bg-muted/50 hover:bg-muted focus:bg-background border border-border/30 rounded-xl px-2 py-2 font-black text-foreground outline-none text-center transition-all text-sm"
                 required
               />
             </div>
           </div>
 
           {/* Right: Premium & Publish */}
-          <div className="flex items-center gap-4 sm:gap-6 self-end md:self-auto">
-            {/* 🚀 Publish / Save Button */}
-            <button
+          <div className="flex items-center gap-4">
+            <Button
               disabled={loading}
               type="submit"
-              className="bg-slate-900 hover:bg-black text-white font-medium py-2.5 px-8 rounded-full shadow-lg shadow-gray-200 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 px-8 rounded-full shadow-lg shadow-indigo-500/20 active:scale-95 transition-all text-sm disabled:opacity-50 border-none"
             >
               {loading ? (
-                <>{t('saving')}</>
+                <Loader2 size={16} className="animate-spin" />
               ) : (
-                <>
-                  {/* Edit Mode ဆို Save, New ဆို Publish ပြမယ် */}
-                  <span>{initialData ? t('saveChanges') : t('publish')}</span>
-                  {initialData ? (
-                    <Save size={16} className="text-gray-300" />
-                  ) : (
-                    <Sparkles size={16} className="text-yellow-400" />
-                  )}
-                </>
+                <span>{initialData ? t('saveChanges') : t('publish')}</span>
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

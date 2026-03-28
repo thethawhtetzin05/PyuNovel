@@ -27,7 +27,7 @@ const Editor = ({ onChange, initialContent }: { onChange: (html: string) => void
     editorProps: {
       attributes: {
         // ✅ Medium Style: ဘောင်မရှိ၊ Shadow မရှိ၊ Font ရှင်းရှင်း
-        class: "prose prose-lg focus:outline-none max-w-none text-xl leading-[2] font-serif min-h-[70vh] outline-none placeholder:text-gray-300",
+        class: "prose prose-lg dark:prose-invert focus:outline-none max-w-none text-xl leading-[2] font-serif min-h-[70vh] outline-none placeholder:text-muted-foreground/50",
       },
     },
   });
@@ -88,7 +88,7 @@ const Editor = ({ onChange, initialContent }: { onChange: (html: string) => void
       </div>
 
       <div
-        className="cursor-text bg-white rounded-xl p-6 min-h-[50vh] border border-gray-100 shadow-sm"
+        className="cursor-text bg-background/50 backdrop-blur-sm rounded-3xl p-8 min-h-[60vh] border border-border/50 shadow-inner"
         onClick={() => editor.commands.focus()}
       >
         <EditorContent editor={editor} />
