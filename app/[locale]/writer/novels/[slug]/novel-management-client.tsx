@@ -425,8 +425,82 @@ export default function NovelManagementClient({
 
                 {/* Settings Tab */}
                 <TabsContent value="settings" className="space-y-6 animate-in slide-in-from-bottom-2 duration-300">
-                    <Accordion type="single" collapsible defaultValue="edit-detail" className="w-full space-y-4">
-                        {/* 1. Edit Novel Detail */}
+                    <Accordion type="single" collapsible className="w-full space-y-4">
+                        {/* 1. Paid Settings */}
+                        <AccordionItem value="paid-settings" className="border border-border rounded-3xl bg-background shadow-sm px-4 overflow-hidden">
+                            <AccordionTrigger className="hover:no-underline py-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-amber-500/5 flex items-center justify-center text-amber-500">
+                                        <Crown size={22} fill="currentColor" />
+                                    </div>
+                                    <div className="text-left">
+                                        <CardTitle className="text-lg font-black">{translations.paidSettings}</CardTitle>
+                                        <CardDescription className="font-medium">Manage chapter monetization and price.</CardDescription>
+                                    </div>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-8 pt-2">
+                                <CardContent className="p-0 space-y-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-3">
+                                            <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.pricePerChapter}</label>
+                                            <div className="relative">
+                                                <Input
+                                                    type="number"
+                                                    value={form.chapterPrice}
+                                                    onChange={(e) => setForm({ ...form, chapterPrice: Number(e.target.value) })}
+                                                    className="h-12 rounded-xl border-border bg-muted/20 focus:bg-background transition-all font-black text-xl pl-12"
+                                                />
+                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                                    🪙
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.paidRange}</label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-1.5">
+                                                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 ml-1">{translations.fromChapter}</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={form.paidFrom}
+                                                        onChange={(e) => setForm({ ...form, paidFrom: Number(e.target.value) })}
+                                                        className="h-10 rounded-xl bg-muted/20 border-border focus:bg-background transition-all font-bold"
+                                                        placeholder="e.g. 5"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 ml-1">{translations.toChapter}</span>
+                                                    <Input
+                                                        type="number"
+                                                        value={form.paidTo}
+                                                        onChange={(e) => setForm({ ...form, paidTo: Number(e.target.value) })}
+                                                        className="h-10 rounded-xl bg-muted/20 border-border focus:bg-background transition-all font-bold"
+                                                        placeholder="e.g. 100"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <Separator className="bg-border/50" />
+
+                                    <div className="flex justify-end p-2 pb-0">
+                                        <Button
+                                            className="w-full sm:w-auto rounded-xl font-black bg-[var(--action)] hover:bg-[var(--action)]/90 gap-2 px-8 h-11 shadow-lg shadow-[var(--action)]/20 active:scale-95 transition-all"
+                                            disabled={isSaving}
+                                            onClick={handleSave}
+                                        >
+                                            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                                            {translations.saveChanges}
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        {/* 2. Edit Novel Detail */}
                         <AccordionItem value="edit-detail" className="border border-border rounded-3xl bg-background shadow-sm px-4 overflow-hidden">
                             <AccordionTrigger className="hover:no-underline py-6">
                                 <div className="flex items-center gap-3">
@@ -527,80 +601,6 @@ export default function NovelManagementClient({
                                                 {translations.saveChanges}
                                             </Button>
                                         </div>
-                                    </div>
-                                </CardContent>
-                            </AccordionContent>
-                        </AccordionItem>
-
-                        {/* 2. Paid Settings */}
-                        <AccordionItem value="paid-settings" className="border border-border rounded-3xl bg-background shadow-sm px-4 overflow-hidden">
-                            <AccordionTrigger className="hover:no-underline py-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-amber-500/5 flex items-center justify-center text-amber-500">
-                                        <Badge variant="outline" className="h-6 px-1 border-amber-500/20 bg-amber-500/10 text-amber-600 font-black">VIP</Badge>
-                                    </div>
-                                    <div className="text-left">
-                                        <CardTitle className="text-lg font-black">{translations.paidSettings}</CardTitle>
-                                        <CardDescription className="font-medium">Manage chapter monetization and price.</CardDescription>
-                                    </div>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-8 pt-2">
-                                <CardContent className="p-0 space-y-8">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-3">
-                                            <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.pricePerChapter}</label>
-                                            <div className="relative">
-                                                <Input
-                                                    type="number"
-                                                    value={form.chapterPrice}
-                                                    onChange={(e) => setForm({ ...form, chapterPrice: Number(e.target.value) })}
-                                                    className="h-12 rounded-xl border-border bg-muted/20 focus:bg-background transition-all font-black text-xl pl-12"
-                                                />
-                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                                                    🪙
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.paidRange}</label>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-1.5">
-                                                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 ml-1">{translations.fromChapter}</span>
-                                                    <Input
-                                                        type="number"
-                                                        value={form.paidFrom}
-                                                        onChange={(e) => setForm({ ...form, paidFrom: Number(e.target.value) })}
-                                                        className="h-10 rounded-xl bg-muted/20 border-border focus:bg-background transition-all font-bold"
-                                                        placeholder="e.g. 5"
-                                                    />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 ml-1">{translations.toChapter}</span>
-                                                    <Input
-                                                        type="number"
-                                                        value={form.paidTo}
-                                                        onChange={(e) => setForm({ ...form, paidTo: Number(e.target.value) })}
-                                                        className="h-10 rounded-xl bg-muted/20 border-border focus:bg-background transition-all font-bold"
-                                                        placeholder="e.g. 100"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <Separator className="bg-border/50" />
-
-                                    <div className="flex justify-end p-2 pb-0">
-                                        <Button
-                                            className="w-full sm:w-auto rounded-xl font-black bg-[var(--action)] hover:bg-[var(--action)]/90 gap-2 px-8 h-11 shadow-lg shadow-[var(--action)]/20 active:scale-95 transition-all"
-                                            disabled={isSaving}
-                                            onClick={handleSave}
-                                        >
-                                            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                                            {translations.saveChanges}
-                                        </Button>
                                     </div>
                                 </CardContent>
                             </AccordionContent>

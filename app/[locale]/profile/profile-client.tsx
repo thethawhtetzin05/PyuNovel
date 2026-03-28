@@ -148,13 +148,6 @@ export default function ProfileClient({ user, userNovels, joinedDate }: ProfileC
                                         </svg>
                                         {(novel.views || 0).toLocaleString()}
                                     </span>
-
-                                    <Link
-                                        href={`/novel/${novel.slug}/edit`}
-                                        className="text-[10px] font-black uppercase tracking-widest text-[var(--action)] hover:text-white hover:bg-[var(--action)] border border-[var(--action)]/30 px-4 py-1.5 rounded-full transition-all"
-                                    >
-                                        Edit
-                                    </Link>
                                 </div>
                             </div>
                         ))}
