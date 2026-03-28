@@ -53,6 +53,8 @@ export async function POST(
         // Calculate scheduling slots if mode is enabled
         let currentScheduledCount = 0;
         const now = new Date();
+        const mmOffset = 6.5 * 60 * 60 * 1000;
+        const nowMM = new Date(now.getTime() + mmOffset);
 
         if (novel.isScheduledMode) {
             const existingScheduled = await db.query.chapters.findMany({
@@ -77,19 +79,21 @@ export async function POST(
                 const slotIndex = currentScheduledCount + i;
                 const daysAhead = Math.floor(slotIndex / chaptersPerDay);
 
-                let targetDate = new Date(now);
-                targetDate.setHours(scheduledHour, 0, 0, 0);
+                // Create target date in Myanmar time
+                let targetDateMM = new Date(nowMM);
+                targetDateMM.setUTCHours(scheduledHour, 0, 0, 0);
 
-                // If the base scheduled hour for today has already passed, the 0th day is actually tomorrow
-                if (targetDate <= now) {
-                    targetDate.setDate(targetDate.getDate() + 1);
+                // If the base scheduled hour for today has already passed in Myanmar, start from tomorrow
+                if (targetDateMM <= nowMM) {
+                    targetDateMM.setUTCDate(targetDateMM.getUTCDate() + 1);
                 }
 
                 // Offset by the number of days required by the queue position
-                targetDate.setDate(targetDate.getDate() + daysAhead);
+                targetDateMM.setUTCDate(targetDateMM.getUTCDate() + daysAhead);
 
                 status = 'scheduled';
-                publishedAt = targetDate;
+                // Convert back to UTC for storage
+                publishedAt = new Date(targetDateMM.getTime() - mmOffset);
             }
 
             return {

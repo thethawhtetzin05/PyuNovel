@@ -48,6 +48,10 @@ export async function POST(request: NextRequest) {
             const scheduledHour = novel.scheduledHour || 18;
             const chaptersPerDay = novel.chaptersPerDay || 1;
 
+            // Get current time in Myanmar (UTC+6.5)
+            const mmOffset = 6.5 * 60 * 60 * 1000;
+            const nowMM = new Date(now.getTime() + mmOffset);
+
             // Get all future scheduled chapters to find the next available slot
             const existingScheduled = await db.query.chapters.findMany({
                 where: (chapters, { eq, and, gt }) => and(
@@ -61,17 +65,20 @@ export async function POST(request: NextRequest) {
             const slotIndex = existingScheduled.length;
             const daysAhead = Math.floor(slotIndex / chaptersPerDay);
 
-            let targetDate = new Date(now);
-            targetDate.setHours(scheduledHour, 0, 0, 0);
+            // Create target date in Myanmar time
+            let targetDateMM = new Date(nowMM);
+            targetDateMM.setUTCHours(scheduledHour, 0, 0, 0);
 
-            // If the base scheduled hour for today has already passed, the 0th day is actually tomorrow
-            if (targetDate <= now) {
-                targetDate.setDate(targetDate.getDate() + 1);
+            // If the base scheduled hour for today has already passed in Myanmar, start from tomorrow
+            if (targetDateMM <= nowMM) {
+                targetDateMM.setUTCDate(targetDateMM.getUTCDate() + 1);
             }
 
             // Offset by the number of days required by the current queue
-            targetDate.setDate(targetDate.getDate() + daysAhead);
-            finalPublishedAt = targetDate;
+            targetDateMM.setUTCDate(targetDateMM.getUTCDate() + daysAhead);
+
+            // Convert back to UTC for storage
+            finalPublishedAt = new Date(targetDateMM.getTime() - mmOffset);
             finalStatus = 'scheduled';
         } else if (finalStatus === 'published' && !finalPublishedAt) {
             finalPublishedAt = new Date();
