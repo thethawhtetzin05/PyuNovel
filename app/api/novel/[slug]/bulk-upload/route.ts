@@ -12,6 +12,9 @@ export async function POST(
 ) {
     try {
         const { db, auth } = getServerContext();
+        if (!auth) {
+            return NextResponse.json({ success: false, error: "Auth not initialized" }, { status: 500 });
+        }
         const session = await auth.api.getSession({ headers: request.headers });
 
         if (!session) {
@@ -47,17 +50,62 @@ export async function POST(
         const lastIdRow = await db.select({ id: chapters.id }).from(chapters).orderBy(desc(chapters.id)).limit(1).get();
         let currentMaxId = lastIdRow?.id ?? 0;
 
-        const rows = parsedChapters.map((ch, i) => ({
-            id: currentMaxId + i + 1,
-            novelId,
-            volumeId: volumeId || null,
-            title: ch.title,
-            content: ch.content,
-            isPaid: false,
-            sortIndex: startIndex + i,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        }));
+        // Calculate scheduling slots if mode is enabled
+        let currentScheduledCount = 0;
+        const now = new Date();
+
+        if (novel.isScheduledMode) {
+            const existingScheduled = await db.query.chapters.findMany({
+                where: (chapters, { eq, and, gt }) => and(
+                    eq(chapters.novelId, novel.id),
+                    eq(chapters.status, 'scheduled'),
+                    gt(chapters.publishedAt, now)
+                )
+            });
+            currentScheduledCount = existingScheduled.length;
+        }
+
+        const rows = parsedChapters.map((ch, i) => {
+            let status = 'published';
+            let publishedAt = new Date();
+
+            if (novel.isScheduledMode) {
+                const scheduledHour = novel.scheduledHour || 18;
+                const chaptersPerDay = novel.chaptersPerDay || 1;
+
+                // Virtual slot index for this specific chapter in the batch
+                const slotIndex = currentScheduledCount + i;
+                const daysAhead = Math.floor(slotIndex / chaptersPerDay);
+
+                let targetDate = new Date(now);
+                targetDate.setHours(scheduledHour, 0, 0, 0);
+
+                // If the base scheduled hour for today has already passed, the 0th day is actually tomorrow
+                if (targetDate <= now) {
+                    targetDate.setDate(targetDate.getDate() + 1);
+                }
+
+                // Offset by the number of days required by the queue position
+                targetDate.setDate(targetDate.getDate() + daysAhead);
+
+                status = 'scheduled';
+                publishedAt = targetDate;
+            }
+
+            return {
+                id: currentMaxId + i + 1,
+                novelId,
+                volumeId: volumeId || null,
+                title: ch.title,
+                content: ch.content,
+                isPaid: false,
+                status: status as any,
+                publishedAt: publishedAt,
+                sortIndex: startIndex + i,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+        });
 
         // Batch insert in chunks
         const chunkSize = 25;

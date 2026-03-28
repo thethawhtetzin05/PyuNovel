@@ -151,6 +151,51 @@ export default function NovelManagementClient({
     const [deletePassword, setDeletePassword] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Chapter deletion states
+    const [chapterToDelete, setChapterToDelete] = useState<number | null>(null);
+    const [isDeletingChapter, setIsDeletingChapter] = useState(false);
+
+    const handleDeleteChapter = async () => {
+        if (!chapterToDelete) return;
+
+        setIsDeletingChapter(true);
+        try {
+            const res = await fetch(`/api/novel/chapter/delete`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chapterId: chapterToDelete })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setAlert({
+                    isOpen: true,
+                    title: translations.successTitle,
+                    message: "Chapter deleted successfully",
+                    type: 'success'
+                });
+                router.refresh();
+            } else {
+                setAlert({
+                    isOpen: true,
+                    title: "Error",
+                    message: data.error || "Failed to delete chapter",
+                    type: 'error'
+                });
+            }
+        } catch (error) {
+            setAlert({
+                isOpen: true,
+                title: "Error",
+                message: "An unexpected error occurred",
+                type: 'error'
+            });
+        } finally {
+            setIsDeletingChapter(false);
+            setChapterToDelete(null);
+        }
+    };
+
     const handleDeleteNovel = async () => {
         if (!deletePassword) return;
 
@@ -444,7 +489,15 @@ export default function NovelManagementClient({
                                                     </Link>
                                                 </Button>
 
-                                                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setChapterToDelete(chapter.id);
+                                                    }}
+                                                    className="h-9 w-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                                >
                                                     <Trash2 size={16} />
                                                 </Button>
                                             </div>
@@ -898,6 +951,18 @@ export default function NovelManagementClient({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmModal
+                isOpen={chapterToDelete !== null}
+                onClose={() => setChapterToDelete(null)}
+                onConfirm={handleDeleteChapter}
+                title={translations.deleteChapter}
+                message="Are you sure you want to delete this chapter? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                isDestructive={true}
+                isLoading={isDeletingChapter}
+            />
 
             <AlertModal
                 isOpen={alert.isOpen}
