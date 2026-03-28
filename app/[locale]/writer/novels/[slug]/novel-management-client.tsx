@@ -161,9 +161,12 @@ export default function NovelManagementClient({
         setIsDeletingChapter(true);
         try {
             const res = await fetch(`/api/novel/chapter/delete`, {
-                method: 'DELETE',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chapterId: chapterToDelete })
+                body: JSON.stringify({
+                    chapterId: chapterToDelete,
+                    novelSlug: novel.slug
+                })
             });
             const data = await res.json();
 
