@@ -19,10 +19,11 @@ interface BulkUploadModalProps {
     novelId: number;
     novelSlug: string;
     volumes?: Volume[];
+    defaultVolumeId?: string;
     onClose: () => void;
 }
 
-export default function BulkUploadModal({ novelId, novelSlug, volumes = [], onClose }: BulkUploadModalProps) {
+export default function BulkUploadModal({ novelId, novelSlug, volumes = [], defaultVolumeId = '', onClose }: BulkUploadModalProps) {
     const router = useRouter();
     const fileRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<ParsedChapter[] | null>(null);
@@ -31,7 +32,7 @@ export default function BulkUploadModal({ novelId, novelSlug, volumes = [], onCl
     const [isPending, startTransition] = useTransition();
     const [showGuide, setShowGuide] = useState(false);
     const [localVolumes, setLocalVolumes] = useState<Volume[]>(volumes);
-    const [selectedVolumeId, setSelectedVolumeId] = useState<string>('');
+    const [selectedVolumeId, setSelectedVolumeId] = useState<string>(defaultVolumeId);
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -186,7 +187,7 @@ export default function BulkUploadModal({ novelId, novelSlug, volumes = [], onCl
                 const chunkSize = 10;
                 for (let i = 0; i < preview.length; i += chunkSize) {
                     const chunk = preview.slice(i, i + chunkSize);
-                    
+
                     const response = await fetch(`/api/novel/${novelSlug}/bulk-upload`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

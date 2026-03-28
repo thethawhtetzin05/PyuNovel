@@ -71,6 +71,7 @@ interface Chapter {
     status: string;
     publishedAt: Date | null;
     createdAt: Date | null;
+    volumeId?: number | null;
 }
 
 interface Volume {
@@ -442,6 +443,7 @@ export default function NovelManagementClient({
                             novelId={novel.id}
                             novelSlug={novel.slug}
                             volumes={volumes}
+                            defaultVolumeId={chapters.length > 0 ? chapters.sort((a, b) => b.id - a.id)[0].volumeId?.toString() : undefined}
                             onClose={() => setIsBulkUploadOpen(false)}
                         />
                     )}
