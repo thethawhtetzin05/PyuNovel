@@ -62,6 +62,8 @@ export async function POST(request: NextRequest) {
             isPaid: validatedData.isPaid,
             sortIndex: validatedData.sortIndex,
             volumeId: validatedData.volumeId || null,
+            status: validatedData.status,
+            publishedAt: validatedData.publishedAt,
             updatedAt: validatedData.updatedAt || new Date() // Use client-side timestamp if available for LWW
         }, session.user.id);
 

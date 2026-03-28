@@ -9,6 +9,8 @@ export const ChapterSchema = z.object({
     novelSlug: z.string().optional(),
     novelId: z.coerce.number(),
     volumeId: z.coerce.number().nullable().optional(),
+    status: z.enum(['draft', 'scheduled', 'published']).default('published'),
+    publishedAt: z.coerce.date().nullable().optional(),
     updatedAt: z.coerce.date().optional(), // Added for LWW conflict resolution
 });
 

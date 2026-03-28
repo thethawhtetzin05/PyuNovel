@@ -17,6 +17,9 @@ export const UpdateNovelSchema = z.object({
     tags: z.string().optional(),
     coverUrl: z.string().optional(),
     oldImageUrl: z.string().optional(), // For cleanup
+    isScheduledMode: z.boolean().optional(),
+    scheduledHour: z.coerce.number().min(0).max(23).optional(),
+    chaptersPerDay: z.coerce.number().min(1).max(24).optional(),
 });
 
 export type CreateNovelInput = z.infer<typeof CreateNovelSchema>;

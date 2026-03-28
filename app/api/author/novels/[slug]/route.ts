@@ -84,6 +84,9 @@ export async function PATCH(
             description: body.description ?? existing.description,
             tags: body.tags ?? existing.tags,
             status: body.status ?? existing.status,
+            isScheduledMode: body.isScheduledMode ?? existing.isScheduledMode,
+            scheduledHour: typeof body.scheduledHour === 'number' ? body.scheduledHour : existing.scheduledHour,
+            chaptersPerDay: typeof body.chaptersPerDay === 'number' ? body.chaptersPerDay : existing.chaptersPerDay,
             updatedAt: new Date()
         };
 

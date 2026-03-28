@@ -14,7 +14,9 @@ export const createChapter = async (
     title: string,
     content: string,
     sortIndex: string | number,
-    isPaid: boolean | string
+    isPaid: boolean | string,
+    status?: 'draft' | 'scheduled' | 'published',
+    publishedAt?: Date | null
   },
   userId: string
 ) => {
@@ -37,6 +39,8 @@ export const createChapter = async (
     content: data.content,
     sortIndex: Number(data.sortIndex || 0),
     isPaid: data.isPaid === "on" || data.isPaid === true,
+    status: data.status || 'published',
+    publishedAt: data.publishedAt || new Date(),
     createdAt: new Date(), // Optional if defaultFn is set in schema
   };
 
@@ -86,6 +90,8 @@ export const updateChapter = async (
     sortIndex?: number;
     isPaid?: boolean;
     volumeId?: number | null;
+    status?: 'draft' | 'scheduled' | 'published';
+    publishedAt?: Date | null;
     updatedAt?: Date;
   },
   userId: string

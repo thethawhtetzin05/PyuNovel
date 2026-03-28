@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     LayoutDashboard,
@@ -21,12 +21,6 @@ import {
     AlertTriangle,
     Crown
 } from "lucide-react";
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from "@/components/ui/accordion";
 import BulkUploadModal from '@/app/[locale]/novel/[slug]/bulk-upload-modal';
 import { Link } from '@/i18n/routing';
 import { Button } from "@/components/ui/button";
@@ -64,6 +58,9 @@ interface Novel {
     views: number;
     tags: string;
     chapterPrice: number;
+    isScheduledMode: boolean;
+    chaptersPerDay: number;
+    scheduledHour: number;
 }
 
 interface Chapter {
@@ -71,6 +68,8 @@ interface Chapter {
     title: string;
     sortIndex: number;
     isPaid: boolean | null;
+    status: string;
+    publishedAt: Date | null;
     createdAt: Date | null;
 }
 
@@ -101,6 +100,8 @@ export default function NovelManagementClient({
     const [activeTab, setActiveTab] = useState('overview');
     const [isSaving, setIsSaving] = useState(false);
     const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
+    const [openSetting, setOpenSetting] = useState<string | null>(null);
+    const [showWheel, setShowWheel] = useState(false);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [alert, setAlert] = useState<{ isOpen: boolean; title: string; message: string; type: 'success' | 'error' | 'info' }>({
         isOpen: false,
@@ -109,10 +110,8 @@ export default function NovelManagementClient({
         type: 'info'
     });
 
-    // Deletion states
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [deletePassword, setDeletePassword] = useState('');
-    const [isDeleting, setIsDeleting] = useState(false);
+    const hourWheelRef = useRef<HTMLDivElement>(null);
+    const periodWheelRef = useRef<HTMLDivElement>(null);
 
     const [form, setForm] = useState({
         title: novel.title,
@@ -122,8 +121,35 @@ export default function NovelManagementClient({
         status: novel.status || 'ongoing',
         chapterPrice: novel.chapterPrice || 0,
         paidFrom: chapters.some(c => c.isPaid) ? Math.min(...chapters.filter(c => c.isPaid).map(c => c.sortIndex)) : 0,
-        paidTo: chapters.some(c => c.isPaid) ? Math.max(...chapters.filter(c => c.isPaid).map(c => c.sortIndex)) : 0
+        paidTo: chapters.some(c => c.isPaid) ? Math.max(...chapters.filter(c => c.isPaid).map(c => c.sortIndex)) : 0,
+        isScheduledMode: novel.isScheduledMode || false,
+        scheduledHour: novel.scheduledHour || 18,
+        chaptersPerDay: novel.chaptersPerDay || 1
     });
+
+    // Sync wheels on open
+    useLayoutEffect(() => {
+        if (showWheel) {
+            const h12 = form.scheduledHour % 12 || 12;
+            const periodIdx = form.scheduledHour < 12 ? 0 : 1;
+
+            // Wait a tiny bit for the DOM to be ready and rendered
+            const timer = setTimeout(() => {
+                if (hourWheelRef.current) {
+                    hourWheelRef.current.scrollTop = (h12 - 1) * 56;
+                }
+                if (periodWheelRef.current) {
+                    periodWheelRef.current.scrollTop = periodIdx * 56;
+                }
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [showWheel, form.scheduledHour]);
+
+    // Deletion states
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deletePassword, setDeletePassword] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const handleDeleteNovel = async () => {
         if (!deletePassword) return;
@@ -351,14 +377,16 @@ export default function NovelManagementClient({
                                 <ArrowUpDown size={22} className={sortOrder === 'asc' ? 'rotate-180 transition-transform duration-300' : 'transition-transform duration-300'} />
                             </Button>
                         </div>
-                        <Button
-                            onClick={() => setIsBulkUploadOpen(true)}
-                            size="sm"
-                            className="rounded-xl gap-2 font-bold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 shadow-sm h-10 px-5"
-                        >
-                            <Upload size={16} />
-                            File Upload
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={() => setIsBulkUploadOpen(true)}
+                                size="sm"
+                                className="rounded-xl gap-2 font-bold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 shadow-sm h-10 px-5"
+                            >
+                                <Upload size={16} />
+                                File Upload
+                            </Button>
+                        </div>
                     </div>
 
                     {isBulkUploadOpen && (
@@ -380,9 +408,25 @@ export default function NovelManagementClient({
                                                 <h4 className="font-bold text-lg text-[var(--foreground)] truncate group-hover:text-[var(--action)] transition-colors">
                                                     {chapter.title}
                                                 </h4>
+                                                {chapter.status === 'scheduled' && (
+                                                    <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold border-amber-500/30 text-amber-600 bg-amber-500/5">
+                                                        <Clock size={10} className="mr-1" />
+                                                        Scheduled
+                                                    </Badge>
+                                                )}
+                                                {chapter.status === 'draft' && (
+                                                    <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold border-muted-foreground/30 text-muted-foreground bg-muted/5">
+                                                        Draft
+                                                    </Badge>
+                                                )}
                                             </div>
                                             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                                                 <span>{chapter.createdAt ? new Date(chapter.createdAt).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Draft'}</span>
+                                                {chapter.status === 'scheduled' && chapter.publishedAt && (
+                                                    <span className="flex items-center gap-1 text-amber-600 font-bold">
+                                                        • Will post on {new Date(chapter.publishedAt).toLocaleString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -425,219 +469,382 @@ export default function NovelManagementClient({
 
                 {/* Settings Tab */}
                 <TabsContent value="settings" className="space-y-6 animate-in slide-in-from-bottom-2 duration-300">
-                    <Accordion type="single" collapsible className="w-full space-y-4">
-                        {/* 1. Paid Settings */}
-                        <AccordionItem value="paid-settings" className="border border-border rounded-3xl bg-background shadow-sm px-4 overflow-hidden">
-                            <AccordionTrigger className="hover:no-underline py-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-amber-500/5 flex items-center justify-center text-amber-500">
-                                        <Crown size={22} fill="currentColor" />
-                                    </div>
-                                    <div className="text-left">
-                                        <CardTitle className="text-lg font-black">{translations.paidSettings}</CardTitle>
-                                        <CardDescription className="font-medium">Manage chapter monetization and price.</CardDescription>
-                                    </div>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-8 pt-2">
-                                <CardContent className="p-0 space-y-8">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-3">
-                                            <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.pricePerChapter}</label>
-                                            <div className="relative">
-                                                <Input
-                                                    type="number"
-                                                    value={form.chapterPrice}
-                                                    onChange={(e) => setForm({ ...form, chapterPrice: Number(e.target.value) })}
-                                                    className="h-12 rounded-xl border-border bg-muted/20 focus:bg-background transition-all font-black text-xl pl-12"
-                                                />
-                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                                                    🪙
-                                                </div>
-                                            </div>
-                                        </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* 1. Scheduling Settings Button */}
+                        <button
+                            onClick={() => setOpenSetting('scheduling')}
+                            className="flex items-center gap-4 p-5 rounded-3xl border border-border bg-background hover:bg-muted/30 hover:border-primary/20 transition-all text-left group shadow-sm"
+                        >
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${form.isScheduledMode ? 'bg-amber-500/10 text-amber-600' : 'bg-muted/50 text-muted-foreground'} group-hover:scale-110 transition-transform duration-300`}>
+                                <Clock size={24} />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-lg">Scheduling</h3>
+                                <p className="text-xs text-muted-foreground font-medium">Auto-post chapters on schedule.</p>
+                            </div>
+                        </button>
 
-                                        <div className="space-y-3">
-                                            <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.paidRange}</label>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-1.5">
-                                                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 ml-1">{translations.fromChapter}</span>
-                                                    <Input
-                                                        type="number"
-                                                        value={form.paidFrom}
-                                                        onChange={(e) => setForm({ ...form, paidFrom: Number(e.target.value) })}
-                                                        className="h-10 rounded-xl bg-muted/20 border-border focus:bg-background transition-all font-bold"
-                                                        placeholder="e.g. 5"
-                                                    />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 ml-1">{translations.toChapter}</span>
-                                                    <Input
-                                                        type="number"
-                                                        value={form.paidTo}
-                                                        onChange={(e) => setForm({ ...form, paidTo: Number(e.target.value) })}
-                                                        className="h-10 rounded-xl bg-muted/20 border-border focus:bg-background transition-all font-bold"
-                                                        placeholder="e.g. 100"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                        {/* 2. Paid Settings Button */}
+                        <button
+                            onClick={() => setOpenSetting('paid')}
+                            className="flex items-center gap-4 p-5 rounded-3xl border border-border bg-background hover:bg-muted/30 hover:border-primary/20 transition-all text-left group shadow-sm"
+                        >
+                            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                <Crown size={24} fill="currentColor" />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-lg">{translations.paidSettings}</h3>
+                                <p className="text-xs text-muted-foreground font-medium">Monetization & chapter pricing.</p>
+                            </div>
+                        </button>
 
-                                    <Separator className="bg-border/50" />
+                        {/* 3. Edit Detail Button */}
+                        <button
+                            onClick={() => setOpenSetting('detail')}
+                            className="flex items-center gap-4 p-5 rounded-3xl border border-border bg-background hover:bg-muted/30 hover:border-primary/20 transition-all text-left group shadow-sm"
+                        >
+                            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                <Pencil size={24} />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-lg">{translations.editNovelDetail}</h3>
+                                <p className="text-xs text-muted-foreground font-medium">Update title, synopsis & tags.</p>
+                            </div>
+                        </button>
 
-                                    <div className="flex justify-end p-2 pb-0">
-                                        <Button
-                                            className="w-full sm:w-auto rounded-xl font-black bg-[var(--action)] hover:bg-[var(--action)]/90 gap-2 px-8 h-11 shadow-lg shadow-[var(--action)]/20 active:scale-95 transition-all"
-                                            disabled={isSaving}
-                                            onClick={handleSave}
-                                        >
-                                            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                                            {translations.saveChanges}
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </AccordionContent>
-                        </AccordionItem>
+                        {/* 4. Danger Zone Button */}
+                        <button
+                            onClick={() => setIsDeleteModalOpen(true)}
+                            className="flex items-center gap-4 p-5 rounded-3xl border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 transition-all text-left group shadow-sm"
+                        >
+                            <div className="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                <AlertTriangle size={24} />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-lg text-destructive">{translations.dangerZone}</h3>
+                                <p className="text-xs text-destructive/60 font-medium font-medium">Delete novel forever.</p>
+                            </div>
+                        </button>
+                    </div>
 
-                        {/* 2. Edit Novel Detail */}
-                        <AccordionItem value="edit-detail" className="border border-border rounded-3xl bg-background shadow-sm px-4 overflow-hidden">
-                            <AccordionTrigger className="hover:no-underline py-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary">
-                                        <Pencil size={20} />
-                                    </div>
-                                    <div className="text-left">
-                                        <CardTitle className="text-lg font-black">{translations.editNovelDetail}</CardTitle>
-                                        <CardDescription className="font-medium">Update metadata and appearance.</CardDescription>
-                                    </div>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-8 pt-2">
-                                <CardContent className="p-0 space-y-8">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-3">
-                                            <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.novelTitle}</label>
-                                            <Input
-                                                value={form.title}
-                                                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                                                className="h-12 rounded-xl border-border bg-muted/20 focus:bg-background focus:ring-primary/20 transition-all font-bold text-lg"
-                                            />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.authorName}</label>
-                                            <Input
-                                                value={form.author}
-                                                onChange={(e) => setForm({ ...form, author: e.target.value })}
-                                                className="h-12 rounded-xl border-border bg-muted/20 focus:bg-background focus:ring-primary/20 transition-all font-bold text-lg"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.synopsis}</label>
-                                        <textarea
-                                            value={form.description}
-                                            onChange={(e) => setForm({ ...form, description: e.target.value })}
-                                            className="w-full min-h-[180px] p-5 rounded-2xl border border-border bg-muted/20 focus:bg-background focus:ring-4 focus:ring-primary/5 outline-none transition-all text-base leading-relaxed font-medium"
-                                            placeholder="Share what your book is about..."
-                                        />
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.tags}</label>
-                                        <Input
-                                            value={form.tags}
-                                            onChange={(e) => setForm({ ...form, tags: e.target.value })}
-                                            className="h-12 rounded-xl border-border bg-muted/20 focus:bg-background transition-all font-medium"
-                                        />
-                                        <p className="text-[10px] font-bold text-muted-foreground ml-1">Separate with commas (e.g., Action, Fantasy, Romance)</p>
-                                    </div>
-
-                                    <Separator className="bg-border/50" />
-
-                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 pt-2">
-                                        <div className="flex flex-col gap-2 w-full sm:w-64">
-                                            <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.novelStatus}</label>
-                                            <Select
-                                                value={form.status}
-                                                onValueChange={(val) => setForm({ ...form, status: val })}
-                                            >
-                                                <SelectTrigger className="h-11 rounded-xl font-bold bg-muted/20">
-                                                    <SelectValue placeholder="Select Status" />
-                                                </SelectTrigger>
-                                                <SelectContent className="rounded-xl border-border shadow-xl">
-                                                    <SelectItem value="ongoing" className="font-bold">{translations.statusOngoing}</SelectItem>
-                                                    <SelectItem value="completed" className="font-bold">{translations.statusCompleted}</SelectItem>
-                                                    <SelectItem value="hiatus" className="font-bold">{translations.statusHiatus}</SelectItem>
-                                                    <SelectItem value="dropped" className="font-bold">{translations.statusDropped}</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="flex gap-3 w-full sm:w-auto mt-4 sm:mt-0">
-                                            <Button
-                                                variant="outline"
-                                                className="flex-1 sm:flex-none rounded-xl font-black bg-primary/5 dark:bg-primary/10 text-primary shadow-xl border-primary/30 hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary px-6"
-                                                onClick={() => setForm({
-                                                    ...form,
-                                                    title: novel.title,
-                                                    author: novel.author,
-                                                    description: novel.description || '',
-                                                    tags: novel.tags,
-                                                    status: novel.status || 'ongoing',
-                                                    chapterPrice: novel.chapterPrice || 0,
-                                                    paidFrom: chapters.some(c => c.isPaid) ? Math.min(...chapters.filter(c => c.isPaid).map(c => c.sortIndex)) : 0,
-                                                    paidTo: chapters.some(c => c.isPaid) ? Math.max(...chapters.filter(c => c.isPaid).map(c => c.sortIndex)) : 0
-                                                })}
-                                            >
-                                                {translations.discardChanges}
-                                            </Button>
-                                            <Button
-                                                className="flex-1 sm:flex-none rounded-xl font-black bg-[var(--action)] hover:bg-[var(--action)]/90 gap-2 px-8 h-11 shadow-lg shadow-[var(--action)]/20 active:scale-95 transition-all"
-                                                disabled={isSaving}
-                                                onClick={handleSave}
-                                            >
-                                                {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                                                {translations.saveChanges}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </AccordionContent>
-                        </AccordionItem>
-
-                        {/* 3. Delete Novel */}
-                        <AccordionItem value="danger-zone" className="border border-destructive/20 rounded-3xl bg-destructive/5 shadow-none px-4 overflow-hidden">
-                            <AccordionTrigger className="hover:no-underline py-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center text-destructive">
-                                        <AlertTriangle size={20} />
-                                    </div>
-                                    <div className="text-left">
-                                        <CardTitle className="text-lg font-black text-destructive">{translations.dangerZone}</CardTitle>
-                                        <CardDescription className="font-medium text-destructive/60">Permanently remove this novel.</CardDescription>
-                                    </div>
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-8 pt-2">
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 bg-white dark:bg-black/20 p-6 rounded-2xl border border-destructive/20">
-                                    <div>
-                                        <p className="text-lg font-black">{translations.deleteNovel}</p>
-                                        <p className="text-sm text-muted-foreground font-medium mt-1">Removing this novel will delete all chapters, comments, and analytics permanently.</p>
-                                    </div>
-                                    <Button
-                                        variant="destructive"
-                                        className="rounded-2xl font-black h-12 px-8 shadow-xl shadow-destructive/20 active:scale-95 transition-all shrink-0"
-                                        onClick={() => setIsDeleteModalOpen(true)}
-                                    >
-                                        {translations.deletePermanently}
-                                    </Button>
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
                 </TabsContent>
             </Tabs>
+
+            {/* Scheduling Settings Dialog */}
+            <Dialog open={openSetting === 'scheduling'} onOpenChange={(open) => !open && setOpenSetting(null)}>
+                <DialogContent className="rounded-3xl border-border bg-background shadow-2xl p-0 overflow-hidden max-w-2xl">
+                    <DialogHeader className="p-8 pb-4">
+                        <DialogTitle className="text-2xl font-black flex items-center gap-3">
+                            <Clock className="text-amber-500" size={28} />
+                            Scheduling
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="p-8 pt-4 space-y-8">
+                        <div className="flex items-center justify-between p-4 bg-muted/20 rounded-2xl border border-border/50">
+                            <div>
+                                <p className="font-black text-sm">Auto-Schedule Mode</p>
+                            </div>
+                            <div
+                                onClick={() => setForm(prev => ({ ...prev, isScheduledMode: !prev.isScheduledMode }))}
+                                className={`h-6 w-11 rounded-full p-1 transition-all duration-300 cursor-pointer relative ${form.isScheduledMode ? 'bg-[#00afa9]' : 'bg-[#dbdce0]'}`}
+                            >
+                                <div className={`absolute top-1 left-1 bg-white rounded-full h-4 w-4 shadow-sm transition-transform duration-300 ${form.isScheduledMode ? 'translate-x-5' : 'translate-x-0'}`} />
+                            </div>
+                        </div>
+
+                        {form.isScheduledMode && (
+                            <div className="space-y-6 pt-2 animate-in fade-in slide-in-from-top-2">
+                                {/* Time Selection Row (iOS Style) */}
+                                <div className="space-y-3 relative">
+                                    <div
+                                        onClick={() => setShowWheel(!showWheel)}
+                                        className="flex items-center justify-between p-4 bg-muted/20 rounded-2xl border border-border/50 cursor-pointer hover:bg-muted/30 transition-all group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Clock size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                                            <p className="font-black text-sm uppercase tracking-wider text-muted-foreground font-inter">Posting Time</p>
+                                        </div>
+                                        <div className={`px-4 py-1.5 rounded-lg font-black text-lg transition-all ${showWheel ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-105' : 'bg-primary/10 text-primary'}`}>
+                                            {form.scheduledHour % 12 || 12}:00 {form.scheduledHour < 12 ? 'AM' : 'PM'}
+                                        </div>
+                                    </div>
+
+                                    {showWheel && (
+                                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+                                            {/* Backdrop */}
+                                            <div className="absolute inset-0 bg-background/80 backdrop-blur-md" onClick={() => setShowWheel(false)} />
+
+                                            {/* Centered Box */}
+                                            <div className="relative w-full max-w-sm bg-background border border-border shadow-2xl rounded-[40px] p-8 animate-in zoom-in-95 slide-in-from-bottom-10 duration-300">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <div>
+                                                        <h3 className="text-xl font-black">Select Time</h3>
+                                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">12-Hour Format</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setShowWheel(false)}
+                                                        className="h-10 px-6 rounded-full bg-primary text-white font-black text-sm hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
+                                                    >
+                                                        Done
+                                                    </button>
+                                                </div>
+
+                                                <div className="relative h-56 flex items-center justify-center bg-muted/5 rounded-[32px] border border-border/30 overflow-hidden shadow-inner gap-4">
+                                                    {/* Central Indicator */}
+                                                    <div className="absolute h-14 w-[calc(100%-32px)] bg-primary/5 border-y border-primary/10 z-0 rounded-xl" />
+                                                    <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background/90 to-transparent z-10" />
+                                                    <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background/90 to-transparent z-10" />
+
+                                                    {/* Hour Wheel (1-12) */}
+                                                    <div className="flex-[1.5] h-full overflow-y-auto snap-y snap-mandatory no-scrollbar z-20 py-[84px]"
+                                                        ref={hourWheelRef}
+                                                        onScroll={(e) => {
+                                                            const el = e.currentTarget;
+                                                            const h12 = Math.round(el.scrollTop / 56) + 1;
+                                                            if (h12 >= 1 && h12 <= 12) {
+                                                                const isPM = form.scheduledHour >= 12;
+                                                                const h24 = (h12 % 12) + (isPM ? 12 : 0);
+                                                                if (h24 !== form.scheduledHour) setForm(prev => ({ ...prev, scheduledHour: h24 }));
+                                                            }
+                                                        }}
+                                                    >
+                                                        {Array.from({ length: 12 }).map((_, i) => (
+                                                            <div key={i} className={`h-14 flex items-center justify-end pr-1 snap-center text-2xl font-black transition-all ${(form.scheduledHour % 12 || 12) === i + 1 ? 'text-primary scale-105' : 'text-muted-foreground/10'}`}>
+                                                                {(i + 1).toString().padStart(2, '0')}:00
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* AM/PM Wheel */}
+                                                    <div className="flex-1 h-full overflow-y-auto snap-y snap-mandatory no-scrollbar z-20 py-[84px]"
+                                                        ref={periodWheelRef}
+                                                        onScroll={(e) => {
+                                                            const el = e.currentTarget;
+                                                            const periodIdx = Math.round(el.scrollTop / 56);
+                                                            if (periodIdx === 0 || periodIdx === 1) {
+                                                                const h12 = form.scheduledHour % 12 || 12;
+                                                                const h24 = (h12 % 12) + (periodIdx === 1 ? 12 : 0);
+                                                                if (h24 !== form.scheduledHour) setForm(prev => ({ ...prev, scheduledHour: h24 }));
+                                                            }
+                                                        }}
+                                                    >
+                                                        {['AM', 'PM'].map((p, i) => (
+                                                            <div key={p} className={`h-14 flex items-center justify-start pl-2 snap-center text-xl font-black transition-all ${(form.scheduledHour < 12 ? 0 : 1) === i ? 'text-primary scale-105' : 'text-muted-foreground/20'}`}>
+                                                                {p}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Chapters Count Input */}
+                                <div className="space-y-3">
+                                    <label className="text-xs font-black uppercase tracking-wider text-muted-foreground ml-1">တစ်နေ့လျှင် တင်မည့် အခန်းအရေအတွက်</label>
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={24}
+                                        value={form.chaptersPerDay}
+                                        onChange={(e) => setForm({ ...form, chaptersPerDay: Number(e.target.value) })}
+                                        className="h-12 rounded-xl border-border bg-muted/20 focus:bg-background transition-all font-black text-lg"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex justify-center pt-8 border-t border-border/50">
+                            <Button
+                                size="lg"
+                                className="px-16 rounded-full font-black shadow-2xl shadow-primary/30 active:scale-95 transition-all text-lg"
+                                disabled={isSaving}
+                                onClick={async () => {
+                                    await handleSave();
+                                    setOpenSetting(null);
+                                }}
+                            >
+                                {isSaving ? <Loader2 size={18} className="animate-spin mr-2" /> : null}
+                                {isSaving ? "Saving..." : "Save"}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Paid Settings Dialog */}
+            <Dialog open={openSetting === 'paid'} onOpenChange={(open) => !open && setOpenSetting(null)}>
+                <DialogContent className="rounded-3xl border-border bg-background shadow-2xl p-0 overflow-hidden max-w-2xl">
+                    <DialogHeader className="p-8 pb-4">
+                        <DialogTitle className="text-2xl font-black flex items-center gap-3">
+                            <Crown className="text-amber-500" size={28} fill="currentColor" />
+                            {translations.paidSettings}
+                        </DialogTitle>
+                        <DialogDescription className="text-muted-foreground font-medium pt-2">
+                            Manage chapter monetization and price.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="p-8 pt-4 space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-3">
+                                <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.pricePerChapter}</label>
+                                <div className="relative">
+                                    <Input
+                                        type="number"
+                                        value={form.chapterPrice}
+                                        onChange={(e) => setForm({ ...form, chapterPrice: Number(e.target.value) })}
+                                        className="h-12 rounded-xl border-border bg-muted/20 focus:bg-background transition-all font-black text-xl pl-12"
+                                    />
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                        🪙
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.paidRange}</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1.5">
+                                        <span className="text-[10px] font-black uppercase text-muted-foreground/60 ml-1">{translations.fromChapter}</span>
+                                        <Input
+                                            type="number"
+                                            value={form.paidFrom}
+                                            onChange={(e) => setForm({ ...form, paidFrom: Number(e.target.value) })}
+                                            className="h-10 rounded-xl bg-muted/20 border-border focus:bg-background transition-all font-bold"
+                                            placeholder="e.g. 5"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <span className="text-[10px] font-black uppercase text-muted-foreground/60 ml-1">{translations.toChapter}</span>
+                                        <Input
+                                            type="number"
+                                            value={form.paidTo}
+                                            onChange={(e) => setForm({ ...form, paidTo: Number(e.target.value) })}
+                                            className="h-10 rounded-xl bg-muted/20 border-border focus:bg-background transition-all font-bold"
+                                            placeholder="e.g. 100"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-border/50">
+                            <Button
+                                className="w-full rounded-xl font-black bg-[var(--action)] hover:bg-[var(--action)]/90 gap-2 h-11 shadow-lg shadow-[var(--action)]/20 active:scale-95 transition-all"
+                                disabled={isSaving}
+                                onClick={async () => {
+                                    await handleSave();
+                                    setOpenSetting(null);
+                                }}
+                            >
+                                {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                                {translations.saveChanges}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Detail Dialog */}
+            <Dialog open={openSetting === 'detail'} onOpenChange={(open) => !open && setOpenSetting(null)}>
+                <DialogContent className="rounded-3xl border-border bg-background shadow-2xl p-0 overflow-hidden max-w-3xl">
+                    <DialogHeader className="p-8 pb-4">
+                        <DialogTitle className="text-2xl font-black flex items-center gap-3">
+                            <Pencil className="text-primary" size={28} />
+                            {translations.editNovelDetail}
+                        </DialogTitle>
+                        <DialogDescription className="text-muted-foreground font-medium pt-2">
+                            Update cover title, synopsis and tags metadata.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="p-8 pt-4 space-y-8 scroll-auto max-h-[70vh] overflow-y-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-3">
+                                <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.novelTitle}</label>
+                                <Input
+                                    value={form.title}
+                                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                                    className="h-12 rounded-xl border-border bg-muted/20 focus:bg-background transition-all font-bold text-lg"
+                                />
+                            </div>
+                            <div className="space-y-3">
+                                <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.authorName}</label>
+                                <Input
+                                    value={form.author}
+                                    onChange={(e) => setForm({ ...form, author: e.target.value })}
+                                    className="h-12 rounded-xl border-border bg-muted/20 focus:bg-background transition-all font-bold text-lg"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.synopsis}</label>
+                            <textarea
+                                value={form.description}
+                                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                                className="w-full min-h-[150px] p-5 rounded-2xl border border-border bg-muted/20 focus:bg-background outline-none transition-all text-base leading-relaxed font-medium"
+                                placeholder="..."
+                            />
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.tags}</label>
+                            <Input
+                                value={form.tags}
+                                onChange={(e) => setForm({ ...form, tags: e.target.value })}
+                                className="h-12 rounded-xl border-border bg-muted/20 focus:bg-background transition-all font-medium"
+                            />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-black ml-1 uppercase tracking-wider text-muted-foreground">{translations.novelStatus}</label>
+                            <Select
+                                value={form.status}
+                                onValueChange={(val) => setForm({ ...form, status: val })}
+                            >
+                                <SelectTrigger className="h-11 rounded-xl font-bold bg-muted/20">
+                                    <SelectValue placeholder="..." />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    <SelectItem value="ongoing">{translations.statusOngoing}</SelectItem>
+                                    <SelectItem value="completed">{translations.statusCompleted}</SelectItem>
+                                    <SelectItem value="hiatus">{translations.statusHiatus}</SelectItem>
+                                    <SelectItem value="dropped">{translations.statusDropped}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="pt-4 border-t border-border/50 flex gap-4">
+                            <Button
+                                variant="outline"
+                                className="flex-1 rounded-xl font-black h-11"
+                                onClick={() => setForm({
+                                    ...form,
+                                    title: novel.title,
+                                    author: novel.author,
+                                    description: novel.description || '',
+                                    tags: novel.tags,
+                                    status: novel.status || 'ongoing'
+                                })}
+                            >
+                                {translations.discardChanges}
+                            </Button>
+                            <Button
+                                className="flex-1 rounded-xl font-black bg-[var(--action)] hover:bg-[var(--action)]/90 gap-2 h-11 shadow-lg shadow-[var(--action)]/20 active:scale-95 transition-all"
+                                disabled={isSaving}
+                                onClick={async () => {
+                                    await handleSave();
+                                    setOpenSetting(null);
+                                }}
+                            >
+                                {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                                {translations.saveChanges}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
                 <DialogContent className="rounded-3xl border-border bg-background shadow-2xl p-0 overflow-hidden max-w-sm sm:max-w-md">
@@ -699,6 +906,6 @@ export default function NovelManagementClient({
                 message={alert.message}
                 type={alert.type}
             />
-        </div>
+        </div >
     );
 }

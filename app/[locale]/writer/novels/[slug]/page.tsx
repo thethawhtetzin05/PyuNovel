@@ -1,6 +1,6 @@
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getNovelBySlug } from '@/lib/resources/novels/queries';
-import { getChaptersByNovelId } from '@/lib/resources/chapters/queries';
+import { getChaptersByNovelIdForWriter } from '@/lib/resources/chapters/queries';
 import { getVolumesByNovelId } from '@/lib/resources/volumes/queries';
 import { getCollectionCountByNovelId } from '@/lib/resources/collections/queries';
 import { createAuth } from "@/lib/auth";
@@ -46,7 +46,7 @@ export default async function NovelManagementPage({
     }
 
     const [chapters, volumes, collectorCount] = await Promise.all([
-        getChaptersByNovelId(db, novel.id),
+        getChaptersByNovelIdForWriter(db, novel.id),
         getVolumesByNovelId(db, novel.id),
         getCollectionCountByNovelId(db, novel.id)
     ]);

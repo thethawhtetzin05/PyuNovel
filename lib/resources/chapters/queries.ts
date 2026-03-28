@@ -1,6 +1,6 @@
 import { DrizzleD1Database } from 'drizzle-orm/d1';
 import { chapters, novels } from '@/db/schema';
-import { eq, asc, desc, and, gt, lt } from 'drizzle-orm';
+import { eq, asc, desc, and, gt, lt, lte, sql } from 'drizzle-orm';
 
 // 👇 ၁။ Function အားလုံးရဲ့ Parameter မှာ (db: DrizzleD1Database<any>) လို့ ပြောင်းထားပါတယ်
 // 👇 ၂။ Function ထဲမှာ 'const db = drizzle(...)' ဆိုတာ လုံးဝ မပါတော့ပါဘူး
@@ -26,13 +26,37 @@ export async function getChaptersForDownload(db: DrizzleD1Database<any>, novelId
 // ဝတ္ထုတစ်ခုလုံးရဲ့ အခန်းစာရင်းကို ယူရန် (content မပါ — list page အတွက် fast query)
 
 export async function getChaptersByNovelId(db: DrizzleD1Database<any>, novelId: number) {
-  // ⚠️ ဒီနေရာမှာ const db = drizzle(...) မလိုတော့ပါ
   return await db
     .select({
       id: chapters.id,
       title: chapters.title,
       sortIndex: chapters.sortIndex,
       isPaid: chapters.isPaid,
+      createdAt: chapters.createdAt,
+      volumeId: chapters.volumeId,
+    })
+    .from(chapters)
+    .where(
+      and(
+        eq(chapters.novelId, novelId),
+        eq(chapters.status, 'published'),
+        lte(chapters.publishedAt, new Date())
+      )
+    )
+    .orderBy(asc(chapters.sortIndex))
+    .all();
+}
+
+// Writer Dashboard — includes status/publishedAt but NOT content
+export async function getChaptersByNovelIdForWriter(db: DrizzleD1Database<any>, novelId: number) {
+  return await db
+    .select({
+      id: chapters.id,
+      title: chapters.title,
+      sortIndex: chapters.sortIndex,
+      isPaid: chapters.isPaid,
+      status: chapters.status,
+      publishedAt: chapters.publishedAt,
       createdAt: chapters.createdAt,
       volumeId: chapters.volumeId,
     })
@@ -45,7 +69,19 @@ export async function getChaptersByNovelId(db: DrizzleD1Database<any>, novelId: 
 // အခန်းတစ်ခုချင်းစီရဲ့ အသေးစိတ်စာသားကို ယူရန် (Edit အတွက်)
 export async function getChapterDetail(db: DrizzleD1Database<any>, novelId: number, sortIndex: number) {
   return await db
-    .select()
+    .select({
+      id: chapters.id,
+      novelId: chapters.novelId,
+      volumeId: chapters.volumeId,
+      title: chapters.title,
+      content: chapters.content,
+      isPaid: chapters.isPaid,
+      status: chapters.status,
+      publishedAt: chapters.publishedAt,
+      sortIndex: chapters.sortIndex,
+      createdAt: chapters.createdAt,
+      updatedAt: chapters.updatedAt,
+    })
     .from(chapters)
     .where(
       and(
@@ -82,7 +118,9 @@ export async function getChapterForReader(db: DrizzleD1Database<any>, slug: stri
     .where(
       and(
         eq(novels.slug, slug),
-        eq(chapters.sortIndex, chapterIndex)
+        eq(chapters.sortIndex, chapterIndex),
+        eq(chapters.status, 'published'),
+        lte(chapters.publishedAt, new Date())
       )
     )
     .get();
@@ -147,7 +185,13 @@ export async function getLatestChapters(db: DrizzleD1Database<any>, limitCount: 
     })
     .from(chapters)
     .innerJoin(novels, eq(chapters.novelId, novels.id))
-    .orderBy(desc(chapters.createdAt))
+    .where(
+      and(
+        eq(chapters.status, 'published'),
+        lte(chapters.publishedAt, new Date())
+      )
+    )
+    .orderBy(desc(chapters.publishedAt))
     .limit(limitCount)
     .all();
 }

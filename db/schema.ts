@@ -88,6 +88,11 @@ export const novels = sqliteTable('novels', {
   views: integer('views').default(0).notNull(),
   chapterPrice: integer('price').default(0),
 
+  // Scheduling Settings
+  isScheduledMode: integer('is_scheduled_mode', { mode: 'boolean' }).default(false).notNull(),
+  scheduledHour: integer('scheduled_hour').default(18).notNull(), // Preferred hour (0-23)
+  chaptersPerDay: integer('chapters_per_day').default(1).notNull(),
+
   // ✅ Fix: $defaultFn ensures current time on insert
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
@@ -124,6 +129,8 @@ export const chapters = sqliteTable('chapters', {
   content: text('content').notNull(),
 
   isPaid: integer('is_paid', { mode: 'boolean' }).default(false),
+  status: text('status', { enum: ['draft', 'scheduled', 'published'] }).default('published').notNull(),
+  publishedAt: integer('published_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 
   sortIndex: real('sort_index').notNull(),
 
@@ -135,6 +142,7 @@ export const chapters = sqliteTable('chapters', {
 }, (table) => ({
   novelSortIdx: uniqueIndex('novel_sort_idx').on(table.novelId, table.sortIndex),
   volumeIdx: index('chapter_volume_idx').on(table.volumeId),
+  statusPublishedAtIdx: index('chapter_status_published_at_idx').on(table.status, table.publishedAt),
   updatedAtIdx: index('chapter_updated_at_idx').on(table.updatedAt),
   createdAtIdx: index('chapter_created_at_idx').on(table.createdAt),
   novelIdIdx: index('chapter_novel_id_idx').on(table.novelId),
