@@ -16,4 +16,4 @@ bucket_name = "pyunovel-covers"
 ADMIN_SECRET_KEY = "secret_12345"
 
 [triggers]
-crons = ["0 * * * *"]
+crons = ["*/5 * * * *"]

@@ -4,6 +4,7 @@ import { chapters } from "@/db/schema";
 import { and, eq, lte, sql } from "drizzle-orm";
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 /**
  * Cron Publish API
