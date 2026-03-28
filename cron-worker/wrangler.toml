@@ -1,0 +1,11 @@
+name = "pyunovel-cron"
+main = "src/index.ts"
+compatibility_date = "2024-03-28"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+API_URL = "https://pyunovel.com/api/cron/publish"
+# Note: In production you MUST set this secret dynamically via `wrangler secret put ADMIN_SECRET_KEY`
+ADMIN_SECRET_KEY = "secret_12345"

@@ -1,3 +1,4 @@
 packages:
   - "."
   - "writer-app"
+  - "cron-worker"
