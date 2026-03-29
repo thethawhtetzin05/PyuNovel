@@ -29,13 +29,15 @@ export async function POST(request: NextRequest) {
             const novelIdRaw = formData.get('novelId');
             const sortIndexRaw = formData.get('sortIndex');
 
+            const isPaidRaw = formData.get('isPaid');
+
             data = {
                 chapterId: formData.get('chapterId') as string,
                 novelSlug: formData.get('novelSlug') as string,
                 novelId: novelIdRaw ? Number(novelIdRaw) : undefined,
                 title: formData.get('title') as string,
                 content: formData.get('content') as string,
-                isPaid: formData.get('isPaid') === 'on' || formData.get('isPaid') === 'true',
+                isPaid: isPaidRaw !== null ? (isPaidRaw === 'on' || isPaidRaw === 'true') : undefined,
                 sortIndex: sortIndexRaw ? Number(sortIndexRaw) : undefined,
                 volumeId: (volumeIdRaw && volumeIdRaw !== "") ? Number(volumeIdRaw) : null,
             };
