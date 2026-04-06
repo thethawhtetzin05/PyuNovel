@@ -26,6 +26,12 @@ export const user = sqliteTable("user", {
   level: integer('level').default(0).notNull(),
   lastCheckIn: integer('last_check_in', { mode: 'timestamp' }), // nullable — no default
   checkInStreak: integer('check_in_streak').default(0).notNull(),
+
+  // Reward System
+  lotteryChances: integer('lottery_chances').default(0).notNull(),
+  couponYield: integer('coupon_yield').default(1).notNull(),
+  couponLongevity: integer('coupon_longevity').default(1).notNull(),
+  lastDailyReset: integer('last_daily_reset', { mode: 'timestamp' }),
 });
 
 export const session = sqliteTable("session", {
@@ -354,4 +360,15 @@ export const chapterCommentVotesRelations = relations(chapterCommentVotes, ({ on
   }),
 }));
 
+// ==========================================
+// 10. Reward System
+// ==========================================
+
+export const coupons = sqliteTable('coupons', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: text('user_id').references(() => user.id).notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  usedAt: integer('used_at', { mode: 'timestamp' }), // null = မသုံးရသေး
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+});
 

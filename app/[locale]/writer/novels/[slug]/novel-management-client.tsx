@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useLayoutEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useRef, useLayoutEffect, useTransition } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
     LayoutDashboard,
     BookOpen,
@@ -97,8 +97,20 @@ export default function NovelManagementClient({
     locale,
     translations
 }: Props) {
+    const searchParams = useSearchParams();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState('overview');
+    const pathname = usePathname();
+    const [isPending, startTransition] = useTransition();
+
+    const activeTab = searchParams.get("tab") || "overview";
+
+    const handleTabChange = (value: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("tab", value);
+        startTransition(() => {
+            router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        });
+    };
     const [isSaving, setIsSaving] = useState(false);
     const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
     const [openSetting, setOpenSetting] = useState<string | null>(null);
@@ -169,7 +181,7 @@ export default function NovelManagementClient({
                     novelSlug: novel.slug
                 })
             });
-            const data = await res.json();
+            const data: any = await res.json();
 
             if (data.success) {
                 setAlert({
@@ -210,7 +222,7 @@ export default function NovelManagementClient({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: deletePassword })
             });
-            const data = await res.json();
+            const data: any = await res.json();
 
             if (data.success) {
                 router.push('/writer');
@@ -244,7 +256,7 @@ export default function NovelManagementClient({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form)
             });
-            const data = await res.json();
+            const data: any = await res.json();
             if (data.success) {
                 setAlert({
                     isOpen: true,
@@ -318,7 +330,7 @@ export default function NovelManagementClient({
                 </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="inline-flex h-14 items-center justify-start rounded-xl bg-muted/50 p-1 text-muted-foreground mb-8 overflow-x-auto whitespace-nowrap w-full sm:w-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scrollbar-hide">
                     <TabsTrigger
                         value="overview"

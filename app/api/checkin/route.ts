@@ -13,6 +13,9 @@ export async function POST() {
         const { env } = getRequestContext();
         const db = drizzle(env.DB, { schema });
         const auth = createAuth(env.DB);
+        if (!auth) {
+            return Response.json({ success: false, error: "Auth configuration error" }, { status: 500 });
+        }
 
         const session = await auth.api.getSession({ headers: await headers() });
         if (!session) {
@@ -81,6 +84,7 @@ export async function POST() {
                 level: newLevel,
                 lastCheckIn: now,
                 checkInStreak: newStreak,
+                ...(leveledUp && { lotteryChances: (user.lotteryChances || 0) + (newLevel - oldLevel) })
             })
             .where(eq(schema.user.id, userId));
 

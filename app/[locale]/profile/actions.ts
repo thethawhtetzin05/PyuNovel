@@ -73,6 +73,7 @@ export async function claimDailyCheckIn() {
                 level: newLevel,
                 lastCheckIn: now,
                 checkInStreak: newStreak,
+                ...(leveledUp && { lotteryChances: (user.lotteryChances || 0) + (newLevel - oldLevel) })
             })
             .where(eq(schema.user.id, userId));
 

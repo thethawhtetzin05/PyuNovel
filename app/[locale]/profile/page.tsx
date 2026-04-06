@@ -47,17 +47,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
     // 2. Get User's Novels
     const userNovels = await getNovelsByUserId(db, user.id);
 
-    // Date Formatting Helper
-    const joinedDate = new Date(user.createdAt).toLocaleDateString('en-US', {
-        month: 'long',
-        year: 'numeric'
-    });
-
     return (
         <ProfileClient
             user={safeUser}
             userNovels={userNovels}
-            joinedDate={joinedDate}
         />
     );
 }

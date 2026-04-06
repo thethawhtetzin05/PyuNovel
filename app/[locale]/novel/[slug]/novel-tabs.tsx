@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Link } from '@/i18n/routing';
+import { useState, useTransition } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { Calendar, Crown, Folder, ChevronRight, ChevronDown, ChevronUp, MessageSquare, BookOpen, Info } from "lucide-react";
 import { useTranslations } from 'next-intl';
 import ReviewSection from '@/components/novel/review-section';
@@ -63,7 +63,20 @@ export default function NovelTabs({
   isLoggedIn = false,
   defaultTab,
 }: NovelTabsProps) {
-  const [activeTab, setActiveTab] = useState(defaultTab || 'about');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
+
+  const activeTab = searchParams.get("tab") || defaultTab || "about";
+
+  const handleTabChange = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", value);
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    });
+  };
   const [expandedVolumes, setExpandedVolumes] = useState<Record<string, boolean>>({});
 
   const toggleVolume = (volumeId: string) => {
@@ -102,7 +115,7 @@ export default function NovelTabs({
   return (
     <>
       <div className="mt-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="inline-flex h-14 items-center justify-start rounded-xl bg-muted/50 p-1 text-muted-foreground mb-8 overflow-x-auto whitespace-nowrap w-full sm:w-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scrollbar-hide">
             <TabsTrigger
               value="about"
