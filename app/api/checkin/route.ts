@@ -32,26 +32,33 @@ export async function POST() {
         }
 
         const now = new Date();
-        const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        // Convert to Myanmar Time (+6:30)
+        const mmTimeOffset = 6.5 * 60 * 60 * 1000;
+        const mmNow = new Date(now.getTime() + mmTimeOffset);
+
+        // Midnight Myanmar Time representation
+        const todayMM = new Date(Date.UTC(mmNow.getUTCFullYear(), mmNow.getUTCMonth(), mmNow.getUTCDate()));
 
         // Check if already claimed today
         let newStreak: number;
         if (user.lastCheckIn) {
             const lastCheckInDate = new Date(user.lastCheckIn);
-            const lastCheckInUTC = new Date(Date.UTC(
-                lastCheckInDate.getUTCFullYear(),
-                lastCheckInDate.getUTCMonth(),
-                lastCheckInDate.getUTCDate()
+            const mmLastCheckIn = new Date(lastCheckInDate.getTime() + mmTimeOffset);
+
+            const lastCheckInMM = new Date(Date.UTC(
+                mmLastCheckIn.getUTCFullYear(),
+                mmLastCheckIn.getUTCMonth(),
+                mmLastCheckIn.getUTCDate()
             ));
 
-            if (lastCheckInUTC >= todayUTC) {
+            if (lastCheckInMM >= todayMM) {
                 return Response.json({ success: false, error: "Already checked in today" }, { status: 400 });
             }
 
             // Check if the previous check-in was yesterday (to continue streak)
-            const yesterdayUTC = new Date(todayUTC);
-            yesterdayUTC.setUTCDate(yesterdayUTC.getUTCDate() - 1);
-            const isConsecutive = lastCheckInUTC.getTime() === yesterdayUTC.getTime();
+            const yesterdayMM = new Date(todayMM);
+            yesterdayMM.setUTCDate(yesterdayMM.getUTCDate() - 1);
+            const isConsecutive = lastCheckInMM.getTime() === yesterdayMM.getTime();
 
             newStreak = isConsecutive ? (user.checkInStreak ?? 0) + 1 : 1;
         } else {
