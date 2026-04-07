@@ -84,16 +84,35 @@ export async function POST() {
         const newLevel = calculateLevel(newExp);
         const leveledUp = newLevel > oldLevel;
 
-        // Update user record
-        await db.update(schema.user)
-            .set({
-                exp: newExp,
-                level: newLevel,
-                lastCheckIn: now,
-                checkInStreak: newStreak,
-                ...(leveledUp && { lotteryChances: (user.lotteryChances || 0) + (newLevel - oldLevel) })
-            })
-            .where(eq(schema.user.id, userId));
+        // Update user record & Grant Coupons in one transaction
+        const yieldCount = user.couponYield || 1;
+        const longevityDays = user.couponLongevity || 1;
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + longevityDays);
+
+        const newCoupons: (typeof schema.coupons.$inferInsert)[] = [];
+        for (let i = 0; i < yieldCount; i++) {
+            newCoupons.push({
+                userId: userId,
+                expiresAt: expiryDate,
+            });
+        }
+
+        await db.transaction(async (tx) => {
+            await tx.update(schema.user)
+                .set({
+                    exp: newExp,
+                    level: newLevel,
+                    lastCheckIn: now,
+                    checkInStreak: newStreak,
+                    ...(leveledUp && { lotteryChances: (user.lotteryChances || 0) + (newLevel - oldLevel) })
+                })
+                .where(eq(schema.user.id, userId));
+
+            if (newCoupons.length > 0) {
+                await tx.insert(schema.coupons).values(newCoupons);
+            }
+        });
 
         return Response.json({
             success: true,
@@ -103,6 +122,7 @@ export async function POST() {
             streak: newStreak,
             leveledUp,
             nextLevelExp: expForNextLevel(newLevel),
+            couponsGained: yieldCount
         });
     } catch (e) {
         const errMsg = e instanceof Error ? e.message : String(e);

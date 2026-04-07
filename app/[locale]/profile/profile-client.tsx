@@ -37,7 +37,7 @@ export default function ProfileClient({ user, userNovels }: ProfileClientProps) 
     const [streak, setStreak] = useState(user.checkInStreak ?? 0);
     const [checkedIn, setCheckedIn] = useState(hasCheckedInToday(user.lastCheckIn));
     const [checkInLoading, setCheckInLoading] = useState(false);
-    const [toast, setToast] = useState<{ expGained: number; leveledUp: boolean; newLevel: number; streak: number } | null>(null);
+    const [toast, setToast] = useState<{ expGained: number; leveledUp: boolean; newLevel: number; streak: number; couponsGained?: number } | null>(null);
     const [checkInError, setCheckInError] = useState<string | null>(null);
 
     const safeExp = isNaN(exp) ? 0 : exp;
@@ -53,7 +53,7 @@ export default function ProfileClient({ user, userNovels }: ProfileClientProps) 
         setCheckInError(null);
         try {
             const res = await fetch("/api/checkin", { method: "POST" });
-            const result = await res.json() as { success: boolean; error?: string; newExp?: number; newLevel?: number; streak?: number; expGained?: number; leveledUp?: boolean; nextLevelExp?: number };
+            const result = await res.json() as { success: boolean; error?: string; newExp?: number; newLevel?: number; streak?: number; expGained?: number; leveledUp?: boolean; nextLevelExp?: number; couponsGained?: number };
             if (result.success) {
                 setExp(result.newExp!);
                 setLevel(result.newLevel!);
@@ -63,7 +63,8 @@ export default function ProfileClient({ user, userNovels }: ProfileClientProps) 
                     expGained: result.expGained!,
                     leveledUp: result.leveledUp!,
                     newLevel: result.newLevel!,
-                    streak: result.streak!
+                    streak: result.streak!,
+                    couponsGained: result.couponsGained
                 });
                 setTimeout(() => setToast(null), 4000);
                 router.refresh();
@@ -111,7 +112,12 @@ export default function ProfileClient({ user, userNovels }: ProfileClientProps) 
                     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-4 duration-300">
                         <div className="bg-emerald-500 text-white px-6 py-2.5 rounded-full text-sm font-black flex items-center gap-2 shadow-xl border border-emerald-400">
                             {toast.leveledUp ? <Sparkles className="w-4 h-4 fill-white animate-bounce" /> : <Gift className="w-4 h-4" />}
-                            {toast.leveledUp ? `Level Up! → ${toast.newLevel}` : `+${toast.expGained} EXP 🔥`}
+                            <span>{toast.leveledUp ? `Level Up! → ${toast.newLevel}` : `+${toast.expGained} EXP 🔥`}</span>
+                            {toast.couponsGained && toast.couponsGained > 0 && (
+                                <span className="ml-1 border-l border-white/30 pl-2">
+                                    + {toast.couponsGained} 🎫
+                                </span>
+                            )}
                         </div>
                     </div>
                 )}
