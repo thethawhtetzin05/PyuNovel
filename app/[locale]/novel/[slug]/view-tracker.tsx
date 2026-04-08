@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
-export default function ViewTracker({ slug, chapterId }: { slug: string, chapterId: string }) {
+export default function ViewTracker({ slug, chapterId }: { slug: string, chapterId?: string }) {
   const hasViewed = useRef(false); // ၂ ခါ မတိုးအောင် ကာကွယ်မယ်
 
   useEffect(() => {

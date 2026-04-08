@@ -127,6 +127,13 @@
       "when": 1775446877142,
       "tag": "0017_noisy_thor_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1775533280000,
+      "tag": "0018_chapters_composite_index",
+      "breakpoints": true
     }
   ]
 }

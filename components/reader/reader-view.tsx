@@ -5,6 +5,7 @@ import { List, ChevronLeft, ChevronRight, Settings, Minus, Plus, Sun, Moon, Moni
 import ParagraphReader from './ParagraphReader';
 import { Link } from '@/i18n/routing';
 import { useTheme } from 'next-themes';
+import AdUnit from '../ads/AdUnit';
 
 interface ReaderViewProps {
   content: string;
@@ -113,6 +114,8 @@ export default function ReaderView({ content, chapterId, allChapters, novelSlug,
           novelSlug={novelSlug}
           novelTitle={novelTitle}
         />
+        {/* CHAPTER END AD */}
+        <AdUnit type="300x250" />
       </div>
 
       {/* Floating Bottom Navigation Bar (Mobile Only) */}

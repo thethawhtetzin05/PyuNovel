@@ -13,6 +13,7 @@ import CollectButton from './collect-button';
 import ViewTracker from './view-tracker';
 import { Link } from '@/i18n/routing';
 import Image from 'next/image';
+import AdUnit from '@/components/ads/AdUnit';
 import { drizzle } from 'drizzle-orm/d1';
 import * as schema from "@/db/schema"; // 👈 Schema import လုပ်ထားရမယ်
 import type { Metadata, ResolvingMetadata } from 'next';
@@ -226,6 +227,7 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
 
       {/* TABS & CONTENT SECTION */}
       <div className="mt-10 border-t border-[var(--border)] pt-8">
+        <AdUnit type="320x50" />
         <NovelTabs
           novelSlug={novel.slug}
           novelId={novel.id}

@@ -12,6 +12,7 @@ import LatestChapters from '@/components/home/LatestChapters';
 import ContinueReadingBanner from '@/components/home/ContinueReading';
 import { NovelCard } from '@/components/novel/NovelCard';
 import { getTranslations } from 'next-intl/server';
+import AdUnit from '@/components/ads/AdUnit';
 
 export const runtime = 'edge';
 export const revalidate = 60; // Cache at Cloudflare edge for 60s — huge speed boost
@@ -22,7 +23,7 @@ interface Novel {
   slug: string;
   author: string;
   coverUrl: string | null;
-  status?: "completed" | "ongoing" | "hiatus" | null;
+  status?: "completed" | "ongoing" | "hiatus" | "dropped" | null;
   views?: number | null;
   description?: string | null;
 }
@@ -137,7 +138,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
         {/* ─── LATEST CHAPTERS ───────────────── */}
         {latestChapterList.length > 0 && (
-          <LatestChapters chapters={latestChapterList} />
+          <>
+            <LatestChapters chapters={latestChapterList} />
+            {/* NATIVE AD INTERSTITIAL */}
+            <AdUnit type="native" />
+          </>
         )}
 
         {/* ─── NEW RELEASES ───────────────── */}
