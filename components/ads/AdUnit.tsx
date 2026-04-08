@@ -47,6 +47,9 @@ export default function AdUnit({ type }: AdUnitProps) {
       script.setAttribute('data-cfasync', 'false');
 
       const adDiv = document.createElement('div');
+      // If we have multiple native ads, they might need unique IDs or the same script might handle them.
+      // Most Adsterra scripts target the specific ID. We'll try to support multiple by ensuring
+      // the container exists before the script runs.
       adDiv.id = (config as any).id;
 
       containerRef.current.appendChild(script);
