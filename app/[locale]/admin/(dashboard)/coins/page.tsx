@@ -34,9 +34,9 @@ export default async function AdminCoinsPage({ params }: { params: Promise<{ loc
     });
 
     return (
-        <div className="p-6 md:p-10 max-w-6xl mx-auto">
-            <h1 className="text-3xl font-black text-[var(--foreground)] tracking-tight mb-2">Coin Management</h1>
-            <p className="text-[var(--text-muted)] mb-8 font-medium">Manually grant or deduct coins for users.</p>
+        <div className="px-5 py-6 md:px-10 md:py-12 max-w-6xl mx-auto">
+            <h1 className="text-3xl md:text-4xl font-black text-[var(--foreground)] tracking-tight mb-2">Coin Management</h1>
+            <p className="text-[var(--text-muted)] mb-10 font-medium">Manually grant or deduct coins for users.</p>
 
             <CoinManagementPanel users={allUsers as any} />
         </div>

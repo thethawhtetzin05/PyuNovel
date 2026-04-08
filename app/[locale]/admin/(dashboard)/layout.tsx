@@ -1,8 +1,8 @@
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { Home, Megaphone, Settings, Users, Settings2, LogOut, Coins } from 'lucide-react';
+import { Home, Megaphone, Users, LogOut, Coins, Book } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { logoutAdmin } from '../actions';
+import AdminMobileMenu from '@/components/admin/AdminMobileMenu';
 
 export default async function AdminLayout({
     children,
@@ -14,20 +14,20 @@ export default async function AdminLayout({
     const cookieStore = await cookies();
     const isAdmin = cookieStore.get('admin_session')?.value === 'authenticated';
 
-    // Protect Admin Routes
-    // If we are already on the login page, don't redirect again
-    // We handle this loosely here since the layout wraps the login page too in this structure
-    // Actually, wait, layout.tsx in /admin wraps /admin/login too. We need to handle this conditionally or move login out
-    // Let's redirect if NOT authenticated AND NOT on login page.
-    // Next.js layout doesn't easily know the exact child route without passing it down.
-    // Best practice: protect in middleware OR inside the children pages OR separate login layout.
+    const handleLogout = async () => {
+        'use server';
+        const { locale } = await params;
+        await logoutAdmin(locale);
+    };
 
-    // Quick fix: we will check this inside the child pages instead of layout to avoid infinite loop on /admin/login
     return (
-        <div className="flex bg-[var(--background)] min-h-screen">
-            {/* Sidebar - Only show if authenticated */}
+        <div className="flex flex-col md:flex-row bg-[var(--background)] min-h-screen">
+            {/* Mobile Header & Menu */}
+            {isAdmin && <AdminMobileMenu logoutAction={handleLogout} />}
+
+            {/* Sidebar for Desktop - Only show if authenticated */}
             {isAdmin && (
-                <aside className="w-64 bg-[var(--surface)] border-r border-[var(--border)] min-h-screen p-6 hidden md:block">
+                <aside className="w-64 bg-[var(--surface)] border-r border-[var(--border)] min-h-screen p-6 hidden md:block sticky top-0 overflow-y-auto">
                     <div className="flex items-center gap-3 mb-10">
                         <span className="text-2xl">⚡</span>
                         <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[var(--action)] to-purple-500">
@@ -42,7 +42,11 @@ export default async function AdminLayout({
                         </Link>
                         <Link href="/admin/users" className="flex items-center gap-3 px-4 py-3 text-[var(--text-muted)] hover:bg-[var(--surface-2)] rounded-xl transition">
                             <Users size={18} />
-                            <span className="font-medium">Users Stats</span>
+                            <span className="font-medium">User Stats</span>
+                        </Link>
+                        <Link href="/admin/novels" className="flex items-center gap-3 px-4 py-3 text-[var(--text-muted)] hover:bg-[var(--surface-2)] rounded-xl transition">
+                            <Book size={18} />
+                            <span className="font-medium">Novel Stats</span>
                         </Link>
                         <Link href="/admin/coins" className="flex items-center gap-3 px-4 py-3 text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-xl transition">
                             <Coins size={18} />
@@ -55,11 +59,7 @@ export default async function AdminLayout({
                     </nav>
 
                     <form
-                        action={async () => {
-                            'use server';
-                            const { locale } = await params;
-                            await logoutAdmin(locale);
-                        }}
+                        action={handleLogout}
                         className="mt-8 pt-8 border-t border-[var(--border)]"
                     >
                         <button type="submit" className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-500/10 rounded-xl transition w-full text-left font-medium">
@@ -71,8 +71,14 @@ export default async function AdminLayout({
             )}
 
             {/* Main Content Area */}
-            <main className="flex-1 min-w-0">
-                {children}
+            <main className="flex-1 min-w-0 overflow-x-hidden">
+                {/* 
+                    No base padding here because child pages have their own max-w and p-6/p-8. 
+                    However, we add a bit of top margin on mobile to separate from header 
+                */}
+                <div className="pb-10 pt-4 md:pt-0">
+                    {children}
+                </div>
             </main>
         </div>
     );

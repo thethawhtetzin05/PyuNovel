@@ -98,21 +98,19 @@ export async function POST() {
             });
         }
 
-        await db.transaction(async (tx) => {
-            await tx.update(schema.user)
-                .set({
-                    exp: newExp,
-                    level: newLevel,
-                    lastCheckIn: now,
-                    checkInStreak: newStreak,
-                    ...(leveledUp && { lotteryChances: (user.lotteryChances || 0) + (newLevel - oldLevel) })
-                })
-                .where(eq(schema.user.id, userId));
+        await db.update(schema.user)
+            .set({
+                exp: newExp,
+                level: newLevel,
+                lastCheckIn: now,
+                checkInStreak: newStreak,
+                ...(leveledUp && { lotteryChances: (user.lotteryChances || 0) + (newLevel - oldLevel) })
+            })
+            .where(eq(schema.user.id, userId));
 
-            if (newCoupons.length > 0) {
-                await tx.insert(schema.coupons).values(newCoupons);
-            }
-        });
+        if (newCoupons.length > 0) {
+            await db.insert(schema.coupons).values(newCoupons);
+        }
 
         return Response.json({
             success: true,

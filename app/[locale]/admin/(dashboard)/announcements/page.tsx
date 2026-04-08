@@ -24,14 +24,14 @@ export default async function AnnouncementsAdminPage({ params }: { params: Promi
     const items = await getLatestAnnouncements(db, 20);
 
     return (
-        <div className="p-8 max-w-5xl mx-auto">
-            <div className="flex justify-between items-end mb-8 border-b border-[var(--border)] pb-6">
+        <div className="px-5 py-6 md:px-10 md:py-12 max-w-5xl mx-auto">
+            <div className="flex flex-col md:flex-row md:justify-between items-start md:items-end mb-10 border-b border-[var(--border)] pb-8">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-[var(--foreground)] flex items-center gap-3">
+                    <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--foreground)] flex items-center gap-3">
                         <Megaphone className="text-[var(--action)]" size={32} />
                         Announcements
                     </h1>
-                    <p className="text-[var(--text-muted)] mt-2">Create and manage alerts shown on the homepage sidebar.</p>
+                    <p className="text-[var(--text-muted)] mt-2 font-medium">Create and manage alerts shown on the homepage sidebar.</p>
                 </div>
             </div>
 
