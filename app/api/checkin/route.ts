@@ -5,6 +5,7 @@ import { drizzle } from "drizzle-orm/d1";
 import * as schema from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { calculateLevel, expForNextLevel } from "@/lib/leveling";
+import { getMMMidnight } from "@/lib/time";
 
 export const runtime = 'edge';
 
@@ -32,33 +33,21 @@ export async function POST() {
         }
 
         const now = new Date();
-        // Convert to Myanmar Time (+6:30)
-        const mmTimeOffset = 6.5 * 60 * 60 * 1000;
-        const mmNow = new Date(now.getTime() + mmTimeOffset);
-
-        // Midnight Myanmar Time representation
-        const todayMM = new Date(Date.UTC(mmNow.getUTCFullYear(), mmNow.getUTCMonth(), mmNow.getUTCDate()));
+        const nowMidnight = getMMMidnight(now);
 
         // Check if already claimed today
         let newStreak: number;
         if (user.lastCheckIn) {
-            const lastCheckInDate = new Date(user.lastCheckIn);
-            const mmLastCheckIn = new Date(lastCheckInDate.getTime() + mmTimeOffset);
+            const lastCheckInMidnight = getMMMidnight(new Date(user.lastCheckIn));
 
-            const lastCheckInMM = new Date(Date.UTC(
-                mmLastCheckIn.getUTCFullYear(),
-                mmLastCheckIn.getUTCMonth(),
-                mmLastCheckIn.getUTCDate()
-            ));
-
-            if (lastCheckInMM >= todayMM) {
+            if (lastCheckInMidnight.getTime() >= nowMidnight.getTime()) {
                 return Response.json({ success: false, error: "Already checked in today" }, { status: 400 });
             }
 
             // Check if the previous check-in was yesterday (to continue streak)
-            const yesterdayMM = new Date(todayMM);
-            yesterdayMM.setUTCDate(yesterdayMM.getUTCDate() - 1);
-            const isConsecutive = lastCheckInMM.getTime() === yesterdayMM.getTime();
+            const yesterdayMidnight = new Date(nowMidnight);
+            yesterdayMidnight.setUTCDate(yesterdayMidnight.getUTCDate() - 1);
+            const isConsecutive = lastCheckInMidnight.getTime() === yesterdayMidnight.getTime();
 
             newStreak = isConsecutive ? (user.checkInStreak ?? 0) + 1 : 1;
         } else {

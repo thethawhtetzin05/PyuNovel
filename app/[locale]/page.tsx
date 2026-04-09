@@ -136,16 +136,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
           </section>
         )}
 
-        {/* TOP NATIVE AD */}
+        {/* NATIVE AD INTERSTITIAL */}
         <AdUnit type="native" />
 
         {/* ─── LATEST CHAPTERS ───────────────── */}
         {latestChapterList.length > 0 && (
-          <>
-            <LatestChapters chapters={latestChapterList} />
-            {/* MIDDLE NATIVE AD */}
-            <AdUnit type="native" />
-          </>
+          <LatestChapters chapters={latestChapterList} />
         )}
 
         {/* ─── NEW RELEASES ───────────────── */}

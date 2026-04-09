@@ -4,7 +4,7 @@ import * as schema from "@/db/schema";
 import { createAuth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, lt } from "drizzle-orm";
 
 export const runtime = "edge";
 
@@ -20,6 +20,18 @@ export async function GET() {
         }
 
         const userId = session.user.id;
+        const now = new Date();
+
+        // 1. On-demand cleanup: Delete expired coupons for this user
+        await db.delete(schema.coupons)
+            .where(
+                and(
+                    eq(schema.coupons.userId, userId),
+                    lt(schema.coupons.expiresAt, now)
+                )
+            );
+
+        // 2. Fetch remaining active coupons
         const userCoupons = await db.query.coupons.findMany({
             where: eq(schema.coupons.userId, userId),
             orderBy: [desc(schema.coupons.createdAt)],

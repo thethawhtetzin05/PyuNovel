@@ -16,7 +16,7 @@ export default function Footer() {
                 <div className="flex items-center gap-6 text-sm" style={{ color: "var(--text-muted)" }}>
                     <a href="/about" className="hover:text-[var(--foreground)] transition">About</a>
                     <a href="/privacy" className="hover:text-[var(--foreground)] transition">Privacy</a>
-                    <a href="/novel/create" className="hover:text-[var(--foreground)] transition">Write</a>
+                    <a href="/dmca" className="hover:text-[var(--foreground)] transition">DMCA</a>
                 </div>
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                     © {new Date().getFullYear()} PyuNovel

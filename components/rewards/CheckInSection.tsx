@@ -1,5 +1,6 @@
 "use client";
 
+import { hasCheckedInToday } from "@/lib/time";
 import { useState } from "react";
 import { calculateLevel, expForNextLevel } from "@/lib/leveling";
 
@@ -8,13 +9,6 @@ interface CheckInButtonProps {
     initialLevel: number;
     initialStreak: number;
     lastCheckIn: Date | null;
-}
-
-function hasCheckedInToday(lastCheckIn: Date | null): boolean {
-    if (!lastCheckIn) return false;
-    const now = new Date();
-    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    return new Date(lastCheckIn) >= todayUTC;
 }
 
 function getTodayGain(streak: number, isCheckedIn: boolean): number {

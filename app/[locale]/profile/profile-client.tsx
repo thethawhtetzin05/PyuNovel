@@ -1,5 +1,6 @@
 "use client";
 
+import { hasCheckedInToday } from "@/lib/time";
 import { useState, useTransition } from "react";
 import { Link, useRouter, usePathname } from '@/i18n/routing';
 import { useSearchParams } from "next/navigation";
@@ -15,13 +16,6 @@ interface ProfileClientProps {
     user: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     userNovels: any[];
-}
-
-function hasCheckedInToday(lastCheckIn: Date | string | null): boolean {
-    if (!lastCheckIn) return false;
-    const now = new Date();
-    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    return new Date(lastCheckIn) >= todayUTC;
 }
 
 export default function ProfileClient({ user, userNovels }: ProfileClientProps) {
