@@ -116,112 +116,138 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
       <ViewTracker slug={slug} />
 
       {/* HEADER INFO SECTION */}
-      <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start">
+      <div className="flex flex-col gap-6 md:gap-12">
+        <div className="flex flex-row gap-5 md:gap-12 items-start">
 
-        {/* 1. Cover Image (Shadow & Rounded Corners) */}
-        <div className="w-44 md:w-56 aspect-[2/3] bg-gray-100 rounded-2xl shadow-2xl shrink-0 border border-gray-200 overflow-hidden relative mx-auto md:mx-0 transform hover:scale-[1.02] transition-transform duration-300">
-          {novel.coverUrl && novel.coverUrl !== "/placeholder-cover.jpg" ? (
-            <Image
-              src={novel.coverUrl}
-              alt={novel.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 176px, 224px"
-              priority
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center w-full h-full text-gray-400 bg-gray-50">
-              <span className="text-4xl mb-2">📚</span>
-              <span className="text-xs font-bold uppercase tracking-widest">No Cover</span>
+          {/* 1. Cover Image (Shadow & Rounded Corners) */}
+          <div className="w-32 sm:w-44 md:w-56 aspect-[2/3] bg-gray-100 rounded-xl md:rounded-2xl shadow-xl md:shadow-2xl shrink-0 border border-gray-200 overflow-hidden relative transform hover:scale-[1.02] transition-transform duration-300">
+            {novel.coverUrl && novel.coverUrl !== "/placeholder-cover.jpg" ? (
+              <Image
+                src={novel.coverUrl}
+                alt={novel.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 128px, 224px"
+                priority
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center w-full h-full text-gray-400 bg-gray-50">
+                <span className="text-4xl mb-2">📚</span>
+                <span className="text-xs font-bold uppercase tracking-widest text-center px-2">No Cover</span>
+              </div>
+            )}
+          </div>
+
+          {/* 2. Novel Details Text */}
+          <div className="flex flex-col flex-1 min-w-0 py-0 md:py-1 text-left w-full">
+
+            {/* Title */}
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-black text-[var(--foreground)] leading-tight mb-2 md:mb-4 tracking-tight break-words">
+              {novel.title}
+            </h1>
+
+            {/* Details List */}
+            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 md:gap-y-4 text-[15px] sm:text-base mb-2 md:mb-6">
+              <span className="text-[var(--text-muted)] font-medium">Author:</span>
+              <Link
+                href={`/author/${novel.ownerId}`}
+                className="text-[var(--action)] font-bold hover:underline transition-all cursor-pointer truncate"
+              >
+                {novel.author}
+              </Link>
+
+              <span className="text-[var(--text-muted)] font-medium">Status:</span>
+              <span className={`font-bold capitalize ${novel.status === 'ongoing' ? 'text-emerald-500' : 'text-blue-600'}`}>
+                {novel.status || 'Ongoing'}
+              </span>
+
+              <span className="text-[var(--text-muted)] font-medium">Views:</span>
+              <span className="font-bold">{(novel.views || 0).toLocaleString()} views</span>
+
+              <span className="text-[var(--text-muted)] font-medium">Tags:</span>
+              <span className="font-semibold text-[var(--foreground)] line-clamp-2 md:line-clamp-none">
+                {tagsList.length > 0 ? tagsList.join(', ') : 'No tags'}
+              </span>
+
+              <span className="text-[var(--text-muted)] font-medium">Updated:</span>
+              <span className="font-semibold">
+                {novel.updatedAt ? new Intl.DateTimeFormat('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric'
+                }).format(new Date(novel.updatedAt)) : 'Unknown'}
+              </span>
             </div>
-          )}
+
+            {/* ACTION BUTTONS - Desktop (Hidden on mobile) */}
+            <div className="hidden md:flex flex-row gap-3 mt-auto w-full">
+              {/* A. READ BUTTON (Primary Action) */}
+              <div className="flex-1">
+                {firstChapter ? (
+                  <Button asChild variant="premium" size="lg" className="w-full text-base font-bold h-12">
+                    <Link href={`/novel/${novel.slug}/${firstChapter.sortIndex}`}>
+                      📖 Read Now
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button disabled variant="secondary" size="lg" className="w-full text-base h-12 opacity-50">
+                    🚫 No Chapters
+                  </Button>
+                )}
+              </div>
+
+              {/* B. COLLECT BUTTON (Secondary Action) */}
+              <div className="flex-1">
+                {session?.user ? (
+                  <CollectButton novelId={novel.id} initialCollected={isCollected} slug={novel.slug} />
+                ) : (
+                  <Button asChild variant="outline" size="lg" className="w-full h-12 bg-primary/5 dark:bg-primary/10 text-primary shadow-xl border-primary/30 hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary font-bold flex items-center justify-center gap-2 transition-none text-base">
+                    <Link href="/sign-in">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 shrink-0">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+                      </svg>
+                      <span>Collect</span>
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            </div>
+
+          </div>
         </div>
 
-        {/* 2. Novel Details Text */}
-        <div className="flex flex-col flex-1 py-1 text-center md:text-left w-full">
-
-          {/* Title */}
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-[var(--foreground)] leading-snug md:leading-tight mb-4 tracking-tight break-words">
-            {novel.title}
-          </h1>
-
-          {/* Author */}
-          <p className="text-lg text-[var(--text-muted)] font-medium mb-6 flex items-center justify-center md:justify-start gap-2">
-            <span className="opacity-70">By</span>
-            <Link
-              href={`/author/${novel.ownerId}`}
-              className="text-[var(--action)] font-bold hover:underline transition-all cursor-pointer"
-            >
-              {novel.author}
-            </Link>
-          </p>
-
-          {/* Tags & Status Badges */}
-          <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-6">
-            {/* Status Badge (❗ lowercase နဲ့ ပြောင်းစစ်ထားတယ်) */}
-            <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider text-white shadow-sm ${novel.status === 'ongoing' ? 'bg-emerald-500' : 'bg-blue-600'}`}>
-              {novel.status || 'Ongoing'}
-            </span>
-
-            {/* Views Badge */}
-            <span className="px-3 py-1 rounded-full text-[11px] font-bold tracking-wider bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1 shadow-sm whitespace-nowrap">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 shrink-0">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              {(novel.views || 0).toLocaleString()} Views
-            </span>
-
-            {/* Collectors Badge */}
-            <span className="px-3 py-1 rounded-full text-[11px] font-bold tracking-wider bg-amber-100 text-amber-700 border border-amber-200 flex items-center gap-1 shadow-sm whitespace-nowrap">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 shrink-0">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
-              </svg>
-              {collectorCount.toLocaleString()} Collectors
-            </span>
-
-            {/* Tags Badges */}
-            {tagsList.map((tag, index) => (
-              <span key={index} className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[var(--surface-2)] text-[var(--foreground)] border border-[var(--border)] whitespace-nowrap">
-                {tag}
-              </span>
-            ))}
+        {/* ACTION BUTTONS - Mobile (Under both image and text) */}
+        <div className="flex md:hidden flex-row gap-3 w-full">
+          {/* A. READ BUTTON */}
+          <div className="flex-1">
+            {firstChapter ? (
+              <Button asChild variant="premium" size="lg" className="w-full text-sm font-bold h-12">
+                <Link href={`/novel/${novel.slug}/${firstChapter.sortIndex}`}>
+                  📖 Read Now
+                </Link>
+              </Button>
+            ) : (
+              <Button disabled variant="secondary" size="lg" className="w-full text-sm h-12 opacity-50">
+                🚫 No Chapters
+              </Button>
+            )}
           </div>
 
-          {/* ACTION BUTTONS - 50/50 SPLIT */}
-          <div className="flex flex-row gap-3 mt-auto w-full">
-            {/* A. READ BUTTON (Primary Action) */}
-            <div className="flex-1">
-              {firstChapter ? (
-                <Button asChild variant="premium" size="lg" className="w-full text-sm md:text-base font-bold h-12">
-                  <Link href={`/novel/${novel.slug}/${firstChapter.sortIndex}`}>
-                    📖 Read Now
-                  </Link>
-                </Button>
-              ) : (
-                <Button disabled variant="secondary" size="lg" className="w-full text-sm md:text-base h-12 opacity-50">
-                  🚫 No Chapters
-                </Button>
-              )}
-            </div>
-
-            {/* B. COLLECT BUTTON (Secondary Action) */}
-            <div className="flex-1">
-              {session?.user ? (
-                <CollectButton novelId={novel.id} initialCollected={isCollected} slug={novel.slug} />
-              ) : (
-                <Button asChild variant="outline" size="lg" className="w-full h-12 bg-primary/5 dark:bg-primary/10 text-primary shadow-xl border-primary/30 hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary font-bold flex items-center justify-center gap-2 transition-none text-sm md:text-base">
-                  <Link href="/sign-in">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 shrink-0">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
-                    </svg>
-                    <span>Collect</span>
-                  </Link>
-                </Button>
-              )}
-            </div>
+          {/* B. COLLECT BUTTON */}
+          <div className="flex-1">
+            {session?.user ? (
+              <CollectButton novelId={novel.id} initialCollected={isCollected} slug={novel.slug} />
+            ) : (
+              <Button asChild variant="outline" size="lg" className="w-full h-12 bg-primary/5 dark:bg-primary/10 text-primary shadow-xl border-primary/30 hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary font-bold flex items-center justify-center gap-2 transition-none text-sm">
+                <Link href="/sign-in">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 shrink-0">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+                  </svg>
+                  <span>Collect</span>
+                </Link>
+              </Button>
+            )}
           </div>
-
         </div>
       </div>
 
