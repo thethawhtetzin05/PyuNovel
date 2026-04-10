@@ -4,7 +4,7 @@ import { Link } from "@/i18n/routing";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useSession } from "@/lib/auth-client";
-import { Home, Library, BookHeart, CircleUser } from "lucide-react";
+import { Home, Library, PencilLine, CircleUser } from "lucide-react";
 import Image from "next/image";
 
 export default function BottomNav() {
@@ -41,8 +41,8 @@ export default function BottomNav() {
             href: '/ranking',
         },
         {
-            icon: <BookHeart className="w-7 h-7 text-current transition-colors" strokeWidth={1.5} />,
-            href: '/collection',
+            icon: <PencilLine className="w-6 h-6 text-current transition-colors" strokeWidth={1.5} />,
+            href: '/writer',
         },
         {
             // If logged in, show user image inside a ring; else show user icon

@@ -116,8 +116,14 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
       <ViewTracker slug={slug} />
 
       {/* HEADER INFO SECTION */}
-      <div className="flex flex-col gap-6 md:gap-12">
-        <div className="flex flex-row gap-5 md:gap-12 items-start">
+      <div className="flex flex-col gap-4 md:gap-12">
+
+        {/* Title - Mobile View (Shown only on small screens) */}
+        <h1 className="block md:hidden text-2xl sm:text-3xl font-black text-[var(--foreground)] leading-tight tracking-tight break-words">
+          {novel.title}
+        </h1>
+
+        <div className="flex flex-row gap-5 md:gap-12 items-start w-full">
 
           {/* 1. Cover Image (Shadow & Rounded Corners) */}
           <div className="w-32 sm:w-44 md:w-56 aspect-[2/3] bg-gray-100 rounded-xl md:rounded-2xl shadow-xl md:shadow-2xl shrink-0 border border-gray-200 overflow-hidden relative transform hover:scale-[1.02] transition-transform duration-300">
@@ -141,8 +147,8 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
           {/* 2. Novel Details Text */}
           <div className="flex flex-col flex-1 min-w-0 py-0 md:py-1 text-left w-full">
 
-            {/* Title */}
-            <h1 className="text-2xl sm:text-3xl md:text-5xl font-black text-[var(--foreground)] leading-tight mb-2 md:mb-4 tracking-tight break-words">
+            {/* Title - Desktop View (Hidden on mobile as it's moved above) */}
+            <h1 className="hidden md:block text-3xl md:text-5xl font-black text-[var(--foreground)] leading-tight mb-4 tracking-tight break-words">
               {novel.title}
             </h1>
 
@@ -161,8 +167,10 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
                 {novel.status || 'Ongoing'}
               </span>
 
-              <span className="text-[var(--text-muted)] font-medium">Views:</span>
-              <span className="font-bold">{(novel.views || 0).toLocaleString()} views</span>
+              <span className="text-[var(--text-muted)] font-medium">Statistics:</span>
+              <span className="font-bold">
+                {(novel.views || 0).toLocaleString()} views & {collectorCount.toLocaleString()} collections
+              </span>
 
               <span className="text-[var(--text-muted)] font-medium">Tags:</span>
               <span className="font-semibold text-[var(--foreground)] line-clamp-2 md:line-clamp-none">
