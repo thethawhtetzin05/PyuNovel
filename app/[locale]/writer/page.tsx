@@ -7,8 +7,8 @@ import { drizzle } from 'drizzle-orm/d1';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { novels, collections, chapters } from '@/db/schema';
-import { eq, count, desc, sql } from 'drizzle-orm';
+import { novels } from '@/db/schema';
+import { desc, sql } from 'drizzle-orm';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -29,9 +29,11 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   const t = await getTranslations('Writer');
 
   /**
-   * 🛠️ OPTIMIZATION: Priority 1 - Fix N+1 Queries
-   * Instead of scalar subqueries which run O(N) times, we use a single query with LEFT JOINs and GROUP BY.
-   * This reduces row reads from O(N * (Chapters + Collections)) to O(Novels + Chapters_Scan + Collections_Scan).
+   * ✅ OPTIMIZATION: Correlated subqueries instead of double LEFT JOIN
+   * Double LEFT JOIN (novels × collections × chapters) creates a cartesian product,
+   * causing row reads = novel_count × avg_chapter_count (e.g. 12 × 27 = 324).
+   * Correlated subqueries run per-novel but use indexed FK columns (novel_id),
+   * so row reads = novel_count × index_lookups only.
    */
   const myNovels = await db
     .select({
@@ -42,15 +44,19 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
       coverUrl: novels.coverUrl,
       views: novels.views,
       updatedAt: novels.updatedAt,
-      // Aggregates with subqueries removed for inner joins to avoid cross-product overhead
-      collectorCount: sql<number>`CAST(count(distinct ${collections.id}) AS INTEGER)`,
-      chapterCount: sql<number>`CAST(count(distinct ${chapters.id}) AS INTEGER)`,
+      collectorCount: sql<number>`(
+        SELECT CAST(count(*) AS INTEGER)
+        FROM collections
+        WHERE collections.novel_id = ${novels.id}
+      )`,
+      chapterCount: sql<number>`(
+        SELECT CAST(count(*) AS INTEGER)
+        FROM chapters
+        WHERE chapters.novel_id = ${novels.id}
+      )`,
     })
     .from(novels)
-    .leftJoin(collections, eq(collections.novelId, novels.id))
-    .leftJoin(chapters, eq(chapters.novelId, novels.id))
-    .where(eq(novels.ownerId, session.user.id))
-    .groupBy(novels.id)
+    .where(sql`${novels.ownerId} = ${session.user.id}`)
     .orderBy(desc(novels.updatedAt))
     .all();
 

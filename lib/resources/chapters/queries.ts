@@ -26,7 +26,10 @@ export async function getChaptersForDownload(db: DrizzleD1Database<any>, novelId
 // ဝတ္ထုတစ်ခုလုံးရဲ့ အခန်းစာရင်းကို ယူရန် (content မပါ — list page အတွက် fast query)
 
 export async function getChaptersByNovelId(db: DrizzleD1Database<any>, novelId: number) {
-  return await db
+  // ✅ OPTIMIZATION: Remove ORDER BY from DB query so D1 can fully use the composite index
+  // (novelId, status, publishedAt, sortIndex). With a range condition (publishedAt <= ?),
+  // adding ORDER BY sortIndex forces a filesort. Sorting in JS instead avoids extra row reads.
+  const rows = await db
     .select({
       id: chapters.id,
       title: chapters.title,
@@ -43,8 +46,10 @@ export async function getChaptersByNovelId(db: DrizzleD1Database<any>, novelId: 
         lte(chapters.publishedAt, new Date())
       )
     )
-    .orderBy(asc(chapters.sortIndex))
     .all();
+
+  // Sort in application memory — avoids DB filesort overhead on large tables
+  return rows.sort((a, b) => a.sortIndex - b.sortIndex);
 }
 
 // Writer Dashboard — includes status/publishedAt but NOT content
