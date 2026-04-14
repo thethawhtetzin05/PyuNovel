@@ -119,14 +119,14 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
       <div className="flex flex-col gap-4 md:gap-12">
 
         {/* Title - Mobile View (Shown only on small screens) */}
-        <h1 className="block md:hidden text-2xl sm:text-3xl font-black text-[var(--foreground)] leading-tight tracking-tight break-words">
+        <h1 className="block md:hidden text-2xl sm:text-3xl font-black text-[var(--foreground)] leading-tight tracking-tight break-words text-center">
           {novel.title}
         </h1>
 
-        <div className="flex flex-row gap-5 md:gap-12 items-start w-full">
+        <div className="flex flex-col md:flex-row gap-6 md:gap-12 items-center md:items-start w-full">
 
           {/* 1. Cover Image (Shadow & Rounded Corners) */}
-          <div className="w-32 sm:w-44 md:w-56 aspect-[2/3] bg-gray-100 rounded-xl md:rounded-2xl shadow-xl md:shadow-2xl shrink-0 border border-gray-200 overflow-hidden relative transform hover:scale-[1.02] transition-transform duration-300">
+          <div className="w-40 sm:w-48 md:w-56 aspect-[2/3] bg-gray-100 rounded-xl md:rounded-2xl shadow-xl md:shadow-2xl shrink-0 border border-gray-200 overflow-hidden relative transform hover:scale-[1.02] transition-transform duration-300 mx-auto md:mx-0">
             {novel.coverUrl && novel.coverUrl !== "/placeholder-cover.jpg" ? (
               <Image
                 src={novel.coverUrl}
@@ -145,7 +145,7 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
           </div>
 
           {/* 2. Novel Details Text */}
-          <div className="flex flex-col flex-1 min-w-0 py-0 md:py-1 text-left w-full">
+          <div className="flex flex-col flex-1 min-w-0 py-0 md:py-1 text-center md:text-left w-full">
 
             {/* Title - Desktop View (Hidden on mobile as it's moved above) */}
             <h1 className="hidden md:block text-3xl md:text-5xl font-black text-[var(--foreground)] leading-tight mb-4 tracking-tight break-words">
@@ -153,7 +153,7 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
             </h1>
 
             {/* Details List */}
-            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 md:gap-y-4 text-[15px] sm:text-base mb-2 md:mb-6">
+            <div className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_1fr] justify-center md:justify-start gap-x-3 gap-y-1.5 md:gap-y-4 text-[15px] sm:text-base mb-2 md:mb-6 mx-auto md:mx-0">
               <span className="text-[var(--text-muted)] font-medium">Author:</span>
               <Link
                 href={`/author/${novel.ownerId}`}

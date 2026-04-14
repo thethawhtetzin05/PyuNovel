@@ -7,8 +7,8 @@ import { drizzle } from 'drizzle-orm/d1';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { novels } from '@/db/schema';
-import { desc, sql } from 'drizzle-orm';
+import { novels, collections, chapters } from '@/db/schema';
+import { desc, sql, eq, inArray, count } from 'drizzle-orm';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -29,11 +29,9 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   const t = await getTranslations('Writer');
 
   /**
-   * ✅ OPTIMIZATION: Correlated subqueries instead of double LEFT JOIN
-   * Double LEFT JOIN (novels × collections × chapters) creates a cartesian product,
-   * causing row reads = novel_count × avg_chapter_count (e.g. 12 × 27 = 324).
-   * Correlated subqueries run per-novel but use indexed FK columns (novel_id),
-   * so row reads = novel_count × index_lookups only.
+   * ✅ OPTIMIZATION: 3 indexed queries (Promise.all) instead of 1 correlated-subquery query.
+   * Correlated subqueries run N×2 loops = N×(collections scan + chapters scan) rows read.
+   * Aggregate queries with inArray + groupBy use FK indexes, total rows = flat O(data size).
    */
   const myNovels = await db
     .select({
@@ -44,21 +42,58 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
       coverUrl: novels.coverUrl,
       views: novels.views,
       updatedAt: novels.updatedAt,
-      collectorCount: sql<number>`(
-        SELECT CAST(count(*) AS INTEGER)
-        FROM collections
-        WHERE collections.novel_id = ${novels.id}
-      )`,
-      chapterCount: sql<number>`(
-        SELECT CAST(count(*) AS INTEGER)
-        FROM chapters
-        WHERE chapters.novel_id = ${novels.id}
-      )`,
     })
     .from(novels)
-    .where(sql`${novels.ownerId} = ${session.user.id}`)
+    .where(eq(novels.ownerId, session.user.id))
     .orderBy(desc(novels.updatedAt))
     .all();
+
+  // Early return if no novels — skip the 2 count queries entirely
+  if (myNovels.length === 0) {
+    return (
+      <div className="max-w-5xl mx-auto px-6 py-12">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-extrabold text-[var(--foreground)]">{t('title')}</h1>
+            <p className="text-[var(--text-muted)] mt-1">{t('description')}</p>
+          </div>
+          <Button asChild variant="premium" size="default" className="font-sans rounded-full">
+            <Link href="/novel/create">{t('newNovel')}</Link>
+          </Button>
+        </div>
+        <div className="text-center py-20 bg-[var(--surface-2)] rounded-3xl border border-dashed border-[var(--border)]">
+          <p className="text-[var(--text-muted)] font-medium mb-4">{t('noNovels')}</p>
+          <Link href="/novel/create" className="text-[var(--action)] font-bold hover:underline">{t('startWriting')}</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const novelIds = myNovels.map(n => n.id);
+
+  // 2 aggregate queries in parallel — both use FK indexes (collection_novel_idx, chapter_novel_id_idx)
+  const [collectionCounts, chapterCounts] = await Promise.all([
+    db.select({ novelId: collections.novelId, cnt: count() })
+      .from(collections)
+      .where(inArray(collections.novelId, novelIds))
+      .groupBy(collections.novelId)
+      .all(),
+    db.select({ novelId: chapters.novelId, cnt: count() })
+      .from(chapters)
+      .where(inArray(chapters.novelId, novelIds))
+      .groupBy(chapters.novelId)
+      .all(),
+  ]);
+
+  // O(N) Map merge in JS — no extra DB round trip
+  const collMap = new Map(collectionCounts.map(r => [r.novelId, r.cnt]));
+  const chapMap  = new Map(chapterCounts.map(r => [r.novelId, r.cnt]));
+
+  const novelsWithStats = myNovels.map(n => ({
+    ...n,
+    collectorCount: collMap.get(n.id) ?? 0,
+    chapterCount:   chapMap.get(n.id)  ?? 0,
+  }));
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
@@ -78,8 +113,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
       {/* Novel List */}
       <div className="flex flex-col gap-4 w-full max-w-full">
-        {myNovels.length > 0 ? (
-          myNovels.map((novel) => (
+        {novelsWithStats.map((novel) => (
             <Link key={novel.id} href={`/writer/novels/${novel.slug}`}>
               <Card className="overflow-hidden border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)] hover:shadow-md transition-all duration-200 group">
                 <CardContent className="p-4 flex flex-row items-center gap-4">
@@ -144,14 +178,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
                 </CardContent>
               </Card>
             </Link>
-          ))
-        ) : (
-          /* ဝတ္ထု မရှိသေးရင် ပြမယ့်နေရာ */
-          <div className="text-center py-20 bg-[var(--surface-2)] rounded-3xl border border-dashed border-[var(--border)]">
-            <p className="text-[var(--text-muted)] font-medium mb-4">{t('noNovels')}</p>
-            <Link href="/novel/create" className="text-[var(--action)] font-bold hover:underline">{t('startWriting')}</Link>
-          </div>
-        )}
+        ))}
       </div>
 
     </div>
