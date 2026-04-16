@@ -134,6 +134,13 @@
       "when": 1775533280000,
       "tag": "0018_chapters_composite_index",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1776318614883,
+      "tag": "0019_clever_lord_hawal",
+      "breakpoints": true
     }
   ]
 }

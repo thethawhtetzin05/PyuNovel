@@ -151,8 +151,8 @@ export const chapters = sqliteTable('chapters', {
   statusPublishedAtIdx: index('chapter_status_published_at_idx').on(table.status, table.publishedAt),
   updatedAtIdx: index('chapter_updated_at_idx').on(table.updatedAt),
   createdAtIdx: index('chapter_created_at_idx').on(table.createdAt),
-  novelIdIdx: index('chapter_novel_id_idx').on(table.novelId),
-  // Composite index for the hot query: WHERE novel_id = ? AND status = ? AND published_at <= ? ORDER BY sort_index ASC
+  // Composite index for the hot query: WHERE novel_id = ? AND status = ? ORDER BY sort_index ASC
+  // novel_id is the leading column so single-column index is redundant
   novelStatusPublishedSortIdx: index('chapter_novel_status_published_sort_idx').on(table.novelId, table.status, table.publishedAt, table.sortIndex),
 }));
 

@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS `chapter_novel_id_idx`;
