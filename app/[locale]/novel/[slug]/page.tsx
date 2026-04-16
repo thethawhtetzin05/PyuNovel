@@ -145,7 +145,7 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
           </div>
 
           {/* 2. Novel Details Text */}
-          <div className="flex flex-col flex-1 min-w-0 py-0 md:py-1 text-center md:text-left w-full">
+          <div className="flex flex-col flex-1 min-w-0 py-0 md:py-1 text-left w-full">
 
             {/* Title - Desktop View (Hidden on mobile as it's moved above) */}
             <h1 className="hidden md:block text-3xl md:text-5xl font-black text-[var(--foreground)] leading-tight mb-4 tracking-tight break-words">
@@ -153,38 +153,50 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
             </h1>
 
             {/* Details List */}
-            <div className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_1fr] justify-center md:justify-start gap-x-3 gap-y-1.5 md:gap-y-4 text-[15px] sm:text-base mb-2 md:mb-6 mx-auto md:mx-0">
-              <span className="text-[var(--text-muted)] font-medium">Author:</span>
-              <Link
-                href={`/author/${novel.ownerId}`}
-                className="text-[var(--action)] font-bold hover:underline transition-all cursor-pointer truncate"
-              >
-                {novel.author}
-              </Link>
+            <div className="grid grid-cols-[auto_1fr] gap-x-4 md:gap-x-8 items-start gap-y-1.5 md:gap-y-4 text-[15px] sm:text-base mb-2 md:mb-6">
+              <div className="contents">
+                <span className="text-[var(--text-muted)] font-medium">Author:</span>
+                <Link
+                  href={`/author/${novel.ownerId}`}
+                  className="text-[var(--action)] font-bold hover:underline transition-all cursor-pointer truncate"
+                >
+                  {novel.author}
+                </Link>
+              </div>
 
-              <span className="text-[var(--text-muted)] font-medium">Status:</span>
-              <span className={`font-bold capitalize ${novel.status === 'ongoing' ? 'text-emerald-500' : 'text-blue-600'}`}>
-                {novel.status || 'Ongoing'}
-              </span>
+              <div className="contents">
+                <span className="text-[var(--text-muted)] font-medium">Status:</span>
+                <span className={`font-bold capitalize ${novel.status === 'ongoing' ? 'text-emerald-500' : 'text-blue-600'}`}>
+                  {novel.status || 'Ongoing'}
+                </span>
+              </div>
 
-              <span className="text-[var(--text-muted)] font-medium">Statistics:</span>
-              <span className="font-bold">
-                {(novel.views || 0).toLocaleString()} views & {collectorCount.toLocaleString()} collections
-              </span>
+              <div className="contents">
+                <span className="text-[var(--text-muted)] font-medium">Tags:</span>
+                <span className="font-semibold text-[var(--foreground)] line-clamp-2 md:line-clamp-none">
+                  {tagsList.length > 0 ? tagsList.join(', ') : 'No tags'}
+                </span>
+              </div>
 
-              <span className="text-[var(--text-muted)] font-medium">Tags:</span>
-              <span className="font-semibold text-[var(--foreground)] line-clamp-2 md:line-clamp-none">
-                {tagsList.length > 0 ? tagsList.join(', ') : 'No tags'}
-              </span>
+              <div className="contents">
+                <span className="text-[var(--text-muted)] font-medium">Views:</span>
+                <span className="font-bold">
+                  {(novel.views || 0).toLocaleString()}
+                </span>
+              </div>
 
-              <span className="text-[var(--text-muted)] font-medium">Updated:</span>
-              <span className="font-semibold">
-                {novel.updatedAt ? new Intl.DateTimeFormat('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                }).format(new Date(novel.updatedAt)) : 'Unknown'}
-              </span>
+
+
+              <div className="contents">
+                <span className="text-[var(--text-muted)] font-medium">Updated:</span>
+                <span className="font-semibold">
+                  {novel.updatedAt ? new Intl.DateTimeFormat('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                  }).format(new Date(novel.updatedAt)) : 'Unknown'}
+                </span>
+              </div>
             </div>
 
             {/* ACTION BUTTONS - Desktop (Hidden on mobile) */}
