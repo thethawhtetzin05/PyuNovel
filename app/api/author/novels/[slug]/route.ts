@@ -2,8 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerContext } from "@/lib/server-context";
 import { eq, and } from "drizzle-orm";
 import { novels } from "@/db/schema";
+import { z } from "zod";
 
 export const runtime = 'edge';
+
+const updateNovelSchema = z.object({
+    title: z.string().optional(),
+    author: z.string().optional(),
+    description: z.string().nullable().optional(),
+    tags: z.string().optional(),
+    status: z.enum(['ongoing', 'completed', 'hiatus', 'dropped']).optional(),
+    isScheduledMode: z.boolean().optional(),
+    scheduledHour: z.number().min(0).max(23).optional(),
+    chaptersPerDay: z.number().min(1).optional(),
+    chapterPrice: z.number().min(0).optional(),
+    paidFrom: z.number().optional(),
+    paidTo: z.number().optional(),
+});
+
 
 // GET /api/author/novels/[slug]
 export async function GET(
@@ -52,7 +68,12 @@ export async function PATCH(
 ) {
     try {
         const { slug } = await params;
-        const body = await request.json();
+        const rawBody = await request.json();
+        const validation = updateNovelSchema.safeParse(rawBody);
+        if (!validation.success) {
+            return NextResponse.json({ success: false, error: validation.error.message }, { status: 400 });
+        }
+        const body = validation.data;
         const { db, auth } = getServerContext();
         if (!auth) return NextResponse.json({ success: false, error: "Auth configuration error" }, { status: 500 });
         const session = await auth.api.getSession({ headers: request.headers });
@@ -156,7 +177,10 @@ export async function DELETE(
 ) {
     try {
         const { slug } = await params;
-        const { password } = await request.json();
+        const { password } = (await request.json()) as { password?: string };
+        if (!password) {
+            return NextResponse.json({ success: false, error: "Password is required" }, { status: 400 });
+        }
         const { db, auth } = getServerContext();
         if (!auth) {
             return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });

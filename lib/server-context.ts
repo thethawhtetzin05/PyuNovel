@@ -1,8 +1,18 @@
 import { getRequestContext } from '@cloudflare/next-on-pages';
-import { drizzle } from 'drizzle-orm/d1';
+import { drizzle, DrizzleD1Database } from 'drizzle-orm/d1';
 import * as schema from '@/db/schema';
 import { createAuth } from '@/lib/auth';
 
+export function getServerContext(options?: { withAuth?: true }): {
+    db: DrizzleD1Database<typeof schema>;
+    auth: ReturnType<typeof createAuth>;
+    env: any;
+};
+export function getServerContext(options: { withAuth: false }): {
+    db: DrizzleD1Database<typeof schema>;
+    auth: null;
+    env: any;
+};
 /**
  * Server Action တိုင်းတွင် db နှင့် auth ကို ထပ်ခါတလဲလဲ init မလုပ်ရအောင်
  * ဤ helper function တစ်ခုတည်းမှ ယူသုံးပါ။
@@ -20,5 +30,6 @@ export function getServerContext(options: { withAuth?: boolean } = { withAuth: t
     // Auth initialization is optional to prevent crashes in non-browser headers environments (like Telegram Webhook)
     const auth = options.withAuth ? createAuth(env.DB) : null;
     
-    return { db, auth, env };
+    return { db, auth, env } as any;
 }
+

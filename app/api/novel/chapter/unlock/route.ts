@@ -3,12 +3,24 @@ import { getServerContext } from "@/lib/server-context";
 import { eq, sql } from "drizzle-orm";
 import { chapterUnlocks, coinTransactions, user } from "@/db/schema";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 export const runtime = 'edge';
+
+const unlockSchema = z.object({
+    chapterId: z.coerce.number(),
+    novelId: z.coerce.number(),
+    chapterPrice: z.coerce.number(),
+    slug: z.string(),
+    sortIndex: z.coerce.number(),
+});
 
 export async function POST(request: NextRequest) {
     try {
         const { db, auth } = getServerContext();
+        if (!auth) {
+            return NextResponse.json({ success: false, error: "Auth system is not available" }, { status: 500 });
+        }
         const session = await auth.api.getSession({ headers: request.headers });
 
         if (!session?.user) {
@@ -16,11 +28,11 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { chapterId, novelId, chapterPrice, slug, sortIndex } = body;
-
-        if (!chapterId || !novelId || !chapterPrice || !slug || !sortIndex) {
-            return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+        const validation = unlockSchema.safeParse(body);
+        if (!validation.success) {
+            return NextResponse.json({ success: false, error: validation.error.message }, { status: 400 });
         }
+        const { chapterId, novelId, chapterPrice, slug, sortIndex } = validation.data;
 
         const userId = session.user.id;
 

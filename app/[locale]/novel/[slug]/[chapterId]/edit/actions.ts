@@ -16,6 +16,9 @@ const UpdateChapterSchema = z.object({
 
 export async function updateChapterAction(formData: FormData) {
   const { db, auth } = getServerContext();
+  if (!auth) {
+    throw new Error("Authentication system is not available");
+  }
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     redirect({ href: '/sign-in', locale: await getLocale() });

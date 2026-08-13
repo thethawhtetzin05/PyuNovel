@@ -26,7 +26,15 @@ export async function POST(request: NextRequest) {
             stack ? `\n<b>Stack Trace:</b>\n<code>${escapeHtml(stack.substring(0, 500))}...</code>` : null,
         ].filter(Boolean).join("\n");
 
-        const result = await sendTelegramMessage(env, formattedMessage);
+        const botToken = env.TELEGRAM_BOT_TOKEN;
+        const chatId = env.TELEGRAM_CHAT_ID;
+
+        if (!botToken || !chatId) {
+            console.error("Telegram credentials missing in environment variables.");
+            return NextResponse.json({ success: false, error: "Telegram config missing" }, { status: 500 });
+        }
+
+        const result = await sendTelegramMessage(botToken, chatId, formattedMessage);
 
         if (!result.success) {
             return NextResponse.json({ success: false, error: result.error }, { status: 500 });

@@ -68,7 +68,7 @@ export default function ScheduleBatchModal({ chapters, novelSlug, onClose, onSuc
                     })
                 });
 
-                const data = await res.json();
+                const data = (await res.json()) as { success: boolean; error?: string };
                 if (data.success) {
                     onSuccess();
                     onClose();

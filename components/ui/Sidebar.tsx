@@ -3,6 +3,7 @@ import { Link } from "@/i18n/routing";
 import ThemeSwitcher from './theme-switcher';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslations } from 'next-intl';
+import Image from "next/image";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -31,10 +32,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: "1px solid var(--border)" }}>
-          <span className="text-lg font-extrabold tracking-tight" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
-            <span className="text-primary drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]">Pyu</span>
-            <span style={{ color: "var(--foreground)" }}>Novel</span>
-          </span>
+          <div className="flex items-center gap-0">
+            <Image
+              src="/logo.png"
+              alt="PyuNovel Logo"
+              width={24}
+              height={24}
+              className="w-6 h-6 rounded-md object-contain"
+            />
+            <span className="text-lg font-extrabold tracking-tight" style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}>
+              <span className="text-primary drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]">yu</span>
+              <span style={{ color: "var(--foreground)" }}> Novel</span>
+            </span>
+          </div>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg transition hover:bg-[var(--surface-2)]"

@@ -93,13 +93,20 @@ export default function Navbar() {
               </button>
 
               {/* Logo */}
-              <Link href="/" className="flex items-center gap-2 shrink-0 group">
+              <Link href="/" className="flex items-center gap-0 shrink-0 group">
+                <Image
+                  src="/logo.png"
+                  alt="PyuNovel Logo"
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 rounded-lg object-contain transition-transform group-hover:scale-105"
+                />
                 <span
                   className="text-2xl font-black tracking-tighter transition-all group-hover:scale-105 active:scale-95"
                   style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
                 >
-                  <span className="text-primary drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]">Pyu</span>
-                  <span className="text-foreground">Novel</span>
+                  <span className="text-primary drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]">yu</span>
+                  <span className="text-foreground"> Novel</span>
                 </span>
               </Link>
 

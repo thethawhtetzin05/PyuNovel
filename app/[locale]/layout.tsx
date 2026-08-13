@@ -19,6 +19,10 @@ export const metadata: Metadata = {
     siteName: "PyuNovel",
     locale: "en_US",
   },
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export const viewport: Viewport = {

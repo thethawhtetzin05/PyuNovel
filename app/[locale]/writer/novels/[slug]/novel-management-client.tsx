@@ -57,7 +57,7 @@ interface Novel {
     status: string | null;
     views: number;
     tags: string;
-    chapterPrice: number;
+    chapterPrice: number | null;
     isScheduledMode: boolean;
     chaptersPerDay: number;
     scheduledHour: number;

@@ -11,6 +11,9 @@ import { createNovel } from '@/lib/resources/novels/mutations';
 
 export async function addNovelAction(formData: FormData) {
   const { db, auth } = getServerContext();
+  if (!auth) {
+    throw new Error("Authentication system is not available");
+  }
 
   // ၁။ User Session စစ်ဆေးခြင်း
   const session = await auth.api.getSession({

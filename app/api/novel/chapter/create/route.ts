@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
             title: data.title,
             content: data.content,
             sortIndex: data.sortIndex,
-            isPaid: data.isPaid,
+            isPaid: data.isPaid ?? false,
             status: finalStatus as any,
             publishedAt: finalPublishedAt
         }, session.user.id);
