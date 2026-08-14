@@ -137,13 +137,15 @@ export async function getChapterForReader(db: DrizzleD1Database<any>, slug: stri
 
   const novelId = result.novel.id;
 
-  // B. ရှေ့အခန်းနဲ့ နောက်အခန်းကို Parallel (Promise.all) နဲ့ ရှာမယ်
+  const now = new Date();
   const [prevChapter, nextChapter] = await Promise.all([
     db.select({ sortIndex: chapters.sortIndex })
       .from(chapters)
       .where(
         and(
           eq(chapters.novelId, novelId),
+          eq(chapters.status, 'published'),
+          lte(chapters.publishedAt, now),
           lt(chapters.sortIndex, chapterIndex)
         )
       )
@@ -155,6 +157,8 @@ export async function getChapterForReader(db: DrizzleD1Database<any>, slug: stri
       .where(
         and(
           eq(chapters.novelId, novelId),
+          eq(chapters.status, 'published'),
+          lte(chapters.publishedAt, now),
           gt(chapters.sortIndex, chapterIndex)
         )
       )

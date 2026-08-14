@@ -148,7 +148,7 @@ export const chapters = sqliteTable('chapters', {
 }, (table) => ({
   novelSortIdx: uniqueIndex('novel_sort_idx').on(table.novelId, table.sortIndex),
   volumeIdx: index('chapter_volume_idx').on(table.volumeId),
-  statusPublishedAtIdx: index('chapter_status_published_at_idx').on(table.status, table.publishedAt),
+  statusPublishedAtIdx: index('chapter_status_published_at_idx').on(table.status, table.publishedAt, table.novelId, table.id, table.title, table.sortIndex),
   updatedAtIdx: index('chapter_updated_at_idx').on(table.updatedAt),
   createdAtIdx: index('chapter_created_at_idx').on(table.createdAt),
   // Composite index for the hot query: WHERE novel_id = ? AND status = ? ORDER BY sort_index ASC
