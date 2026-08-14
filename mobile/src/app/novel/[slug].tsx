@@ -14,6 +14,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { API_URL } from '../index';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface NovelDetail {
   id: number;
@@ -49,6 +50,56 @@ export default function NovelDetailScreen() {
   const [novel, setNovel] = useState<NovelDetail | null>(null);
   const [volumes, setVolumes] = useState<Volume[]>([]);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
+  // Load bookmark status on mount / slug change
+  useEffect(() => {
+    const checkBookmarkStatus = async () => {
+      if (!slug) return;
+      try {
+        const bookmarksStr = await AsyncStorage.getItem('pyunovel_bookmarks');
+        if (bookmarksStr) {
+          const bookmarks = JSON.parse(bookmarksStr);
+          const exists = bookmarks.some((b: any) => b.slug === slug);
+          setIsBookmarked(exists);
+        }
+      } catch (error) {
+        console.error('Error checking bookmark status:', error);
+      }
+    };
+    checkBookmarkStatus();
+  }, [slug]);
+
+  // Toggle bookmark
+  const toggleBookmark = async () => {
+    if (!novel) return;
+    try {
+      const bookmarksStr = await AsyncStorage.getItem('pyunovel_bookmarks');
+      let bookmarks = bookmarksStr ? JSON.parse(bookmarksStr) : [];
+      
+      if (isBookmarked) {
+        bookmarks = bookmarks.filter((b: any) => b.slug !== slug);
+        await AsyncStorage.setItem('pyunovel_bookmarks', JSON.stringify(bookmarks));
+        setIsBookmarked(false);
+      } else {
+        const newBookmark = {
+          id: novel.id,
+          title: novel.title,
+          slug: novel.slug,
+          author: novel.author,
+          coverUrl: novel.coverUrl,
+          status: novel.status,
+          views: novel.views,
+          bookmarkedAt: Date.now()
+        };
+        bookmarks.push(newBookmark);
+        await AsyncStorage.setItem('pyunovel_bookmarks', JSON.stringify(bookmarks));
+        setIsBookmarked(true);
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchNovelDetails = async () => {
@@ -129,6 +180,19 @@ export default function NovelDetailScreen() {
                 <ThemedText type="small" style={styles.viewsText}>👁️ {novel.views} views</ThemedText>
               )}
             </ThemedView>
+
+            <TouchableOpacity 
+              style={[
+                styles.bookmarkBtn, 
+                isBookmarked ? styles.bookmarkedBtn : styles.unbookmarkedBtn
+              ]} 
+              onPress={toggleBookmark}
+              activeOpacity={0.7}
+            >
+              <ThemedText style={isBookmarked ? styles.bookmarkBtnTextActive : styles.bookmarkBtnText}>
+                {isBookmarked ? '❤️ In Library' : '🖤 Add to Library'}
+              </ThemedText>
+            </TouchableOpacity>
           </ThemedView>
         </ThemedView>
 
@@ -348,7 +412,7 @@ const styles = StyleSheet.create({
   },
   chapterItem: {
     flexDirection: 'row',
-    justifyContent: 'between',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.two,
@@ -361,6 +425,32 @@ const styles = StyleSheet.create({
   },
   chapterChevron: {
     color: '#3c87f7',
+    fontWeight: 'bold',
+  },
+  bookmarkBtn: {
+    marginTop: Spacing.two,
+    paddingVertical: Spacing.one + 2,
+    paddingHorizontal: Spacing.three,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+  },
+  unbookmarkedBtn: {
+    backgroundColor: 'transparent',
+    borderColor: '#3c87f7',
+  },
+  bookmarkedBtn: {
+    backgroundColor: '#3c87f7',
+    borderColor: '#3c87f7',
+  },
+  bookmarkBtnText: {
+    color: '#3c87f7',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  bookmarkBtnTextActive: {
+    color: '#ffffff',
+    fontSize: 12,
     fontWeight: 'bold',
   },
 });

@@ -1,180 +1,232 @@
-import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { ExternalLink } from '@/components/external-link';
+import React, { useEffect, useState } from 'react';
+import {
+  StyleSheet,
+  ActivityIndicator,
+  FlatList,
+  Image as RNImage,
+  TouchableOpacity,
+  SafeAreaView,
+  TextInput,
+  Platform,
+} from 'react-native';
+import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Collapsible } from '@/components/ui/collapsible';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { API_URL } from './index';
 
-export default function TabTwoScreen() {
-  const safeAreaInsets = useSafeAreaInsets();
-  const insets = {
-    ...safeAreaInsets,
-    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
-  };
+interface Novel {
+  id: number;
+  title: string;
+  slug: string;
+  author: string;
+  coverUrl: string | null;
+  status?: string | null;
+  views?: number | null;
+}
+
+export default function ExploreScreen() {
   const theme = useTheme();
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [searchResults, setSearchResults] = useState<Novel[]>([]);
+  const [defaultNovels, setDefaultNovels] = useState<Novel[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const contentPlatformStyle = Platform.select({
-    android: {
-      paddingTop: insets.top,
-      paddingLeft: insets.left,
-      paddingRight: insets.right,
-      paddingBottom: insets.bottom,
-    },
-    web: {
-      paddingTop: Spacing.six,
-      paddingBottom: Spacing.four,
-    },
-  });
+  // Fetch initial list of novels on mount
+  useEffect(() => {
+    const fetchDefaultNovels = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/public/home`);
+        const json = await response.json();
+        if (json.success) {
+          setDefaultNovels(json.allNovels || []);
+        }
+      } catch (error) {
+        console.error('Error fetching default novels:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDefaultNovels();
+  }, []);
+
+  // Handle Search API calls
+  const handleSearch = async (text: string) => {
+    setSearchQuery(text);
+    if (!text.trim()) {
+      setIsSearching(false);
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(`${API_URL}/api/search?q=${encodeURIComponent(text)}`);
+      const json = await response.json();
+      if (json.success) {
+        setSearchResults(json.results || []);
+      }
+    } catch (error) {
+      console.error('Error searching novels:', error);
+    }
+  };
+
+  const getCoverUrl = (url: string | null) => {
+    if (!url) return 'https://placehold.co/150x220/png?text=No+Cover';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return `${API_URL}${url}`;
+  };
+
+  const displayedNovels = isSearching ? searchResults : defaultNovels;
 
   return (
-    <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
-      contentInset={insets}
-      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="subtitle">Explore</ThemedText>
-          <ThemedText style={styles.centerText} themeColor="textSecondary">
-            This starter app includes example{'\n'}code to help you get started.
-          </ThemedText>
-
-          <ExternalLink href="https://docs.expo.dev" asChild>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedView type="backgroundElement" style={styles.linkButton}>
-                <ThemedText type="link">Expo documentation</ThemedText>
-                <SymbolView
-                  tintColor={theme.text}
-                  name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
-                  size={12}
-                />
-              </ThemedView>
-            </Pressable>
-          </ExternalLink>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      {/* Search Input Container */}
+      <ThemedView style={styles.header}>
+        <ThemedText style={styles.headerTitle}>Explore</ThemedText>
+        <ThemedView style={[styles.searchContainer, { backgroundColor: theme.backgroundElement }]}>
+          <TextInput
+            style={[styles.searchInput, { color: theme.text }]}
+            placeholder="Search novels by title or author..."
+            placeholderTextColor={theme.textSecondary || '#64748b'}
+            value={searchQuery}
+            onChangeText={handleSearch}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => handleSearch('')} style={styles.clearButton}>
+              <ThemedText style={{ color: '#3c87f7', fontWeight: 'bold' }}>Clear</ThemedText>
+            </TouchableOpacity>
+          )}
         </ThemedView>
-
-        <ThemedView style={styles.sectionsWrapper}>
-          <Collapsible title="File-based routing">
-            <ThemedText type="small">
-              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
-              <ThemedText type="code">src/app/explore.tsx</ThemedText>
-            </ThemedText>
-            <ThemedText type="small">
-              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
-              the tab navigator.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/router/introduction">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Android, iOS, and web support">
-            <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
-              <ThemedText type="small">
-                You can open this project on Android, iOS, and the web. To open the web version,
-                press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
-                project.
-              </ThemedText>
-              <Image
-                source={require('@/assets/images/tutorial-web.png')}
-                style={styles.imageTutorial}
-              />
-            </ThemedView>
-          </Collapsible>
-
-          <Collapsible title="Images">
-            <ThemedText type="small">
-              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
-              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
-              screen densities.
-            </ThemedText>
-            <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
-            <ExternalLink href="https://reactnative.dev/docs/images">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Light and dark mode components">
-            <ThemedText type="small">
-              This template has light and dark mode support. The{' '}
-              <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
-              user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Animations">
-            <ThemedText type="small">
-              This template includes an example of an animated component. The{' '}
-              <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
-              the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
-              animate opening this hint.
-            </ThemedText>
-          </Collapsible>
-        </ThemedView>
-        {Platform.OS === 'web' && <WebBadge />}
       </ThemedView>
-    </ScrollView>
+
+      {loading ? (
+        <ThemedView style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3c87f7" />
+        </ThemedView>
+      ) : (
+        <FlatList
+          data={displayedNovels}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <ThemedView style={styles.emptyContainer}>
+              <ThemedText style={styles.emptyText} themeColor="textSecondary">
+                No novels found matching "{searchQuery}"
+              </ThemedText>
+            </ThemedView>
+          }
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.novelCard}
+              activeOpacity={0.8}
+              onPress={() => router.push(`/novel/${item.slug}`)}
+            >
+              <RNImage source={{ uri: getCoverUrl(item.coverUrl) }} style={styles.coverImage} />
+              <ThemedView style={styles.infoContainer}>
+                <ThemedText style={styles.novelTitle}>{item.title}</ThemedText>
+                <ThemedText type="small" style={styles.novelAuthor}>By {item.author}</ThemedText>
+                {item.status && (
+                  <ThemedView style={styles.statusBadge}>
+                    <ThemedText style={styles.statusText}>{item.status}</ThemedText>
+                  </ThemedView>
+                )}
+              </ThemedView>
+            </TouchableOpacity>
+          )}
+        />
+      )}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
+  safeArea: {
     flex: 1,
   },
-  contentContainer: {
-    flexDirection: 'row',
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
-  },
-  container: {
-    maxWidth: MaxContentWidth,
-    flexGrow: 1,
-  },
-  titleContainer: {
-    gap: Spacing.three,
     alignItems: 'center',
+  },
+  header: {
     paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.six,
+    paddingVertical: Spacing.three,
+    gap: Spacing.two,
   },
-  centerText: {
-    textAlign: 'center',
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
   },
-  pressed: {
-    opacity: 0.7,
-  },
-  linkButton: {
+  searchContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Platform.OS === 'ios' ? Spacing.two : Spacing.one,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    height: 40,
+  },
+  clearButton: {
+    paddingHorizontal: Spacing.two,
+  },
+  listContent: {
     paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
+    paddingBottom: Spacing.five,
+  },
+  novelCard: {
+    flexDirection: 'row',
+    paddingVertical: Spacing.three,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+    gap: Spacing.three,
+  },
+  coverImage: {
+    width: 60,
+    height: 85,
+    borderRadius: 6,
+    backgroundColor: '#e2e8f0',
+  },
+  infoContainer: {
+    flex: 1,
     justifyContent: 'center',
     gap: Spacing.one,
+  },
+  novelTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  novelAuthor: {
+    color: '#64748b',
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#e0f2fe',
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: 2,
+  },
+  statusText: {
+    color: '#0369a1',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textTransform: 'capitalize',
+  },
+  emptyContainer: {
+    padding: Spacing.five,
     alignItems: 'center',
   },
-  sectionsWrapper: {
-    gap: Spacing.five,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-  },
-  collapsibleContent: {
-    alignItems: 'center',
-  },
-  imageTutorial: {
-    width: '100%',
-    aspectRatio: 296 / 171,
-    borderRadius: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  imageReact: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
+  emptyText: {
+    textAlign: 'center',
   },
 });

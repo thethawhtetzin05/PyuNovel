@@ -26,10 +26,12 @@ export async function getChaptersForDownload(db: DrizzleD1Database<any>, novelId
 // ဝတ္ထုတစ်ခုလုံးရဲ့ အခန်းစာရင်းကို ယူရန် (content မပါ — list page အတွက် fast query)
 
 export async function getChaptersByNovelId(db: DrizzleD1Database<any>, novelId: number) {
-  // ✅ OPTIMIZATION: Remove publishedAt from SQL WHERE so D1 can fully use the
-  // (novelId, status) part of the composite index without a range-condition break.
-  // publishedAt filtering is done in JS — avoids extra row reads from partial index scan.
-  const rows = await db
+  // ✅ publishedAt filter ကို SQL WHERE ထဲ ထည့်ထားသည် — composite index
+  // chapter_novel_status_published_sort_idx (novel_id, status, published_at, sort_index)
+  // ကို အပြည့်အဝ သုံးနိုင်ပြီး DB Engine ထဲတွင်ပင် filter ဆင်းသောကြောင့်
+  // Rows Read ကို အနည်းဆုံးထိ လျှော့ချပေးသည်။
+  const now = new Date();
+  return await db
     .select({
       id: chapters.id,
       title: chapters.title,
@@ -43,16 +45,12 @@ export async function getChaptersByNovelId(db: DrizzleD1Database<any>, novelId: 
     .where(
       and(
         eq(chapters.novelId, novelId),
-        eq(chapters.status, 'published')
+        eq(chapters.status, 'published'),
+        lte(chapters.publishedAt, now)
       )
     )
+    .orderBy(asc(chapters.sortIndex))
     .all();
-
-  // Filter scheduled chapters + sort in JS — O(N) in memory, no DB overhead
-  const now = new Date();
-  return rows
-    .filter(r => r.publishedAt == null || r.publishedAt <= now)
-    .sort((a, b) => a.sortIndex - b.sortIndex);
 }
 
 // Writer Dashboard — includes status/publishedAt but NOT content

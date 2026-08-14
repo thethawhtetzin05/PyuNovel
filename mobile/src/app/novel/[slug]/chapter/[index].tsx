@@ -13,6 +13,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { API_URL } from '../../../index';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ChapterDetail {
   id: number;
@@ -47,6 +48,43 @@ export default function ReaderScreen() {
   const [fontSize, setFontSize] = useState<number>(18);
   const [readerTheme, setReaderTheme] = useState<'light' | 'sepia' | 'dark'>('light');
   const [showSettings, setShowSettings] = useState<boolean>(false);
+
+  // Load settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const savedSize = await AsyncStorage.getItem('pyunovel_reader_fontsize');
+        if (savedSize) {
+          setFontSize(parseInt(savedSize, 10));
+        }
+        const savedTheme = await AsyncStorage.getItem('pyunovel_reader_theme');
+        if (savedTheme) {
+          setReaderTheme(savedTheme as 'light' | 'sepia' | 'dark');
+        }
+      } catch (error) {
+        console.error('Error loading reader settings:', error);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const updateFontSize = async (size: number) => {
+    setFontSize(size);
+    try {
+      await AsyncStorage.setItem('pyunovel_reader_fontsize', size.toString());
+    } catch (error) {
+      console.error('Error saving font size:', error);
+    }
+  };
+
+  const updateReaderTheme = async (theme: 'light' | 'sepia' | 'dark') => {
+    setReaderTheme(theme);
+    try {
+      await AsyncStorage.setItem('pyunovel_reader_theme', theme);
+    } catch (error) {
+      console.error('Error saving reader theme:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchChapter = async () => {
@@ -135,11 +173,11 @@ export default function ReaderScreen() {
           <ThemedView style={styles.settingRow}>
             <ThemedText style={{ color: colors.text }}>Font Size:</ThemedText>
             <ThemedView style={styles.buttonGroup}>
-              <TouchableOpacity style={styles.settingBtn} onPress={() => setFontSize(Math.max(14, fontSize - 2))}>
+              <TouchableOpacity style={styles.settingBtn} onPress={() => updateFontSize(Math.max(14, fontSize - 2))}>
                 <ThemedText style={styles.settingBtnText}>A-</ThemedText>
               </TouchableOpacity>
               <ThemedText style={[styles.fontSizeDisplay, { color: colors.text }]}>{fontSize}</ThemedText>
-              <TouchableOpacity style={styles.settingBtn} onPress={() => setFontSize(Math.min(26, fontSize + 2))}>
+              <TouchableOpacity style={styles.settingBtn} onPress={() => updateFontSize(Math.min(26, fontSize + 2))}>
                 <ThemedText style={styles.settingBtnText}>A+</ThemedText>
               </TouchableOpacity>
             </ThemedView>
@@ -150,13 +188,13 @@ export default function ReaderScreen() {
           <ThemedView style={styles.settingRow}>
             <ThemedText style={{ color: colors.text }}>Theme:</ThemedText>
             <ThemedView style={styles.buttonGroup}>
-              <TouchableOpacity style={[styles.themeBtn, { backgroundColor: '#ffffff' }]} onPress={() => setReaderTheme('light')}>
+              <TouchableOpacity style={[styles.themeBtn, { backgroundColor: '#ffffff' }]} onPress={() => updateReaderTheme('light')}>
                 <ThemedText style={{ color: '#000', fontSize: 11 }}>Light</ThemedText>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.themeBtn, { backgroundColor: '#f4ecd8' }]} onPress={() => setReaderTheme('sepia')}>
+              <TouchableOpacity style={[styles.themeBtn, { backgroundColor: '#f4ecd8' }]} onPress={() => updateReaderTheme('sepia')}>
                 <ThemedText style={{ color: '#5c4033', fontSize: 11 }}>Sepia</ThemedText>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.themeBtn, { backgroundColor: '#121212' }]} onPress={() => setReaderTheme('dark')}>
+              <TouchableOpacity style={[styles.themeBtn, { backgroundColor: '#121212' }]} onPress={() => updateReaderTheme('dark')}>
                 <ThemedText style={{ color: '#fff', fontSize: 11 }}>Dark</ThemedText>
               </TouchableOpacity>
             </ThemedView>
@@ -237,7 +275,7 @@ const styles = StyleSheet.create({
   },
   navHeader: {
     flexDirection: 'row',
-    justifyContent: 'between',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,
@@ -255,7 +293,7 @@ const styles = StyleSheet.create({
   },
   settingRow: {
     flexDirection: 'row',
-    justifyContent: 'between',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   buttonGroup: {
@@ -302,7 +340,7 @@ const styles = StyleSheet.create({
   },
   navRow: {
     flexDirection: 'row',
-    justifyContent: 'between',
+    justifyContent: 'space-between',
     marginTop: Spacing.five,
     gap: Spacing.three,
   },
