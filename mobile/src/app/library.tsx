@@ -4,10 +4,10 @@ import {
   ActivityIndicator,
   Image as RNImage,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useNavigation } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';

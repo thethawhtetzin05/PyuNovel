@@ -6,10 +6,10 @@ import {
   Image as RNImage,
   TouchableOpacity,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
