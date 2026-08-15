@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { getRequestContext } from '@cloudflare/next-on-pages';
 import { getNovelBySlug } from '@/lib/resources/novels/queries';
-import { getChaptersByNovelId } from '@/lib/resources/chapters/queries';
+import { getPaginatedChaptersByNovelId, getChaptersCountByNovelId, getFirstPublishedChapter } from '@/lib/resources/chapters/queries';
 import { getVolumesByNovelId } from '@/lib/resources/volumes/queries';
 import { isNovelCollected, getCollectionCountByNovelId } from '@/lib/resources/collections/queries';
 import { getReviewsByNovelId, getUserReview } from '@/lib/resources/reviews/queries';
@@ -82,10 +82,12 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
 
   if (!novel) notFound();
 
-  // ✅ STEP 2: Run all remaining queries IN PARALLEL (no more sequential waiting)
+  // ✅ STEP 2: Run all remaining queries IN PARALLEL (50 chapters only + count + 1st chapter for button)
   const userId = sessionResult?.user?.id;
-  const [chapters, volumes, reviews, collectorCount, isCollected, userReview] = await Promise.all([
-    getChaptersByNovelId(db, novel.id),
+  const [chapters, totalChaptersCount, firstChapter, volumes, reviews, collectorCount, isCollected, userReview] = await Promise.all([
+    getPaginatedChaptersByNovelId(db, novel.id, { limit: 50, offset: 0 }),
+    getChaptersCountByNovelId(db, novel.id),
+    getFirstPublishedChapter(db, novel.id),
     getVolumesByNovelId(db, novel.id),
     getReviewsByNovelId(db, novel.id),
     getCollectionCountByNovelId(db, novel.id),
@@ -95,9 +97,6 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
 
   const session = sessionResult;
   const isOwner = session?.user?.id === novel.ownerId;
-
-  // ပထမဆုံး အခန်းကို ရှာထားမယ် (Read Button အတွက်)
-  const firstChapter = chapters.length > 0 ? chapters.sort((a, b) => a.sortIndex - b.sortIndex)[0] : null;
 
   // ❗ Type Error မတက်အောင် chapters ကို NovelTabs လိုချင်တဲ့ ပုံစံပြောင်းမယ်
   const formattedChapters = chapters.map((chapter) => ({
@@ -279,6 +278,7 @@ export default async function NovelDetailsPage({ params, searchParams }: Props) 
           novelId={novel.id}
           description={novel.description || ''}
           chapters={formattedChapters}
+          totalChaptersCount={totalChaptersCount}
           volumes={volumes}
           isOwner={isOwner}
           reviews={reviews as any}

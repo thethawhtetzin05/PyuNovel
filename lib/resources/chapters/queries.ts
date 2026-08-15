@@ -23,13 +23,106 @@ export async function getChaptersForDownload(db: DrizzleD1Database<any>, novelId
     .all();
 }
 
-// ဝတ္ထုတစ်ခုလုံးရဲ့ အခန်းစာရင်းကို ယူရန် (content မပါ — list page အတွက် fast query)
+// ဝတ္ထုတစ်ခုလုံး၏ Published Chapter စုစုပေါင်း အရေအတွက်ကို ယူရန် (Count Query)
+export async function getChaptersCountByNovelId(db: DrizzleD1Database<any>, novelId: number, volumeId?: number | null) {
+  const now = new Date();
+  const conditions = [
+    eq(chapters.novelId, novelId),
+    eq(chapters.status, 'published'),
+    lte(chapters.publishedAt, now),
+  ];
 
-export async function getChaptersByNovelId(db: DrizzleD1Database<any>, novelId: number) {
-  // ✅ publishedAt filter ကို SQL WHERE ထဲ ထည့်ထားသည် — composite index
-  // chapter_novel_status_published_sort_idx (novel_id, status, published_at, sort_index)
-  // ကို အပြည့်အဝ သုံးနိုင်ပြီး DB Engine ထဲတွင်ပင် filter ဆင်းသောကြောင့်
-  // Rows Read ကို အနည်းဆုံးထိ လျှော့ချပေးသည်။
+  if (volumeId !== undefined) {
+    if (volumeId === null) {
+      conditions.push(sql`${chapters.volumeId} IS NULL`);
+    } else {
+      conditions.push(eq(chapters.volumeId, volumeId));
+    }
+  }
+
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(chapters)
+    .where(and(...conditions))
+    .get();
+
+  return result?.count ?? 0;
+}
+
+// "Read Now" ခလုတ်အတွက် ပထမဆုံး Published Chapter တစ်ခုတည်းကို ယူရန် (1 Row Read)
+export async function getFirstPublishedChapter(db: DrizzleD1Database<any>, novelId: number) {
+  const now = new Date();
+  return await db
+    .select({
+      id: chapters.id,
+      title: chapters.title,
+      sortIndex: chapters.sortIndex,
+    })
+    .from(chapters)
+    .where(
+      and(
+        eq(chapters.novelId, novelId),
+        eq(chapters.status, 'published'),
+        lte(chapters.publishedAt, now)
+      )
+    )
+    .orderBy(asc(chapters.sortIndex))
+    .limit(1)
+    .get();
+}
+
+// Paginated Chapters ယူရန် (Limit / Offset / VolumeId Filter ပါဝင်သည်)
+export async function getPaginatedChaptersByNovelId(
+  db: DrizzleD1Database<any>,
+  novelId: number,
+  options?: { limit?: number; offset?: number; volumeId?: number | null }
+) {
+  const now = new Date();
+  const limit = options?.limit ?? 50;
+  const offset = options?.offset ?? 0;
+
+  const conditions = [
+    eq(chapters.novelId, novelId),
+    eq(chapters.status, 'published'),
+    lte(chapters.publishedAt, now),
+  ];
+
+  if (options?.volumeId !== undefined) {
+    if (options.volumeId === null) {
+      conditions.push(sql`${chapters.volumeId} IS NULL`);
+    } else {
+      conditions.push(eq(chapters.volumeId, options.volumeId));
+    }
+  }
+
+  return await db
+    .select({
+      id: chapters.id,
+      title: chapters.title,
+      sortIndex: chapters.sortIndex,
+      isPaid: chapters.isPaid,
+      createdAt: chapters.createdAt,
+      volumeId: chapters.volumeId,
+      publishedAt: chapters.publishedAt,
+    })
+    .from(chapters)
+    .where(and(...conditions))
+    .orderBy(asc(chapters.sortIndex))
+    .limit(limit)
+    .offset(offset)
+    .all();
+}
+
+// ဝတ္ထုတစ်ခုလုံးရဲ့ အခန်းစာရင်းကို ယူရန် (Backward-compatible wrapper with optional limit)
+export async function getChaptersByNovelId(
+  db: DrizzleD1Database<any>,
+  novelId: number,
+  options?: { limit?: number; offset?: number; volumeId?: number | null }
+) {
+  if (options && (options.limit !== undefined || options.offset !== undefined || options.volumeId !== undefined)) {
+    return getPaginatedChaptersByNovelId(db, novelId, options);
+  }
+
   const now = new Date();
   return await db
     .select({

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageSquare, Send, X, ThumbsUp, ThumbsDown, CornerDownRight, BookOpen, List as ListIcon } from 'lucide-react';
+import { MessageSquare, Send, X, ThumbsUp, ThumbsDown, CornerDownRight, BookOpen, List as ListIcon, Loader2 } from 'lucide-react';
 import { useSession } from '@/lib/auth-client';
 import { Link } from '@/i18n/routing';
 
@@ -60,7 +60,46 @@ export default function ParagraphReader({ content, chapterId, allChapters, novel
     const [replyTo, setReplyTo] = useState<Comment | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showTOCSidebar, setShowTOCSidebar] = useState(false);
+    const [tocChapters, setTocChapters] = useState<any[]>(allChapters || []);
+    const [loadingTOC, setLoadingTOC] = useState(false);
+    const [hasMoreTOC, setHasMoreTOC] = useState(true);
+    const [tocTotal, setTocTotal] = useState<number | null>(null);
     const { data: session } = useSession();
+
+    // Lazy load TOC chapters when TOC sidebar opens
+    useEffect(() => {
+        if (showTOCSidebar && tocChapters.length === 0 && !loadingTOC) {
+            setLoadingTOC(true);
+            fetch(`/api/public/novel/${novelSlug}/chapters?limit=50&offset=0`)
+                .then(res => res.json() as Promise<any>)
+                .then((json: any) => {
+                    if (json.success && json.chapters) {
+                        setTocChapters(json.chapters);
+                        setTocTotal(json.total);
+                        setHasMoreTOC(json.hasMore);
+                    }
+                })
+                .catch(err => console.error("Error loading TOC chapters:", err))
+                .finally(() => setLoadingTOC(false));
+        }
+    }, [showTOCSidebar, novelSlug, tocChapters.length, loadingTOC]);
+
+    const loadMoreTOC = async () => {
+        if (loadingTOC) return;
+        try {
+            setLoadingTOC(true);
+            const res = await fetch(`/api/public/novel/${novelSlug}/chapters?limit=50&offset=${tocChapters.length}`);
+            const json = (await res.json()) as any;
+            if (json.success && json.chapters) {
+                setTocChapters(prev => [...prev, ...json.chapters]);
+                setHasMoreTOC(json.hasMore);
+            }
+        } catch (err) {
+            console.error("Error loading more TOC chapters:", err);
+        } finally {
+            setLoadingTOC(false);
+        }
+    };
 
     // Parse paragraphs from HTML content, client-side only
     useEffect(() => {
@@ -306,26 +345,52 @@ export default function ParagraphReader({ content, chapterId, allChapters, novel
                 </div>
 
                 <div className="flex-grow overflow-y-auto">
-                    <div className="divide-y divide-gray-50 dark:divide-gray-800/50">
-                        {allChapters.map((ch) => {
-                            const isCurrent = ch.id.toString() === chapterId;
-                            return (
-                                <Link
-                                    key={ch.id}
-                                    href={`/novel/${novelSlug}/${ch.sortIndex}`}
-                                    className={`
-                                        flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors
-                                        ${isCurrent ? 'bg-indigo-50/50 dark:bg-indigo-900/20 border-l-4 border-indigo-600' : 'border-l-4 border-transparent'}
-                                    `}
-                                    onClick={() => setShowTOCSidebar(false)}
-                                >
-                                    <span className={`text-lg font-medium truncate ${isCurrent ? 'text-indigo-700 dark:text-indigo-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
-                                        {ch.title}
-                                    </span>
-                                </Link>
-                            );
-                        })}
-                    </div>
+                    {tocChapters.length === 0 && loadingTOC ? (
+                        <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                            <Loader2 size={24} className="animate-spin text-indigo-600" />
+                            <span className="text-sm">Loading chapters...</span>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-gray-50 dark:divide-gray-800/50">
+                            {tocChapters.map((ch) => {
+                                const isCurrent = ch.id.toString() === chapterId;
+                                return (
+                                    <Link
+                                        key={ch.id}
+                                        href={`/novel/${novelSlug}/${ch.sortIndex}`}
+                                        className={`
+                                            flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors
+                                            ${isCurrent ? 'bg-indigo-50/50 dark:bg-indigo-900/20 border-l-4 border-indigo-600' : 'border-l-4 border-transparent'}
+                                        `}
+                                        onClick={() => setShowTOCSidebar(false)}
+                                    >
+                                        <span className={`text-sm md:text-base font-medium truncate ${isCurrent ? 'text-indigo-700 dark:text-indigo-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
+                                            {ch.title}
+                                        </span>
+                                    </Link>
+                                );
+                            })}
+
+                            {hasMoreTOC && (
+                                <div className="p-4 text-center">
+                                    <button
+                                        onClick={loadMoreTOC}
+                                        disabled={loadingTOC}
+                                        className="w-full py-2.5 px-4 text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        {loadingTOC ? (
+                                            <>
+                                                <Loader2 size={16} className="animate-spin" />
+                                                <span>Loading more...</span>
+                                            </>
+                                        ) : (
+                                            <span>Load More Chapters</span>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 

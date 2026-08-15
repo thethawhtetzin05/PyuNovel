@@ -1,7 +1,7 @@
 import { checkChapterAccess } from '@/lib/resources/chapters/unlocks';
 import PaidChapterBlock from '@/components/reader/PaidChapterBlock';
 import { getRequestContext } from '@cloudflare/next-on-pages';
-import { getChapterForReader, getChaptersByNovelId } from '@/lib/resources/chapters/queries';
+import { getChapterForReader } from '@/lib/resources/chapters/queries';
 import { notFound } from 'next/navigation';
 import { Link } from '@/i18n/routing';
 import { drizzle } from 'drizzle-orm/d1';
@@ -34,8 +34,8 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
     notFound();
   }
 
-  // Fetch chapters for TOC sidebar
-  const allChapters = await getChaptersByNovelId(db, data.novel.id);
+  // ✅ TOC chapters are now lazy-loaded on the client side only when user opens TOC sidebar
+  const allChapters: any[] = [];
 
   const session = sessionResult;
   const { chapter, prev, next, novel } = data;

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Link, useRouter, usePathname } from '@/i18n/routing';
-import { Calendar, Crown, Folder, ChevronRight, ChevronDown, ChevronUp, MessageSquare, BookOpen, Info } from "lucide-react";
+import { Calendar, Crown, Folder, ChevronRight, ChevronDown, ChevronUp, MessageSquare, BookOpen, Info, Loader2 } from "lucide-react";
 import { useTranslations } from 'next-intl';
 import ReviewSection from '@/components/novel/review-section';
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ interface NovelTabsProps {
   novelId: number;
   description: string;
   chapters: Chapter[];
+  totalChaptersCount?: number;
   volumes?: Volume[];
   isOwner?: boolean;
   reviews?: Review[];
@@ -55,7 +56,8 @@ export default function NovelTabs({
   novelSlug,
   novelId,
   description,
-  chapters,
+  chapters: initialChapters,
+  totalChaptersCount = initialChapters.length,
   volumes = [],
   isOwner = false,
   reviews = [],
@@ -68,6 +70,11 @@ export default function NovelTabs({
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
 
+  const [chapters, setChapters] = useState<Chapter[]>(initialChapters);
+  const [loadingVolume, setLoadingVolume] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadedVolumes, setLoadedVolumes] = useState<Record<string, boolean>>({});
+
   const activeTab = searchParams.get("tab") || defaultTab || "about";
 
   const handleTabChange = (value: string) => {
@@ -79,8 +86,65 @@ export default function NovelTabs({
   };
   const [expandedVolumes, setExpandedVolumes] = useState<Record<string, boolean>>({});
 
-  const toggleVolume = (volumeId: string) => {
-    setExpandedVolumes(prev => ({ ...prev, [volumeId]: !prev[volumeId] }));
+  const toggleVolume = async (volumeIdStr: string) => {
+    const willExpand = !expandedVolumes[volumeIdStr];
+    setExpandedVolumes(prev => ({ ...prev, [volumeIdStr]: willExpand }));
+
+    // If expanding and not yet fetched for this volume, fetch its chapters
+    if (willExpand && !loadedVolumes[volumeIdStr]) {
+      try {
+        setLoadingVolume(volumeIdStr);
+        const queryParam = volumeIdStr === 'unassigned' ? 'volumeId=unassigned' : `volumeId=${volumeIdStr}`;
+        const res = await fetch(`/api/public/novel/${novelSlug}/chapters?${queryParam}&limit=100`);
+        const json = (await res.json()) as any;
+        if (json.success && json.chapters) {
+          const newChs: Chapter[] = json.chapters.map((c: any) => ({
+            ...c,
+            id: c.id.toString(),
+            isPaid: c.isPaid ?? false,
+            volumeId: c.volumeId ?? null,
+          }));
+
+          setChapters(prev => {
+            const existingIds = new Set(prev.map(c => c.id));
+            const filtered = newChs.filter(c => !existingIds.has(c.id));
+            return [...prev, ...filtered].sort((a, b) => a.sortIndex - b.sortIndex);
+          });
+          setLoadedVolumes(prev => ({ ...prev, [volumeIdStr]: true }));
+        }
+      } catch (err) {
+        console.error("Failed to load volume chapters", err);
+      } finally {
+        setLoadingVolume(null);
+      }
+    }
+  };
+
+  const handleLoadMore = async () => {
+    if (loadingMore) return;
+    try {
+      setLoadingMore(true);
+      const offset = chapters.length;
+      const res = await fetch(`/api/public/novel/${novelSlug}/chapters?offset=${offset}&limit=50`);
+      const json = (await res.json()) as any;
+      if (json.success && json.chapters) {
+        const newChs: Chapter[] = json.chapters.map((c: any) => ({
+          ...c,
+          id: c.id.toString(),
+          isPaid: c.isPaid ?? false,
+          volumeId: c.volumeId ?? null,
+        }));
+        setChapters(prev => {
+          const existingIds = new Set(prev.map(c => c.id));
+          const filtered = newChs.filter(c => !existingIds.has(c.id));
+          return [...prev, ...filtered].sort((a, b) => a.sortIndex - b.sortIndex);
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load more chapters", err);
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   const renderChapter = (chapter: Chapter) => (
@@ -111,6 +175,7 @@ export default function NovelTabs({
   );
 
   const unassignedChapters = chapters.filter(c => !c.volumeId);
+  const hasMoreChapters = chapters.length < totalChaptersCount;
 
   return (
     <>
@@ -129,7 +194,7 @@ export default function NovelTabs({
             >
               Chapters
               <Badge variant="secondary" className="ml-1 px-2 py-0 h-5 font-black bg-primary/10 text-primary border-none">
-                {chapters.length}
+                {totalChaptersCount}
               </Badge>
             </TabsTrigger>
             <TabsTrigger
@@ -153,7 +218,7 @@ export default function NovelTabs({
 
           <TabsContent value="chapters" className="mt-0 focus-visible:outline-none space-y-6">
 
-            {chapters.length > 0 ? (
+            {totalChaptersCount > 0 ? (
               <div className="space-y-8">
                 {/* Unassigned Chapters */}
                 {unassignedChapters.length > 0 && (
@@ -167,14 +232,16 @@ export default function NovelTabs({
                           <Folder size={20} className="text-primary" />
                           No Volume
                         </h3>
-                        {expandedVolumes['unassigned'] ? (
+                        {loadingVolume === 'unassigned' ? (
+                          <Loader2 size={18} className="animate-spin text-primary" />
+                        ) : expandedVolumes['unassigned'] ? (
                           <ChevronUp size={20} className="text-muted-foreground group-hover:text-primary" />
                         ) : (
                           <ChevronDown size={20} className="text-muted-foreground group-hover:text-primary" />
                         )}
                       </div>
                     )}
-                    {(!volumes.length || !expandedVolumes['unassigned']) && (
+                    {(!volumes.length || expandedVolumes['unassigned']) && (
                       <div className="space-y-3">
                         {unassignedChapters.map(renderChapter)}
                       </div>
@@ -185,8 +252,8 @@ export default function NovelTabs({
                 {/* Volumes */}
                 {volumes.map(volume => {
                   const volumeChapters = chapters.filter(c => c.volumeId === volume.id);
-                  if (volumeChapters.length === 0) return null;
-                  const isExpanded = !expandedVolumes[volume.id.toString()];
+                  const isExpanded = !!expandedVolumes[volume.id.toString()];
+                  const isLoadingThisVol = loadingVolume === volume.id.toString();
 
                   return (
                     <div key={volume.id} className="space-y-4">
@@ -202,10 +269,12 @@ export default function NovelTabs({
                             {volume.name}
                           </h3>
                           <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground border-border">
-                            {volumeChapters.length} Chapters
+                            {volumeChapters.length > 0 ? `${volumeChapters.length} Loaded` : 'Volume'}
                           </Badge>
                         </div>
-                        {isExpanded ? (
+                        {isLoadingThisVol ? (
+                          <Loader2 size={18} className="animate-spin text-primary" />
+                        ) : isExpanded ? (
                           <ChevronUp size={20} className="text-muted-foreground group-hover:text-primary" />
                         ) : (
                           <ChevronDown size={20} className="text-muted-foreground group-hover:text-primary" />
@@ -214,13 +283,49 @@ export default function NovelTabs({
                       <Separator className="bg-border/60" />
 
                       <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[5000px] opacity-100 mt-2' : 'max-h-0 opacity-0 mb-0'}`}>
-                        <div className="grid gap-3 pb-2 pt-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1">
-                          {volumeChapters.map(renderChapter)}
-                        </div>
+                        {volumeChapters.length > 0 ? (
+                          <div className="grid gap-3 pb-2 pt-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1">
+                            {volumeChapters.map(renderChapter)}
+                          </div>
+                        ) : isLoadingThisVol ? (
+                          <div className="py-6 text-center text-muted-foreground flex items-center justify-center gap-2">
+                            <Loader2 size={16} className="animate-spin" />
+                            Loading volume chapters...
+                          </div>
+                        ) : (
+                          <div className="py-4 text-center text-muted-foreground text-sm">
+                            Click to load chapters in this volume
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
                 })}
+
+                {/* Load More Button for Flat / Non-volume lists or general pagination */}
+                {hasMoreChapters && (
+                  <div className="pt-4 flex flex-col items-center justify-center gap-2">
+                    <Button
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                      variant="outline"
+                      size="lg"
+                      className="font-bold px-8 h-12 rounded-xl shadow-sm border-primary/20 hover:bg-primary/5 hover:text-primary"
+                    >
+                      {loadingMore ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 size={18} className="animate-spin text-primary" />
+                          <span>Loading More Chapters...</span>
+                        </div>
+                      ) : (
+                        `Load More Chapters (${chapters.length} of ${totalChaptersCount})`
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Showing {chapters.length} of {totalChaptersCount} published chapters
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="bg-muted/30 rounded-2xl p-16 text-center border-2 border-dashed border-border">
@@ -250,3 +355,4 @@ export default function NovelTabs({
     </>
   );
 }
+

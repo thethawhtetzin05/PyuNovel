@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerContext } from "@/lib/server-context";
 import { getNovelBySlug } from "@/lib/resources/novels/queries";
 import { getVolumesByNovelId } from "@/lib/resources/volumes/queries";
-import { getChaptersByNovelId } from "@/lib/resources/chapters/queries";
+import { getPaginatedChaptersByNovelId, getChaptersCountByNovelId } from "@/lib/resources/chapters/queries";
 
 export const runtime = 'edge';
 
@@ -19,9 +19,10 @@ export async function GET(
             return NextResponse.json({ success: false, error: "Novel not found" }, { status: 404 });
         }
 
-        const [volumes, chapters] = await Promise.all([
+        const [volumes, chapters, totalChapters] = await Promise.all([
             getVolumesByNovelId(db, novel.id),
-            getChaptersByNovelId(db, novel.id),
+            getPaginatedChaptersByNovelId(db, novel.id, { limit: 50, offset: 0 }),
+            getChaptersCountByNovelId(db, novel.id),
         ]);
 
         return NextResponse.json({
@@ -29,6 +30,7 @@ export async function GET(
             novel,
             volumes,
             chapters,
+            totalChapters,
         });
     } catch (error: any) {
         console.error("API /api/public/novel/[slug] error:", error);

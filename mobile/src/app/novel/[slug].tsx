@@ -50,6 +50,8 @@ export default function NovelDetailScreen() {
   const [novel, setNovel] = useState<NovelDetail | null>(null);
   const [volumes, setVolumes] = useState<Volume[]>([]);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [totalChapters, setTotalChapters] = useState<number>(0);
+  const [loadingMoreChapters, setLoadingMoreChapters] = useState<boolean>(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
   // Load bookmark status on mount / slug change
@@ -101,6 +103,27 @@ export default function NovelDetailScreen() {
     }
   };
 
+  const handleLoadMoreChapters = async () => {
+    if (loadingMoreChapters || !slug) return;
+    try {
+      setLoadingMoreChapters(true);
+      const offset = chapters.length;
+      const res = await fetch(`${API_URL}/api/public/novel/${slug}/chapters?offset=${offset}&limit=50`);
+      const json = await res.json();
+      if (json.success && json.chapters) {
+        setChapters(prev => {
+          const existingIds = new Set(prev.map(c => c.id));
+          const newChs = json.chapters.filter((c: any) => !existingIds.has(c.id));
+          return [...prev, ...newChs];
+        });
+      }
+    } catch (error) {
+      console.error('Error loading more chapters on mobile:', error);
+    } finally {
+      setLoadingMoreChapters(false);
+    }
+  };
+
   useEffect(() => {
     const fetchNovelDetails = async () => {
       try {
@@ -110,6 +133,7 @@ export default function NovelDetailScreen() {
           setNovel(json.novel);
           setVolumes(json.volumes || []);
           setChapters(json.chapters || []);
+          setTotalChapters(json.totalChapters || json.chapters?.length || 0);
         }
       } catch (error) {
         console.error("Error fetching novel detail:", error);
@@ -262,6 +286,24 @@ export default function NovelDetailScreen() {
                 </TouchableOpacity>
               ))}
             </ThemedView>
+          )}
+
+          {/* Load More Button */}
+          {chapters.length < totalChapters && (
+            <TouchableOpacity
+              style={styles.loadMoreBtn}
+              onPress={handleLoadMoreChapters}
+              disabled={loadingMoreChapters}
+              activeOpacity={0.7}
+            >
+              {loadingMoreChapters ? (
+                <ActivityIndicator size="small" color="#3c87f7" />
+              ) : (
+                <ThemedText style={styles.loadMoreBtnText}>
+                  Load More Chapters ({chapters.length} of {totalChapters})
+                </ThemedText>
+              )}
+            </TouchableOpacity>
           )}
         </ThemedView>
       </ScrollView>
@@ -426,6 +468,19 @@ const styles = StyleSheet.create({
   chapterChevron: {
     color: '#3c87f7',
     fontWeight: 'bold',
+  },
+  loadMoreBtn: {
+    marginVertical: Spacing.four,
+    paddingVertical: Spacing.three,
+    backgroundColor: 'rgba(60, 135, 247, 0.08)',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadMoreBtnText: {
+    color: '#3c87f7',
+    fontSize: 13,
+    fontWeight: '700',
   },
   bookmarkBtn: {
     marginTop: Spacing.two,
