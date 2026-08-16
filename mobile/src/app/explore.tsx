@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   StyleSheet,
   ActivityIndicator,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -24,18 +25,35 @@ interface Novel {
   coverUrl: string | null;
   status?: string | null;
   views?: number | null;
+  tags?: string[] | string | null;
 }
+
+const STATUS_OPTIONS = ['all', 'ongoing', 'completed', 'hiatus'];
+const SORT_OPTIONS = [
+  { label: 'Latest', value: 'latest' },
+  { label: 'Popular', value: 'popular' },
+];
+const POPULAR_TAGS = ['Action', 'Romance', 'Fantasy', 'Martial Arts', 'System', 'Drama', 'Sci-Fi', 'Slice of Life'];
 
 export default function ExploreScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [searchResults, setSearchResults] = useState<Novel[]>([]);
-  const [defaultNovels, setDefaultNovels] = useState<Novel[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
 
-  // Fetch initial list of novels on mount
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedTag, setSelectedTag] = useState<string>('all');
+  const [sortOption, setSortOption] = useState<'latest' | 'popular'>('latest');
+
+  const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isFilterSearching, setIsFilterSearching] = useState(false);
+  const [novels, setNovels] = useState<Novel[]>([]);
+  const [defaultNovels, setDefaultNovels] = useState<Novel[]>([]);
+
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Fetch initial default novels on mount
   useEffect(() => {
     const fetchDefaultNovels = async () => {
       try {
@@ -43,6 +61,7 @@ export default function ExploreScreen() {
         const json = await response.json();
         if (json.success) {
           setDefaultNovels(json.allNovels || []);
+          setNovels(json.allNovels || []);
         }
       } catch (error) {
         console.error('Error fetching default novels:', error);
@@ -53,26 +72,61 @@ export default function ExploreScreen() {
     fetchDefaultNovels();
   }, []);
 
-  // Handle Search API calls
-  const handleSearch = async (text: string) => {
-    setSearchQuery(text);
-    if (!text.trim()) {
-      setIsSearching(false);
-      setSearchResults([]);
+  // Main search / filter execution function
+  const runFilterQuery = useCallback(async (q: string, status: string, tag: string, sort: string) => {
+    const isDefaultState = !q.trim() && status === 'all' && tag === 'all' && sort === 'latest';
+    
+    if (isDefaultState) {
+      setIsFilterSearching(false);
+      setNovels(defaultNovels);
       return;
     }
 
-    setIsSearching(true);
+    setIsFilterSearching(true);
     try {
-      const response = await fetch(`${API_URL}/api/search?q=${encodeURIComponent(text)}`);
+      const params = new URLSearchParams();
+      if (q.trim()) params.append('q', q.trim());
+      if (status !== 'all') params.append('status', status);
+      if (tag !== 'all') params.append('tag', tag);
+      if (sort !== 'latest') params.append('sort', sort);
+
+      const response = await fetch(`${API_URL}/api/search?${params.toString()}`);
       const json = await response.json();
       if (json.success) {
-        setSearchResults(json.results || []);
+        setNovels(json.results || []);
       }
     } catch (error) {
-      console.error('Error searching novels:', error);
+      console.error('Error filtering novels:', error);
     }
+  }, [defaultNovels]);
+
+  // Trigger filter query whenever filters or search query changes with debounce
+  useEffect(() => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    debounceTimer.current = setTimeout(() => {
+      runFilterQuery(searchQuery, selectedStatus, selectedTag, sortOption);
+    }, 350);
+
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [searchQuery, selectedStatus, selectedTag, sortOption, runFilterQuery]);
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
   };
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedStatus('all');
+    setSelectedTag('all');
+    setSortOption('latest');
+  };
+
+  const hasActiveFilters = searchQuery.trim() !== '' || selectedStatus !== 'all' || selectedTag !== 'all' || sortOption !== 'latest';
 
   const getCoverUrl = (url: string | null) => {
     if (!url) return 'https://placehold.co/150x220/png?text=No+Cover';
@@ -80,46 +134,141 @@ export default function ExploreScreen() {
     return `${API_URL}${url}`;
   };
 
-  const displayedNovels = isSearching ? searchResults : defaultNovels;
-
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      {/* Search Input Container */}
+      {/* Header */}
       <ThemedView style={styles.header}>
-        <ThemedText style={styles.headerTitle}>Explore</ThemedText>
+        <ThemedView style={styles.headerTop}>
+          <ThemedText style={styles.headerTitle}>Explore</ThemedText>
+          <TouchableOpacity
+            style={[styles.filterToggleBtn, (showFilters || hasActiveFilters) && styles.filterToggleBtnActive]}
+            onPress={() => setShowFilters(!showFilters)}
+            activeOpacity={0.7}
+          >
+            <ThemedText style={[styles.filterToggleBtnText, (showFilters || hasActiveFilters) && styles.filterToggleBtnTextActive]}>
+              🎛️ Filter {hasActiveFilters ? '•' : ''}
+            </ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+
+        {/* Search Bar */}
         <ThemedView style={[styles.searchContainer, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedText style={styles.searchIcon}>🔍</ThemedText>
           <TextInput
             style={[styles.searchInput, { color: theme.text }]}
-            placeholder="Search novels by title or author..."
+            placeholder="Search titles, authors, keywords..."
             placeholderTextColor={theme.textSecondary || '#64748b'}
             value={searchQuery}
-            onChangeText={handleSearch}
+            onChangeText={setSearchQuery}
             autoCapitalize="none"
             autoCorrect={false}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => handleSearch('')} style={styles.clearButton}>
-              <ThemedText style={{ color: '#3c87f7', fontWeight: 'bold' }}>Clear</ThemedText>
+            <TouchableOpacity onPress={handleClearSearch} style={styles.clearButton}>
+              <ThemedText style={styles.clearButtonText}>✕</ThemedText>
             </TouchableOpacity>
           )}
         </ThemedView>
+
+        {/* Expandable Filter Accordion */}
+        {showFilters && (
+          <ThemedView style={[styles.filterAccordion, { backgroundColor: theme.backgroundElement }]}>
+            {/* Status Filter */}
+            <ThemedView style={styles.filterGroup}>
+              <ThemedText type="smallBold" style={styles.filterGroupTitle}>Status:</ThemedText>
+              <ThemedView style={styles.chipRow}>
+                {STATUS_OPTIONS.map((st) => (
+                  <TouchableOpacity
+                    key={st}
+                    style={[styles.chip, selectedStatus === st && styles.chipActive]}
+                    onPress={() => setSelectedStatus(st)}
+                  >
+                    <ThemedText style={[styles.chipText, selectedStatus === st && styles.chipTextActive]}>
+                      {st.charAt(0).toUpperCase() + st.slice(1)}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </ThemedView>
+            </ThemedView>
+
+            {/* Sort Filter */}
+            <ThemedView style={styles.filterGroup}>
+              <ThemedText type="smallBold" style={styles.filterGroupTitle}>Sort By:</ThemedText>
+              <ThemedView style={styles.chipRow}>
+                {SORT_OPTIONS.map((so) => (
+                  <TouchableOpacity
+                    key={so.value}
+                    style={[styles.chip, sortOption === so.value && styles.chipActive]}
+                    onPress={() => setSortOption(so.value as 'latest' | 'popular')}
+                  >
+                    <ThemedText style={[styles.chipText, sortOption === so.value && styles.chipTextActive]}>
+                      {so.label}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </ThemedView>
+            </ThemedView>
+
+            {/* Tags Filter */}
+            <ThemedView style={styles.filterGroup}>
+              <ThemedText type="smallBold" style={styles.filterGroupTitle}>Genre / Tag:</ThemedText>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+                <TouchableOpacity
+                  style={[styles.chip, selectedTag === 'all' && styles.chipActive]}
+                  onPress={() => setSelectedTag('all')}
+                >
+                  <ThemedText style={[styles.chipText, selectedTag === 'all' && styles.chipTextActive]}>
+                    All
+                  </ThemedText>
+                </TouchableOpacity>
+                {POPULAR_TAGS.map((tag) => (
+                  <TouchableOpacity
+                    key={tag}
+                    style={[styles.chip, selectedTag === tag && styles.chipActive]}
+                    onPress={() => setSelectedTag(tag)}
+                  >
+                    <ThemedText style={[styles.chipText, selectedTag === tag && styles.chipTextActive]}>
+                      {tag}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </ThemedView>
+
+            {/* Reset Button */}
+            {hasActiveFilters && (
+              <TouchableOpacity style={styles.resetBtn} onPress={handleResetFilters}>
+                <ThemedText style={styles.resetBtnText}>Reset All Filters</ThemedText>
+              </TouchableOpacity>
+            )}
+          </ThemedView>
+        )}
       </ThemedView>
 
+      {/* Main Novel List */}
       {loading ? (
         <ThemedView style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3c87f7" />
         </ThemedView>
       ) : (
         <FlatList
-          data={displayedNovels}
+          data={novels}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <ThemedView style={styles.emptyContainer}>
+              <ThemedText style={styles.emptyEmoji}>🔍</ThemedText>
               <ThemedText style={styles.emptyText} themeColor="textSecondary">
-                No novels found matching "{searchQuery}"
+                {hasActiveFilters
+                  ? 'No novels match your selected filters.'
+                  : 'No novels found.'}
               </ThemedText>
+              {hasActiveFilters && (
+                <TouchableOpacity style={styles.resetBtnEmpty} onPress={handleResetFilters}>
+                  <ThemedText style={styles.resetBtnText}>Clear Filters</ThemedText>
+                </TouchableOpacity>
+              )}
             </ThemedView>
           }
           renderItem={({ item }) => (
@@ -132,11 +281,19 @@ export default function ExploreScreen() {
               <ThemedView style={styles.infoContainer}>
                 <ThemedText style={styles.novelTitle}>{item.title}</ThemedText>
                 <ThemedText type="small" style={styles.novelAuthor}>By {item.author}</ThemedText>
-                {item.status && (
-                  <ThemedView style={styles.statusBadge}>
-                    <ThemedText style={styles.statusText}>{item.status}</ThemedText>
-                  </ThemedView>
-                )}
+                
+                <ThemedView style={styles.metaRow}>
+                  {item.status && (
+                    <ThemedView style={styles.statusBadge}>
+                      <ThemedText style={styles.statusText}>{item.status}</ThemedText>
+                    </ThemedView>
+                  )}
+                  {item.views !== undefined && item.views !== null && (
+                    <ThemedText type="small" style={styles.viewsText}>
+                      👁️ {item.views} views
+                    </ThemedText>
+                  )}
+                </ThemedView>
               </ThemedView>
             </TouchableOpacity>
           )}
@@ -160,9 +317,31 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.three,
     gap: Spacing.two,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+  },
+  filterToggleBtn: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  filterToggleBtnActive: {
+    backgroundColor: '#3c87f7',
+  },
+  filterToggleBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  filterToggleBtnTextActive: {
+    color: '#ffffff',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -171,6 +350,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Platform.OS === 'ios' ? Spacing.two : Spacing.one,
   },
+  searchIcon: {
+    fontSize: 14,
+    marginRight: Spacing.two,
+  },
   searchInput: {
     flex: 1,
     fontSize: 15,
@@ -178,6 +361,68 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     paddingHorizontal: Spacing.two,
+  },
+  clearButtonText: {
+    fontSize: 14,
+    color: '#94a3b8',
+    fontWeight: 'bold',
+  },
+  filterAccordion: {
+    padding: Spacing.three,
+    borderRadius: 10,
+    marginTop: Spacing.two,
+    gap: Spacing.three,
+  },
+  filterGroup: {
+    gap: Spacing.one,
+  },
+  filterGroupTitle: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  chipScroll: {
+    gap: Spacing.two,
+    flexDirection: 'row',
+  },
+  chip: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  chipActive: {
+    backgroundColor: '#3c87f7',
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  chipTextActive: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  resetBtn: {
+    alignSelf: 'center',
+    marginTop: Spacing.one,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.three,
+  },
+  resetBtnEmpty: {
+    backgroundColor: '#3c87f7',
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    borderRadius: 8,
+    marginTop: Spacing.two,
+  },
+  resetBtnText: {
+    color: '#3c87f7',
+    fontWeight: 'bold',
+    fontSize: 13,
   },
   listContent: {
     paddingHorizontal: Spacing.four,
@@ -208,13 +453,18 @@ const styles = StyleSheet.create({
   novelAuthor: {
     color: '#64748b',
   },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    marginTop: 2,
+  },
   statusBadge: {
     alignSelf: 'flex-start',
     backgroundColor: '#e0f2fe',
     paddingHorizontal: Spacing.two,
     paddingVertical: 2,
     borderRadius: 4,
-    marginTop: 2,
   },
   statusText: {
     color: '#0369a1',
@@ -222,11 +472,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textTransform: 'capitalize',
   },
+  viewsText: {
+    fontSize: 11,
+    color: '#64748b',
+  },
   emptyContainer: {
-    padding: Spacing.five,
+    padding: Spacing.six,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    marginTop: Spacing.six,
+  },
+  emptyEmoji: {
+    fontSize: 40,
   },
   emptyText: {
     textAlign: 'center',
+    fontSize: 14,
   },
 });

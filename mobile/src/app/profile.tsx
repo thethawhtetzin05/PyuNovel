@@ -3,12 +3,12 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   TextInput,
   Dimensions,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useNavigation } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
@@ -42,6 +42,35 @@ export default function ProfileScreen() {
   const [password, setPassword] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [topupLoading, setTopupLoading] = useState(false);
+
+  const handleTopUp = async () => {
+    if (!token) return;
+    setTopupLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/auth/add-coins`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const json = await response.json();
+      if (json.success) {
+        alert('Simulated top-up of 500 coins successful!');
+        const updatedUser = { ...user!, coins: json.coins };
+        setUser(updatedUser);
+        await AsyncStorage.setItem('pyunovel_user_data', JSON.stringify(updatedUser));
+      } else {
+        alert(json.error || 'Failed to simulate top-up');
+      }
+    } catch (error) {
+      console.error('Top-up error:', error);
+      alert('Network error while simulating top-up.');
+    } finally {
+      setTopupLoading(false);
+    }
+  };
 
   const loadSession = async () => {
     try {
@@ -186,6 +215,18 @@ export default function ProfileScreen() {
                 <ThemedText style={styles.infoValue}>🪙 {user.coins ?? 0}</ThemedText>
               </ThemedView>
             </ThemedView>
+
+            <TouchableOpacity 
+              style={[styles.topupBtn, { backgroundColor: '#3c87f7' }]} 
+              onPress={handleTopUp}
+              disabled={topupLoading}
+            >
+              {topupLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <ThemedText style={styles.topupText}>Simulate Top Up (🪙 +500 Coins)</ThemedText>
+              )}
+            </TouchableOpacity>
 
             <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
               <ThemedText style={styles.signOutText}>Sign Out</ThemedText>
@@ -417,5 +458,16 @@ const styles = StyleSheet.create({
     color: '#3c87f7',
     fontWeight: '600',
     fontSize: 13,
+  },
+  topupBtn: {
+    paddingVertical: Spacing.three,
+    borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: Spacing.three,
+  },
+  topupText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
   },
 });

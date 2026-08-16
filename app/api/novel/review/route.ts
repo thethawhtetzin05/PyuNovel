@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
-import { drizzle } from "drizzle-orm/d1";
-import * as schema from "@/db/schema";
-import { createAuth } from "@/lib/auth";
+import { getServerContext } from "@/lib/server-context";
 import { createReview } from "@/lib/resources/reviews/mutations";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -19,13 +16,10 @@ const reviewSchema = z.object({
 
 export async function POST(request: NextRequest) {
     try {
-        const { env } = getRequestContext();
-        const db = drizzle(env.DB, { schema });
-
-        const auth = createAuth(env.DB);
+        const { db, auth, env } = getServerContext({ withAuth: true });
         const session = await auth.api.getSession({ headers: request.headers });
 
-        if (!session) {
+        if (!session?.user) {
             return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
         }
 
@@ -69,6 +63,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: false,
             error: error?.message || "Internal Server Error"
-        }, { status: error.message.includes('already reviewed') ? 409 : 500 });
+        }, { status: 500 });
     }
 }

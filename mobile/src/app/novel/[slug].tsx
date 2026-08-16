@@ -6,6 +6,8 @@ import {
   Image as RNImage,
   TouchableOpacity,
   FlatList,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -41,6 +43,18 @@ interface Chapter {
   volumeId: number;
 }
 
+interface ReviewItem {
+  id: number;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    image: string | null;
+  };
+}
+
 export default function NovelDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
@@ -53,6 +67,21 @@ export default function NovelDetailScreen() {
   const [totalChapters, setTotalChapters] = useState<number>(0);
   const [loadingMoreChapters, setLoadingMoreChapters] = useState<boolean>(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+
+  // Reviews state
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [avgRating, setAvgRating] = useState<number>(0);
+  const [totalReviews, setTotalReviews] = useState<number>(0);
+  const [myReview, setMyReview] = useState<ReviewItem | null>(null);
+
+  // Review Modal state
+  const [showReviewModal, setShowReviewModal] = useState<boolean>(false);
+  const [userRating, setUserRating] = useState<number>(5);
+  const [reviewComment, setReviewComment] = useState<string>('');
+  const [submittingReview, setSubmittingReview] = useState<boolean>(false);
+  const [showAllReviews, setShowAllReviews] = useState<boolean>(false);
 
   // Load bookmark status on mount / slug change
   useEffect(() => {
@@ -103,6 +132,93 @@ export default function NovelDetailScreen() {
     }
   };
 
+  const downloadNovel = async () => {
+    if (!novel || !slug) return;
+    setDownloading(true);
+    setDownloadProgress(0);
+    try {
+      const res = await fetch(`${API_URL}/api/public/novel/${slug}/chapters?limit=500`);
+      const json = await res.json();
+      if (!json.success || !json.chapters) {
+        alert('Failed to get chapter list for download');
+        setDownloading(false);
+        return;
+      }
+
+      const allChapters = json.chapters;
+      const total = allChapters.length;
+      if (total === 0) {
+        alert('No chapters available to download');
+        setDownloading(false);
+        return;
+      }
+
+      const token = await AsyncStorage.getItem('pyunovel_session_token');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      let downloadedCount = 0;
+      const downloadedChsList: { sortIndex: number; title: string }[] = [];
+
+      for (let i = 0; i < total; i++) {
+        const ch = allChapters[i];
+        try {
+          const chRes = await fetch(`${API_URL}/api/public/novel/${slug}/chapter/${ch.sortIndex}`, {
+            headers
+          });
+          const chJson = await chRes.json();
+          if (chJson.success && chJson.data && !chJson.data.isLocked) {
+            await AsyncStorage.setItem(
+              `pyunovel_download_chapter_${slug}_${ch.sortIndex}`, 
+              JSON.stringify(chJson.data)
+            );
+            downloadedChsList.push({
+              sortIndex: ch.sortIndex,
+              title: ch.title
+            });
+            downloadedCount++;
+          }
+        } catch (e) {
+          console.error(`Failed to download chapter ${ch.sortIndex}:`, e);
+        }
+        
+        setDownloadProgress(Math.round(((i + 1) / total) * 100));
+      }
+
+      if (downloadedCount > 0) {
+        const catalogStr = await AsyncStorage.getItem('pyunovel_download_catalog');
+        let catalog = catalogStr ? JSON.parse(catalogStr) : [];
+
+        catalog = catalog.filter((n: any) => n.slug !== slug);
+
+        catalog.push({
+          id: novel.id,
+          title: novel.title,
+          slug: novel.slug,
+          author: novel.author,
+          coverUrl: novel.coverUrl,
+          chaptersCount: downloadedCount,
+          chapters: downloadedChsList,
+          downloadedAt: Date.now()
+        });
+
+        await AsyncStorage.setItem('pyunovel_download_catalog', JSON.stringify(catalog));
+        alert(`Downloaded ${downloadedCount} free/unlocked chapters successfully!`);
+      } else {
+        alert('No free or unlocked chapters could be downloaded.');
+      }
+
+    } catch (err) {
+      console.error('Download error:', err);
+      alert('Failed to download chapters due to a network error.');
+    } finally {
+      setDownloading(false);
+      setDownloadProgress(0);
+    }
+  };
+
   const handleLoadMoreChapters = async () => {
     if (loadingMoreChapters || !slug) return;
     try {
@@ -142,10 +258,93 @@ export default function NovelDetailScreen() {
       }
     };
 
+    fetchReviews();
     if (slug) {
       fetchNovelDetails();
     }
   }, [slug]);
+
+  const fetchReviews = async () => {
+    if (!slug) return;
+    try {
+      const res = await fetch(`${API_URL}/api/public/novel/${slug}/reviews`);
+      const json = await res.json();
+      if (json.success) {
+        setReviews(json.reviews || []);
+        setAvgRating(json.avgRating || 0);
+        setTotalReviews(json.totalReviews || 0);
+
+        const userDataStr = await AsyncStorage.getItem('pyunovel_user_data');
+        if (userDataStr) {
+          const userData = JSON.parse(userDataStr);
+          const found = (json.reviews || []).find((r: ReviewItem) => r.user.id === userData.id);
+          if (found) {
+            setMyReview(found);
+            setUserRating(found.rating);
+            setReviewComment(found.comment || '');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    }
+  };
+
+  const handleOpenReviewModal = async () => {
+    const token = await AsyncStorage.getItem('pyunovel_session_token');
+    if (!token) {
+      alert('Please login to write a review.');
+      router.push('/profile');
+      return;
+    }
+    setShowReviewModal(true);
+  };
+
+  const handleSubmitReview = async () => {
+    if (!novel || !slug) return;
+    if (userRating < 1 || userRating > 5) {
+      alert('Please select a rating between 1 and 5 stars.');
+      return;
+    }
+
+    try {
+      const token = await AsyncStorage.getItem('pyunovel_session_token');
+      if (!token) {
+        alert('Please login to write a review.');
+        router.push('/profile');
+        return;
+      }
+
+      setSubmittingReview(true);
+      const res = await fetch(`${API_URL}/api/novel/review`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          novelId: novel.id,
+          novelSlug: slug,
+          rating: userRating,
+          comment: reviewComment
+        })
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        alert(myReview ? 'Review updated successfully!' : 'Review submitted successfully!');
+        setShowReviewModal(false);
+        fetchReviews();
+      } else {
+        alert(json.error || 'Failed to submit review.');
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      alert('Network error while submitting review.');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const getCoverUrl = (url: string | null) => {
     if (!url) return 'https://placehold.co/150x220/png?text=No+Cover';
@@ -194,6 +393,15 @@ export default function NovelDetailScreen() {
             <ThemedText style={styles.titleText}>{novel.title}</ThemedText>
             <ThemedText type="small" style={styles.authorText}>By {novel.author}</ThemedText>
             
+            <ThemedView style={styles.ratingRow}>
+              <ThemedText style={styles.ratingStarsText}>⭐ {avgRating > 0 ? avgRating.toFixed(1) : 'No ratings'}</ThemedText>
+              {totalReviews > 0 && (
+                <ThemedText type="small" themeColor="textSecondary">
+                  ({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})
+                </ThemedText>
+              )}
+            </ThemedView>
+            
             <ThemedView style={styles.badgeRow}>
               {novel.status && (
                 <ThemedView style={styles.statusBadge}>
@@ -217,6 +425,21 @@ export default function NovelDetailScreen() {
                 {isBookmarked ? '❤️ In Library' : '🖤 Add to Library'}
               </ThemedText>
             </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.downloadAllBtn} 
+              onPress={downloadNovel}
+              disabled={downloading}
+              activeOpacity={0.7}
+            >
+              {downloading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <ThemedText style={styles.downloadAllBtnText}>
+                  {downloadProgress > 0 ? `💾 Downloading (${downloadProgress}%)` : '💾 Download Free Chapters'}
+                </ThemedText>
+              )}
+            </TouchableOpacity>
           </ThemedView>
         </ThemedView>
 
@@ -237,6 +460,51 @@ export default function NovelDetailScreen() {
           <ThemedText type="small" style={styles.descriptionText}>
             {novel.description || 'No description available.'}
           </ThemedText>
+        </ThemedView>
+
+        {/* User Reviews & Comments Section */}
+        <ThemedView style={styles.reviewsContainer}>
+          <ThemedView style={styles.reviewsHeaderRow}>
+            <ThemedText type="smallBold" style={styles.sectionHeader}>
+              User Reviews ({totalReviews})
+            </ThemedText>
+            <TouchableOpacity style={styles.writeReviewBtn} onPress={handleOpenReviewModal}>
+              <ThemedText style={styles.writeReviewBtnText}>
+                {myReview ? '✏️ Edit Review' : '⭐ Write Review'}
+              </ThemedText>
+            </TouchableOpacity>
+          </ThemedView>
+
+          {reviews.length === 0 ? (
+            <ThemedText type="small" style={styles.noChaptersText}>
+              No reviews yet. Be the first to leave a review!
+            </ThemedText>
+          ) : (
+            (showAllReviews ? reviews : reviews.slice(0, 3)).map((rev) => (
+              <ThemedView key={rev.id} style={styles.reviewCard}>
+                <ThemedView style={styles.reviewCardHeader}>
+                  <ThemedText style={styles.reviewerName}>{rev.user.name}</ThemedText>
+                  <ThemedText style={styles.starText}>{"⭐".repeat(rev.rating)}</ThemedText>
+                </ThemedView>
+                {rev.comment && (
+                  <ThemedText type="small" style={styles.reviewCommentText}>
+                    {rev.comment}
+                  </ThemedText>
+                )}
+                <ThemedText type="small" style={styles.reviewDate} themeColor="textSecondary">
+                  {new Date(rev.createdAt).toLocaleDateString()}
+                </ThemedText>
+              </ThemedView>
+            ))
+          )}
+
+          {reviews.length > 3 && !showAllReviews && (
+            <TouchableOpacity style={styles.showMoreReviewsBtn} onPress={() => setShowAllReviews(true)}>
+              <ThemedText style={styles.showMoreReviewsText}>
+                Show all {totalReviews} reviews ↓
+              </ThemedText>
+            </TouchableOpacity>
+          )}
         </ThemedView>
 
         {/* Chapters Section */}
@@ -307,6 +575,65 @@ export default function NovelDetailScreen() {
           )}
         </ThemedView>
       </ScrollView>
+
+      {/* Write / Edit Review Modal */}
+      <Modal
+        visible={showReviewModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowReviewModal(false)}
+      >
+        <ThemedView style={styles.modalOverlay}>
+          <ThemedView style={[styles.modalContent, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText style={styles.modalTitle}>
+              {myReview ? 'Edit Your Review' : 'Write a Review'}
+            </ThemedText>
+
+            <ThemedText style={styles.modalSubtitle}>Rate this novel:</ThemedText>
+            <ThemedView style={styles.starPickerRow}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity key={star} onPress={() => setUserRating(star)}>
+                  <ThemedText style={{ fontSize: 32 }}>
+                    {star <= userRating ? '⭐' : '☆'}
+                  </ThemedText>
+                </TouchableOpacity>
+              ))}
+            </ThemedView>
+
+            <TextInput
+              style={[styles.modalTextInput, { color: theme.text }]}
+              placeholder="Write your review or thoughts here..."
+              placeholderTextColor={theme.textSecondary || '#64748b'}
+              multiline
+              numberOfLines={4}
+              value={reviewComment}
+              onChangeText={setReviewComment}
+              maxLength={500}
+            />
+
+            <ThemedView style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setShowReviewModal(false)}
+              >
+                <ThemedText style={styles.modalCancelText}>Cancel</ThemedText>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalSubmitBtn}
+                onPress={handleSubmitReview}
+                disabled={submittingReview}
+              >
+                {submittingReview ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <ThemedText style={styles.modalSubmitText}>Submit</ThemedText>
+                )}
+              </TouchableOpacity>
+            </ThemedView>
+          </ThemedView>
+        </ThemedView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -504,8 +831,152 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   bookmarkBtnTextActive: {
+    color: '#e11d48', // rose-600
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  downloadAllBtn: {
+    backgroundColor: '#10b981', // emerald green
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    borderRadius: 8,
+    marginTop: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  downloadAllBtnText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    marginTop: 2,
+  },
+  ratingStarsText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  reviewsContainer: {
+    marginTop: Spacing.five,
+    paddingHorizontal: Spacing.four,
+  },
+  reviewsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.three,
+  },
+  writeReviewBtn: {
+    backgroundColor: '#3c87f7',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one + 2,
+    borderRadius: 6,
+  },
+  writeReviewBtnText: {
     color: '#ffffff',
     fontSize: 12,
+    fontWeight: 'bold',
+  },
+  reviewCard: {
+    padding: Spacing.three,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+    marginBottom: Spacing.three,
+    gap: 4,
+  },
+  reviewCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  reviewerName: {
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  starText: {
+    fontSize: 12,
+  },
+  reviewCommentText: {
+    fontSize: 13,
+    color: '#475569',
+    marginVertical: 2,
+  },
+  reviewDate: {
+    fontSize: 11,
+  },
+  showMoreReviewsBtn: {
+    alignSelf: 'center',
+    paddingVertical: Spacing.two,
+  },
+  showMoreReviewsText: {
+    color: '#3c87f7',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.four,
+  },
+  modalContent: {
+    width: '100%',
+    borderRadius: 12,
+    padding: Spacing.four,
+    gap: Spacing.three,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#64748b',
+  },
+  starPickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.two,
+  },
+  modalTextInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 8,
+    padding: Spacing.three,
+    minHeight: 90,
+    textAlignVertical: 'top',
+    fontSize: 14,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: Spacing.three,
+    marginTop: Spacing.two,
+  },
+  modalCancelBtn: {
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    borderRadius: 6,
+  },
+  modalCancelText: {
+    color: '#64748b',
+    fontWeight: '600',
+  },
+  modalSubmitBtn: {
+    backgroundColor: '#3c87f7',
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.six,
+    borderRadius: 6,
+  },
+  modalSubmitText: {
+    color: '#ffffff',
     fontWeight: 'bold',
   },
 });

@@ -20,7 +20,15 @@ export async function createReview(
         .get();
 
     if (existingReview) {
-        throw new Error('You have already reviewed this novel.');
+        return await db.update(reviews)
+            .set({
+                rating: data.rating,
+                comment: data.comment,
+                updatedAt: new Date()
+            })
+            .where(eq(reviews.id, existingReview.id))
+            .returning()
+            .get();
     }
 
     return await db.insert(reviews).values({

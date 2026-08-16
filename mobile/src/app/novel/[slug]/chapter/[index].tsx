@@ -26,7 +26,9 @@ interface NovelMeta {
   id: number;
   title: string;
   slug: string;
+  ownerId: string;
   chapterPrice: number;
+  coverUrl?: string | null;
 }
 
 interface NavIndex {
@@ -48,6 +50,93 @@ export default function ReaderScreen() {
   const [fontSize, setFontSize] = useState<number>(18);
   const [readerTheme, setReaderTheme] = useState<'light' | 'sepia' | 'dark'>('light');
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [isLocked, setIsLocked] = useState<boolean>(false);
+  const [unlockLoading, setUnlockLoading] = useState<boolean>(false);
+  const [isOffline, setIsOffline] = useState<boolean>(false);
+
+  const saveToRecents = async (newRecent: any) => {
+    try {
+      const recentsStr = await AsyncStorage.getItem('pyunovel_recents');
+      let recents = recentsStr ? JSON.parse(recentsStr) : [];
+      recents = recents.filter((r: any) => r.novelSlug !== newRecent.novelSlug);
+      recents.unshift(newRecent);
+      if (recents.length > 10) {
+        recents = recents.slice(0, 10);
+      }
+      await AsyncStorage.setItem('pyunovel_recents', JSON.stringify(recents));
+    } catch (error) {
+      console.error('Error saving reading history:', error);
+    }
+  };
+
+  const handleUnlock = async () => {
+    if (!chapter || !novel) return;
+    try {
+      const savedToken = await AsyncStorage.getItem('pyunovel_session_token');
+      if (!savedToken) {
+        alert('Please login to unlock chapters.');
+        router.push('/profile');
+        return;
+      }
+
+      setUnlockLoading(true);
+      const response = await fetch(`${API_URL}/api/novel/chapter/unlock`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${savedToken}`
+        },
+        body: JSON.stringify({
+          chapterId: chapter.id,
+          novelId: novel.id,
+          chapterPrice: novel.chapterPrice || 0,
+          slug: novel.slug,
+          sortIndex: chapter.sortIndex
+        })
+      });
+
+      const json = await response.json();
+      if (json.success) {
+        alert('Chapter unlocked successfully!');
+        
+        // Re-fetch chapter
+        setLoading(true);
+        const headers: Record<string, string> = {
+          'Authorization': `Bearer ${savedToken}`
+        };
+        const refetchResponse = await fetch(`${API_URL}/api/public/novel/${slug}/chapter/${index}`, {
+          headers
+        });
+        const refetchJson = await refetchResponse.json();
+        if (refetchJson.success && refetchJson.data) {
+          setChapter(refetchJson.data.chapter);
+          setNovel(refetchJson.data.novel);
+          setPrevChapter(refetchJson.data.prev);
+          setNextChapter(refetchJson.data.next);
+          setIsLocked(refetchJson.data.isLocked || false);
+          
+          saveToRecents({
+            novelId: refetchJson.data.novel.id,
+            novelTitle: refetchJson.data.novel.title,
+            novelSlug: refetchJson.data.novel.slug,
+            novelCoverUrl: refetchJson.data.novel.coverUrl || null,
+            chapterId: refetchJson.data.chapter.id,
+            chapterTitle: refetchJson.data.chapter.title,
+            chapterIndex: refetchJson.data.chapter.sortIndex,
+            readAt: Date.now()
+          });
+        }
+      } else {
+        alert(json.error || 'Failed to unlock chapter. Check if you have enough coins.');
+      }
+    } catch (error) {
+      console.error('Error unlocking chapter:', error);
+      alert('Network error while unlocking chapter.');
+    } finally {
+      setUnlockLoading(false);
+      setLoading(false);
+    }
+  };
 
   // Load settings on mount
   useEffect(() => {
@@ -90,16 +179,54 @@ export default function ReaderScreen() {
     const fetchChapter = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`${API_URL}/api/public/novel/${slug}/chapter/${index}`);
+        const token = await AsyncStorage.getItem('pyunovel_session_token');
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_URL}/api/public/novel/${slug}/chapter/${index}`, {
+          headers
+        });
         const json = await response.json();
         if (json.success && json.data) {
           setChapter(json.data.chapter);
           setNovel(json.data.novel);
           setPrevChapter(json.data.prev);
           setNextChapter(json.data.next);
+          setIsLocked(json.data.isLocked || false);
+
+          if (!json.data.isLocked && json.data.novel && json.data.chapter) {
+            saveToRecents({
+              novelId: json.data.novel.id,
+              novelTitle: json.data.novel.title,
+              novelSlug: json.data.novel.slug,
+              novelCoverUrl: json.data.novel.coverUrl || null,
+              chapterId: json.data.chapter.id,
+              chapterTitle: json.data.chapter.title,
+              chapterIndex: json.data.chapter.sortIndex,
+              readAt: Date.now()
+            });
+          }
+        } else {
+          throw new Error('Failed to fetch from server');
         }
       } catch (error) {
-        console.error("Error fetching chapter:", error);
+        console.error("Error fetching chapter, trying offline:", error);
+        try {
+          const localDataStr = await AsyncStorage.getItem(`pyunovel_download_chapter_${slug}_${index}`);
+          if (localDataStr) {
+            const localData = JSON.parse(localDataStr);
+            setChapter(localData.chapter);
+            setNovel(localData.novel);
+            setPrevChapter(localData.prev);
+            setNextChapter(localData.next);
+            setIsLocked(false);
+            setIsOffline(true);
+          }
+        } catch (e) {
+          console.error("Error reading offline chapter:", e);
+        }
       } finally {
         setLoading(false);
       }
@@ -160,7 +287,10 @@ export default function ReaderScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <ThemedText style={{ color: '#3c87f7', fontWeight: 'bold' }}>← Exit</ThemedText>
         </TouchableOpacity>
-        <ThemedText numberOfLines={1} style={[styles.headerTitle, { color: colors.text }]}>{novel.title}</ThemedText>
+        <ThemedView style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' }}>
+          <ThemedText numberOfLines={1} style={[styles.headerTitle, { color: colors.text }]}>{novel.title}</ThemedText>
+          {isOffline && <ThemedText style={{ fontSize: 12 }}>💾</ThemedText>}
+        </ThemedView>
         <TouchableOpacity onPress={() => setShowSettings(!showSettings)}>
           <ThemedText style={{ color: '#3c87f7', fontWeight: 'bold' }}>⚙️ Style</ThemedText>
         </TouchableOpacity>
@@ -206,9 +336,32 @@ export default function ReaderScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <ThemedText style={[styles.chapterTitleText, { color: colors.text }]}>{chapter.title}</ThemedText>
         
-        <ThemedText style={[styles.contentText, { color: colors.text, fontSize, lineHeight: fontSize * 1.6 }]}>
-          {cleanContent(chapter.content)}
-        </ThemedText>
+        {isLocked ? (
+          <ThemedView style={[styles.lockContainer, { backgroundColor: colors.card }]}>
+            <ThemedText style={styles.lockEmoji}>🔒</ThemedText>
+            <ThemedText style={styles.lockTitle}>Premium Chapter</ThemedText>
+            <ThemedText style={styles.lockDesc} themeColor="textSecondary">
+              This chapter is locked. You need to unlock it to continue reading.
+            </ThemedText>
+            <ThemedText style={styles.lockPrice}>Price: 🪙 {novel.chapterPrice || 0} Coins</ThemedText>
+            
+            <TouchableOpacity 
+              style={styles.unlockBtn} 
+              onPress={handleUnlock}
+              disabled={unlockLoading}
+            >
+              {unlockLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <ThemedText style={styles.unlockBtnText}>Unlock Chapter</ThemedText>
+              )}
+            </TouchableOpacity>
+          </ThemedView>
+        ) : (
+          <ThemedText style={[styles.contentText, { color: colors.text, fontSize, lineHeight: fontSize * 1.6 }]}>
+            {cleanContent(chapter.content)}
+          </ThemedText>
+        )}
 
         {/* Page Nav Buttons */}
         <ThemedView style={styles.navRow}>
@@ -361,5 +514,47 @@ const styles = StyleSheet.create({
   disabledBtnText: {
     color: '#94a3b8',
     fontWeight: 'bold',
+  },
+  lockContainer: {
+    padding: Spacing.five,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: Spacing.four,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  lockEmoji: {
+    fontSize: 48,
+    marginBottom: Spacing.two,
+  },
+  lockTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: Spacing.one,
+  },
+  lockDesc: {
+    textAlign: 'center',
+    fontSize: 14,
+    marginBottom: Spacing.three,
+  },
+  lockPrice: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#3c87f7',
+    marginBottom: Spacing.four,
+  },
+  unlockBtn: {
+    backgroundColor: '#3c87f7',
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.six,
+    borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
+  },
+  unlockBtnText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

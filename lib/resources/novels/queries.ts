@@ -1,6 +1,6 @@
 import { DrizzleD1Database } from 'drizzle-orm/d1';
 import { novels, collections, chapters } from '@/db/schema'; // Schema လမ်းကြောင်း မှန်ပါစေ
-import { eq, desc, sql, count } from 'drizzle-orm';
+import { eq, desc, sql, count, and } from 'drizzle-orm';
 
 // 👇 Function အားလုံးကို db (Drizzle Instance) တစ်ခုတည်းသာ လက်ခံအောင် ပြင်ထားပါတယ်
 // ❌ getDb() ကို ထပ်သုံးစရာ မလိုတော့ပါဘူး
@@ -143,25 +143,70 @@ export const getRecentlyUpdatedNovels = cache(async (db: DrizzleD1Database<Recor
     .all();
 });
 
-// ၇။ Search Function - ဝတ္ထုများကို ခေါင်းစဉ် သို့မဟုတ် စာရေးဆရာ နာမည်ဖြင့် ရှာဖွေခြင်း
-export const searchNovels = cache(async (db: DrizzleD1Database<Record<string, unknown>>, query: string, limit: number = 5) => {
-  if (!query.trim()) return [];
+export interface NovelFilterOptions {
+  q?: string;
+  status?: string;
+  tag?: string;
+  sort?: 'popular' | 'latest' | string;
+  limit?: number;
+}
 
-  const searchPattern = `%${query}%`;
-  return await db
+export const filterNovels = cache(async (
+  db: DrizzleD1Database<Record<string, unknown>>,
+  options: NovelFilterOptions = {}
+) => {
+  const { q, status, tag, sort = 'latest', limit = 20 } = options;
+
+  const conditions: any[] = [];
+
+  if (q && q.trim()) {
+    const pattern = `%${q.trim()}%`;
+    conditions.push(sql`(${novels.title} LIKE ${pattern} OR ${novels.author} LIKE ${pattern} OR ${novels.englishTitle} LIKE ${pattern})`);
+  }
+
+  if (status && status.trim() && status.toLowerCase() !== 'all') {
+    conditions.push(eq(novels.status, status.toLowerCase() as 'ongoing' | 'completed' | 'hiatus' | 'dropped'));
+  }
+
+  if (tag && tag.trim() && tag.toLowerCase() !== 'all') {
+    const tagPattern = `%${tag.trim()}%`;
+    conditions.push(sql`${novels.tags} LIKE ${tagPattern}`);
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  let query = db
     .select({
       id: novels.id,
       title: novels.title,
+      englishTitle: novels.englishTitle,
       author: novels.author,
       slug: novels.slug,
       coverUrl: novels.coverUrl,
+      status: novels.status,
+      views: novels.views,
+      tags: novels.tags,
+      createdAt: novels.createdAt,
+      updatedAt: novels.updatedAt,
     })
-    .from(novels)
-    .where(
-      sql`${novels.title} LIKE ${searchPattern} OR ${novels.author} LIKE ${searchPattern} OR ${novels.englishTitle} LIKE ${searchPattern}`
-    )
-    .limit(limit)
-    .all();
+    .from(novels);
+
+  if (whereClause) {
+    query = query.where(whereClause) as typeof query;
+  }
+
+  if (sort === 'popular') {
+    query = query.orderBy(desc(novels.views), desc(novels.updatedAt)) as typeof query;
+  } else {
+    query = query.orderBy(desc(novels.updatedAt)) as typeof query;
+  }
+
+  return await query.limit(limit).all();
+});
+
+// ၇။ Search Function - ဝတ္ထုများကို ခေါင်းစဉ် သို့မဟုတ် စာရေးဆရာ နာမည်ဖြင့် ရှာဖွေခြင်း
+export const searchNovels = cache(async (db: DrizzleD1Database<Record<string, unknown>>, query: string, limit: number = 20) => {
+  return filterNovels(db, { q: query, limit });
 });
 
 // ၈။ Ranking Page - Collector အများဆုံး ဝတ္ထုများ

@@ -26,23 +26,54 @@ interface BookmarkedNovel {
   views?: number | null;
 }
 
+interface RecentProgress {
+  novelId: number;
+  novelTitle: string;
+  novelSlug: string;
+  novelCoverUrl: string | null;
+  chapterId: number;
+  chapterTitle: string;
+  chapterIndex: number;
+  readAt: number;
+}
+
 export default function LibraryScreen() {
   const theme = useTheme();
   const router = useRouter();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'bookmarks' | 'downloads'>('bookmarks');
   const [bookmarks, setBookmarks] = useState<BookmarkedNovel[]>([]);
+  const [downloads, setDownloads] = useState<any[]>([]);
+  const [recents, setRecents] = useState<RecentProgress[]>([]);
 
-  const fetchBookmarks = async () => {
+  const fetchLibraryData = async () => {
     try {
-      const bookmarksStr = await AsyncStorage.getItem('pyunovel_bookmarks');
+      const [bookmarksStr, recentsStr, downloadsStr] = await Promise.all([
+        AsyncStorage.getItem('pyunovel_bookmarks'),
+        AsyncStorage.getItem('pyunovel_recents'),
+        AsyncStorage.getItem('pyunovel_download_catalog')
+      ]);
+
       if (bookmarksStr) {
         setBookmarks(JSON.parse(bookmarksStr));
       } else {
         setBookmarks([]);
       }
+
+      if (recentsStr) {
+        setRecents(JSON.parse(recentsStr));
+      } else {
+        setRecents([]);
+      }
+
+      if (downloadsStr) {
+        setDownloads(JSON.parse(downloadsStr));
+      } else {
+        setDownloads([]);
+      }
     } catch (error) {
-      console.error('Error fetching bookmarks:', error);
+      console.error('Error fetching library data:', error);
     } finally {
       setLoading(false);
     }
@@ -51,9 +82,9 @@ export default function LibraryScreen() {
   // Fetch bookmarks whenever the screen comes into focus
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      fetchBookmarks();
+      fetchLibraryData();
     });
-    fetchBookmarks();
+    fetchLibraryData();
     return unsubscribe;
   }, [navigation]);
 
@@ -77,39 +108,122 @@ export default function LibraryScreen() {
         {/* Header */}
         <ThemedView style={styles.header}>
           <ThemedText style={styles.headerTitle}>My Library</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            Your bookmarked novels ({bookmarks.length})
-          </ThemedText>
         </ThemedView>
 
-        {bookmarks.length === 0 ? (
-          <ThemedView style={styles.emptyContainer}>
-            <ThemedText style={styles.emptyEmoji}>📚</ThemedText>
-            <ThemedText style={styles.emptyText} themeColor="textSecondary">
-              No bookmarks yet.
+        {/* Tab Switcher */}
+        <ThemedView style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tabBtn, activeTab === 'bookmarks' && styles.tabBtnActive]}
+            onPress={() => setActiveTab('bookmarks')}
+          >
+            <ThemedText style={[styles.tabText, activeTab === 'bookmarks' && styles.tabTextActive]}>
+              Bookmarks ({bookmarks.length})
             </ThemedText>
-            <TouchableOpacity
-              style={styles.exploreBtn}
-              onPress={() => router.push('/explore')}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabBtn, activeTab === 'downloads' && styles.tabBtnActive]}
+            onPress={() => setActiveTab('downloads')}
+          >
+            <ThemedText style={[styles.tabText, activeTab === 'downloads' && styles.tabTextActive]}>
+              Downloads ({downloads.length})
+            </ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+
+        {/* Recents Section */}
+        {recents.length > 0 && (
+          <ThemedView style={styles.recentsSection}>
+            <ThemedText type="smallBold" style={styles.sectionTitle}>Continue Reading</ThemedText>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.recentsScroll}
             >
-              <ThemedText style={styles.exploreBtnText}>Explore Novels</ThemedText>
-            </TouchableOpacity>
+              {recents.map((item) => (
+                <TouchableOpacity
+                  key={item.novelId}
+                  style={styles.recentCard}
+                  activeOpacity={0.8}
+                  onPress={() => router.push(`/novel/${item.novelSlug}/chapter/${item.chapterIndex}`)}
+                >
+                  <RNImage source={{ uri: getCoverUrl(item.novelCoverUrl) }} style={styles.recentCover} />
+                  <ThemedView style={styles.recentMeta}>
+                    <ThemedText numberOfLines={1} style={styles.recentTitle}>{item.novelTitle}</ThemedText>
+                    <ThemedText numberOfLines={1} type="small" style={styles.recentChapter} themeColor="textSecondary">
+                      Ch. {item.chapterIndex} - {item.chapterTitle}
+                    </ThemedText>
+                  </ThemedView>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </ThemedView>
-        ) : (
-          <ThemedView style={styles.novelsGrid}>
-            {bookmarks.map((item) => (
+        )}
+
+        {activeTab === 'bookmarks' ? (
+          bookmarks.length === 0 ? (
+            <ThemedView style={styles.emptyContainer}>
+              <ThemedText style={styles.emptyEmoji}>📚</ThemedText>
+              <ThemedText style={styles.emptyText} themeColor="textSecondary">
+                No bookmarks yet.
+              </ThemedText>
               <TouchableOpacity
-                key={item.id}
-                style={styles.gridCard}
-                activeOpacity={0.8}
-                onPress={() => router.push(`/novel/${item.slug}`)}
+                style={styles.exploreBtn}
+                onPress={() => router.push('/explore')}
               >
-                <RNImage source={{ uri: getCoverUrl(item.coverUrl) }} style={styles.gridCover} />
-                <ThemedText numberOfLines={1} style={styles.gridTitle}>{item.title}</ThemedText>
-                <ThemedText numberOfLines={1} type="small" style={styles.gridAuthor}>{item.author}</ThemedText>
+                <ThemedText style={styles.exploreBtnText}>Explore Novels</ThemedText>
               </TouchableOpacity>
-            ))}
-          </ThemedView>
+            </ThemedView>
+          ) : (
+            <ThemedView style={styles.novelsGrid}>
+              {bookmarks.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.gridCard}
+                  activeOpacity={0.8}
+                  onPress={() => router.push(`/novel/${item.slug}`)}
+                >
+                  <RNImage source={{ uri: getCoverUrl(item.coverUrl) }} style={styles.gridCover} />
+                  <ThemedText numberOfLines={1} style={styles.gridTitle}>{item.title}</ThemedText>
+                  <ThemedText numberOfLines={1} type="small" style={styles.gridAuthor}>{item.author}</ThemedText>
+                </TouchableOpacity>
+              ))}
+            </ThemedView>
+          )
+        ) : (
+          /* Downloads Tab */
+          downloads.length === 0 ? (
+            <ThemedView style={styles.emptyContainer}>
+              <ThemedText style={styles.emptyEmoji}>💾</ThemedText>
+              <ThemedText style={styles.emptyText} themeColor="textSecondary">
+                No downloaded novels.
+              </ThemedText>
+            </ThemedView>
+          ) : (
+            <ThemedView style={styles.downloadsList}>
+              {downloads.map((item) => (
+                <ThemedView key={item.slug} style={styles.downloadItem}>
+                  <RNImage source={{ uri: getCoverUrl(item.coverUrl) }} style={styles.downloadCover} />
+                  <ThemedView style={styles.downloadInfo}>
+                    <ThemedText style={styles.downloadTitle}>{item.title}</ThemedText>
+                    <ThemedText type="small" style={styles.downloadCount} themeColor="textSecondary">
+                      {item.chaptersCount} chapters downloaded
+                    </ThemedText>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.downloadChScroll}>
+                      {item.chapters.map((ch: any) => (
+                        <TouchableOpacity
+                          key={ch.sortIndex}
+                          style={styles.downloadChBtn}
+                          onPress={() => router.push(`/novel/${item.slug}/chapter/${ch.sortIndex}`)}
+                        >
+                          <ThemedText style={styles.downloadChBtnText}>Ch. {ch.sortIndex}</ThemedText>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </ThemedView>
+                </ThemedView>
+              ))}
+            </ThemedView>
+          )
         )}
       </ScrollView>
     </SafeAreaView>
@@ -189,5 +303,114 @@ const styles = StyleSheet.create({
   gridAuthor: {
     fontSize: 11,
     color: '#64748b',
+  },
+  recentsSection: {
+    paddingHorizontal: Spacing.four,
+    marginBottom: Spacing.five,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: Spacing.three,
+  },
+  recentsScroll: {
+    gap: Spacing.three,
+    flexDirection: 'row',
+  },
+  recentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 250,
+    padding: Spacing.two,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+    gap: Spacing.three,
+  },
+  recentCover: {
+    width: 45,
+    height: 65,
+    borderRadius: 4,
+    backgroundColor: '#e2e8f0',
+  },
+  recentMeta: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 2,
+  },
+  recentTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  recentChapter: {
+    fontSize: 11,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.four,
+    marginBottom: Spacing.four,
+    gap: Spacing.three,
+  },
+  tabBtn: {
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  tabBtnActive: {
+    backgroundColor: '#3c87f7',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  tabTextActive: {
+    color: '#fff',
+  },
+  downloadsList: {
+    paddingHorizontal: Spacing.four,
+    gap: Spacing.four,
+  },
+  downloadItem: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+    padding: Spacing.three,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  downloadCover: {
+    width: 60,
+    height: 80,
+    borderRadius: 6,
+    backgroundColor: '#e2e8f0',
+  },
+  downloadInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  downloadTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  downloadCount: {
+    marginBottom: Spacing.two,
+  },
+  downloadChScroll: {
+    flexDirection: 'row',
+  },
+  downloadChBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    borderRadius: 16,
+    marginRight: Spacing.two,
+  },
+  downloadChBtnText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });

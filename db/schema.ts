@@ -152,8 +152,8 @@ export const chapters = sqliteTable('chapters', {
   updatedAtIdx: index('chapter_updated_at_idx').on(table.updatedAt),
   createdAtIdx: index('chapter_created_at_idx').on(table.createdAt),
   // Composite index for the hot query: WHERE novel_id = ? AND status = ? ORDER BY sort_index ASC
-  // novel_id is the leading column so single-column index is redundant
-  novelStatusPublishedSortIdx: index('chapter_novel_status_published_sort_idx').on(table.novelId, table.status, table.publishedAt, table.sortIndex),
+  // sort_index ကို published_at ရှေ့ ထားရမည် — range condition (<=) နောက်မှ sort ကို index မသုံးနိုင်သောကြောင့်
+  novelStatusSortIdx: index('chapter_novel_status_sort_idx').on(table.novelId, table.status, table.sortIndex),
 }));
 
 // ==========================================
