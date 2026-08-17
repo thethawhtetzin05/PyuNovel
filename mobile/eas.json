@@ -1,18 +1,17 @@
 {
   "cli": {
     "version": ">= 12.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "remote",
+    "buildRootDir": "../"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "buildRootDir": "../"
+      "distribution": "internal"
     },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
-      "buildRootDir": "../",
       "android": {
         "buildType": "apk"
       },
@@ -22,7 +21,6 @@
     },
     "production": {
       "channel": "production",
-      "buildRootDir": "../",
       "android": {
         "buildType": "apk"
       }
