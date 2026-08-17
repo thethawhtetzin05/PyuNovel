@@ -1,0 +1,8 @@
+.next
+out
+.git
+.gemini
+*.log
+drizzle
+cron-worker
+writer-app

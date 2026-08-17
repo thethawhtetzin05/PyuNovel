@@ -70,8 +70,5 @@
     "vercel": "^47.0.0",
     "vitest": "^4.1.0",
     "wrangler": "^4.69.0"
-  },
-  "overrides": {
-    "drizzle-orm": "0.45.1"
   }
 }
