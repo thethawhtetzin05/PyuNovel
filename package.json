@@ -71,9 +71,7 @@
     "vitest": "^4.1.0",
     "wrangler": "^4.69.0"
   },
-  "pnpm": {
-    "overrides": {
-      "drizzle-orm": "0.45.1"
-    }
+  "overrides": {
+    "drizzle-orm": "0.45.1"
   }
 }
