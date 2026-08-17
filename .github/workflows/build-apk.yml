@@ -32,4 +32,6 @@ jobs:
 
       - name: 🏗️ Build Standalone APK
         working-directory: ./mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: npx eas-cli build --platform android --profile preview --non-interactive
