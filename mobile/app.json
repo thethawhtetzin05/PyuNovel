@@ -7,6 +7,19 @@
     "icon": "./assets/images/icon.png",
     "scheme": "pyunovel",
     "userInterfaceStyle": "automatic",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2d0be518-4017-4e70-8073-45c8ef329677",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "extra": {
+      "eas": {
+        "projectId": "2d0be518-4017-4e70-8073-45c8ef329677"
+      }
+    },
     "ios": {
       "icon": "./assets/expo.icon"
     },

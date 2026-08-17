@@ -8,6 +8,7 @@ import {
   TextInput,
   Platform,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -15,7 +16,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { API_URL } from './index';
+import { API_URL } from '@/constants/api';
+import { Ionicons } from '@expo/vector-icons';
 
 interface Novel {
   id: number;
@@ -141,11 +143,11 @@ export default function ExploreScreen() {
         <ThemedView style={styles.headerTop}>
           <ThemedText style={styles.headerTitle}>Explore</ThemedText>
           <TouchableOpacity
-            style={[styles.filterToggleBtn, (showFilters || hasActiveFilters) && styles.filterToggleBtnActive]}
-            onPress={() => setShowFilters(!showFilters)}
+            style={[styles.filterToggleBtn, hasActiveFilters && styles.filterToggleBtnActive]}
+            onPress={() => setShowFilters(true)}
             activeOpacity={0.7}
           >
-            <ThemedText style={[styles.filterToggleBtnText, (showFilters || hasActiveFilters) && styles.filterToggleBtnTextActive]}>
+            <ThemedText style={[styles.filterToggleBtnText, hasActiveFilters && styles.filterToggleBtnTextActive]}>
               🎛️ Filter {hasActiveFilters ? '•' : ''}
             </ThemedText>
           </TouchableOpacity>
@@ -169,13 +171,28 @@ export default function ExploreScreen() {
             </TouchableOpacity>
           )}
         </ThemedView>
+      </ThemedView>
 
-        {/* Expandable Filter Accordion */}
-        {showFilters && (
-          <ThemedView style={[styles.filterAccordion, { backgroundColor: theme.backgroundElement }]}>
+      {/* Filter Modal */}
+      <Modal
+        visible={showFilters}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowFilters(false)}
+      >
+        <ThemedView style={styles.modalOverlay}>
+          <ThemedView style={[styles.dropdownSheet, { backgroundColor: theme.background }]}>
+            
+            <ThemedView style={styles.bottomSheetHeader}>
+              <ThemedText style={styles.bottomSheetTitle}>Filters & Sort</ThemedText>
+              <TouchableOpacity onPress={() => setShowFilters(false)} style={styles.doneBtn}>
+                <ThemedText style={styles.doneBtnText}>Done</ThemedText>
+              </TouchableOpacity>
+            </ThemedView>
+
             {/* Status Filter */}
             <ThemedView style={styles.filterGroup}>
-              <ThemedText type="smallBold" style={styles.filterGroupTitle}>Status:</ThemedText>
+              <ThemedText type="smallBold" style={styles.filterGroupTitle}>Status</ThemedText>
               <ThemedView style={styles.chipRow}>
                 {STATUS_OPTIONS.map((st) => (
                   <TouchableOpacity
@@ -193,7 +210,7 @@ export default function ExploreScreen() {
 
             {/* Sort Filter */}
             <ThemedView style={styles.filterGroup}>
-              <ThemedText type="smallBold" style={styles.filterGroupTitle}>Sort By:</ThemedText>
+              <ThemedText type="smallBold" style={styles.filterGroupTitle}>Sort By</ThemedText>
               <ThemedView style={styles.chipRow}>
                 {SORT_OPTIONS.map((so) => (
                   <TouchableOpacity
@@ -211,7 +228,7 @@ export default function ExploreScreen() {
 
             {/* Tags Filter */}
             <ThemedView style={styles.filterGroup}>
-              <ThemedText type="smallBold" style={styles.filterGroupTitle}>Genre / Tag:</ThemedText>
+              <ThemedText type="smallBold" style={styles.filterGroupTitle}>Genre / Tag</ThemedText>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
                 <TouchableOpacity
                   style={[styles.chip, selectedTag === 'all' && styles.chipActive]}
@@ -238,12 +255,13 @@ export default function ExploreScreen() {
             {/* Reset Button */}
             {hasActiveFilters && (
               <TouchableOpacity style={styles.resetBtn} onPress={handleResetFilters}>
-                <ThemedText style={styles.resetBtnText}>Reset All Filters</ThemedText>
+                <ThemedText style={styles.resetBtnText}>Clear All Filters</ThemedText>
               </TouchableOpacity>
             )}
           </ThemedView>
-        )}
-      </ThemedView>
+          <TouchableOpacity style={styles.modalDismiss} activeOpacity={1} onPress={() => setShowFilters(false)} />
+        </ThemedView>
+      </Modal>
 
       {/* Main Novel List */}
       {loading ? (
@@ -258,7 +276,7 @@ export default function ExploreScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <ThemedView style={styles.emptyContainer}>
-              <ThemedText style={styles.emptyEmoji}>🔍</ThemedText>
+              <Ionicons name="search-outline" size={56} color={theme.textSecondary || "#94a3b8"} />
               <ThemedText style={styles.emptyText} themeColor="textSecondary">
                 {hasActiveFilters
                   ? 'No novels match your selected filters.'
@@ -372,6 +390,40 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: Spacing.two,
     gap: Spacing.three,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-start',
+  },
+  modalDismiss: {
+    flex: 1,
+  },
+  dropdownSheet: {
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    padding: Spacing.four,
+    paddingTop: Platform.OS === 'ios' ? 50 : Spacing.four,
+    gap: Spacing.four,
+  },
+  bottomSheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.two,
+  },
+  bottomSheetTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  doneBtn: {
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.two,
+  },
+  doneBtnText: {
+    fontSize: 16,
+    color: '#3c87f7',
+    fontWeight: 'bold',
   },
   filterGroup: {
     gap: Spacing.one,

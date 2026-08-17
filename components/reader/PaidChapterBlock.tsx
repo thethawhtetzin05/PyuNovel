@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-
 
 interface PaidChapterBlockProps {
     chapterId: number;
@@ -19,10 +19,13 @@ export default function PaidChapterBlock({
     slug,
     sortIndex
 }: PaidChapterBlockProps) {
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const handleUnlock = async () => {
+        if (loading) return;
+
         try {
             setLoading(true);
             setError(null);
@@ -45,6 +48,8 @@ export default function PaidChapterBlock({
 
             if (!res.success) {
                 setError(res.error || 'Failed to unlock');
+            } else {
+                router.refresh();
             }
         } catch (err: any) {
             setError(err.message || 'An error occurred');
@@ -74,9 +79,10 @@ export default function PaidChapterBlock({
                 disabled={loading}
                 className="w-full max-w-sm py-6 rounded-2xl text-lg font-bold flex flex-col gap-1 items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-                <span>Unlock Chapter</span>
+                <span>{loading ? 'Unlocking...' : 'Unlock Chapter'}</span>
                 <span className="text-sm opacity-80 font-normal">Costs {chapterPrice} 🪙</span>
             </Button>
         </div>
     );
 }
+

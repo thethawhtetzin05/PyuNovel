@@ -1,22 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import {
-  StyleSheet,
-  ActivityIndicator,
-  ScrollView,
-  Image as RNImage,
-  TouchableOpacity,
-  FlatList,
-  Modal,
-  TextInput,
-} from 'react-native';
+import { StyleSheet, ActivityIndicator, ScrollView, Image as RNImage, TouchableOpacity, FlatList, Modal, TextInput, View, useWindowDimensions } from 'react-native';
+import { TabView } from 'react-native-tab-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { API_URL } from '../index';
+import { API_URL } from '@/constants/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 
 interface NovelDetail {
   id: number;
@@ -41,6 +34,8 @@ interface Chapter {
   title: string;
   sortIndex: number;
   volumeId: number;
+  isPaid?: boolean | number;
+  isUnlocked?: boolean;
 }
 
 interface ReviewItem {
@@ -75,6 +70,7 @@ export default function NovelDetailScreen() {
   const [avgRating, setAvgRating] = useState<number>(0);
   const [totalReviews, setTotalReviews] = useState<number>(0);
   const [myReview, setMyReview] = useState<ReviewItem | null>(null);
+  const [lastRead, setLastRead] = useState<{ chapterIndex: number; chapterTitle: string } | null>(null);
 
   // Review Modal state
   const [showReviewModal, setShowReviewModal] = useState<boolean>(false);
@@ -82,20 +78,37 @@ export default function NovelDetailScreen() {
   const [reviewComment, setReviewComment] = useState<string>('');
   const [submittingReview, setSubmittingReview] = useState<boolean>(false);
   const [showAllReviews, setShowAllReviews] = useState<boolean>(false);
+  const layout = useWindowDimensions();
+  const [index, setIndex] = useState(0);
+  const [routes] = useState([
+    { key: 'synopsis', title: 'Synopsis' },
+    { key: 'chapters', title: 'Chapters' },
+    { key: 'reviews', title: 'Reviews' },
+  ]);
 
   // Load bookmark status on mount / slug change
   useEffect(() => {
     const checkBookmarkStatus = async () => {
       if (!slug) return;
       try {
-        const bookmarksStr = await AsyncStorage.getItem('pyunovel_bookmarks');
+        const [bookmarksStr, recentsStr] = await Promise.all([
+          AsyncStorage.getItem('pyunovel_bookmarks'),
+          AsyncStorage.getItem('pyunovel_recents')
+        ]);
         if (bookmarksStr) {
           const bookmarks = JSON.parse(bookmarksStr);
           const exists = bookmarks.some((b: any) => b.slug === slug);
           setIsBookmarked(exists);
         }
+        if (recentsStr) {
+          const recents = JSON.parse(recentsStr);
+          const found = recents.find((r: any) => r.novelSlug === slug);
+          if (found) {
+            setLastRead({ chapterIndex: found.chapterIndex, chapterTitle: found.chapterTitle });
+          }
+        }
       } catch (error) {
-        console.error('Error checking bookmark status:', error);
+        console.error('Error checking bookmark/recents status:', error);
       }
     };
     checkBookmarkStatus();
@@ -224,7 +237,14 @@ export default function NovelDetailScreen() {
     try {
       setLoadingMoreChapters(true);
       const offset = chapters.length;
-      const res = await fetch(`${API_URL}/api/public/novel/${slug}/chapters?offset=${offset}&limit=50`);
+      const savedToken = await AsyncStorage.getItem('pyunovel_session_token');
+      const headers: Record<string, string> = {};
+      if (savedToken) {
+        headers['Authorization'] = `Bearer ${savedToken}`;
+      }
+      const res = await fetch(`${API_URL}/api/public/novel/${slug}/chapters?offset=${offset}&limit=50`, {
+        headers
+      });
       const json = await res.json();
       if (json.success && json.chapters) {
         setChapters(prev => {
@@ -243,7 +263,14 @@ export default function NovelDetailScreen() {
   useEffect(() => {
     const fetchNovelDetails = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/public/novel/${slug}`);
+        const savedToken = await AsyncStorage.getItem('pyunovel_session_token');
+        const headers: Record<string, string> = {};
+        if (savedToken) {
+          headers['Authorization'] = `Bearer ${savedToken}`;
+        }
+        const response = await fetch(`${API_URL}/api/public/novel/${slug}`, {
+          headers
+        });
         const json = await response.json();
         if (json.success) {
           setNovel(json.novel);
@@ -371,19 +398,28 @@ export default function NovelDetailScreen() {
     );
   }
 
-  // Parse tags helper
-  const parsedTags: string[] = typeof novel.tags === 'string' 
-    ? JSON.parse(novel.tags) 
-    : Array.isArray(novel.tags) 
-      ? novel.tags 
-      : [];
+  // Safely parse tags helper (supporting JSON array or comma-separated string)
+  const parsedTags: string[] = (() => {
+    if (!novel.tags) return [];
+    if (Array.isArray(novel.tags)) return novel.tags;
+    if (typeof novel.tags === 'string') {
+      try {
+        const parsed = JSON.parse(novel.tags);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        // Not a JSON array, treat as comma-separated string
+      }
+      return novel.tags.split(',').map((t) => t.trim()).filter((t) => t.length > 0);
+    }
+    return [];
+  })();
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={{ flex: 1 }}>
         {/* Back navigation header */}
         <TouchableOpacity style={styles.navHeader} onPress={() => router.back()}>
-          <ThemedText style={styles.navBackText}>← Back</ThemedText>
+          <ThemedText style={styles.navBackText}>{"< Back"}</ThemedText>
         </TouchableOpacity>
 
         {/* Novel Hero Card */}
@@ -413,33 +449,60 @@ export default function NovelDetailScreen() {
               )}
             </ThemedView>
 
-            <TouchableOpacity 
-              style={[
-                styles.bookmarkBtn, 
-                isBookmarked ? styles.bookmarkedBtn : styles.unbookmarkedBtn
-              ]} 
-              onPress={toggleBookmark}
-              activeOpacity={0.7}
-            >
-              <ThemedText style={isBookmarked ? styles.bookmarkBtnTextActive : styles.bookmarkBtnText}>
-                {isBookmarked ? '❤️ In Library' : '🖤 Add to Library'}
-              </ThemedText>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.downloadAllBtn} 
-              onPress={downloadNovel}
-              disabled={downloading}
-              activeOpacity={0.7}
-            >
-              {downloading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <ThemedText style={styles.downloadAllBtnText}>
-                  {downloadProgress > 0 ? `💾 Downloading (${downloadProgress}%)` : '💾 Download Free Chapters'}
+            {/* Start / Continue Reading Button */}
+            {chapters.length > 0 && (
+              <TouchableOpacity
+                style={styles.readNowBtn}
+                onPress={() => {
+                  const targetIndex = lastRead?.chapterIndex || chapters[0]?.sortIndex || 1;
+                  router.push(`/novel/${slug}/chapter/${targetIndex}`);
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="play-circle" size={18} color="#ffffff" />
+                <ThemedText style={styles.readNowBtnText}>
+                  {lastRead ? `Continue Ch. ${lastRead.chapterIndex}` : 'Start Reading'}
                 </ThemedText>
-              )}
-            </TouchableOpacity>
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.actionButtonsRow}>
+              <TouchableOpacity 
+                style={[
+                  styles.actionBtn, 
+                  isBookmarked ? styles.actionBtnSelected : styles.actionBtnOutline
+                ]} 
+                onPress={toggleBookmark}
+                activeOpacity={0.8}
+              >
+                <MaterialCommunityIcons 
+                  name={isBookmarked ? "bookmark" : "bookmark-outline"} 
+                  size={18} 
+                  color={isBookmarked ? "#ffffff" : "#3c87f7"} 
+                />
+                <ThemedText style={isBookmarked ? styles.actionBtnTextSelected : styles.actionBtnTextOutline}>
+                  {isBookmarked ? 'In Library' : 'Library'}
+                </ThemedText>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.actionBtn, styles.actionBtnPrimary]} 
+                onPress={downloadNovel}
+                disabled={downloading}
+                activeOpacity={0.8}
+              >
+                {downloading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons name="cloud-download-outline" size={18} color="#ffffff" />
+                    <ThemedText style={styles.actionBtnTextPrimary}>
+                      {downloadProgress > 0 ? `${downloadProgress}%` : 'Download'}
+                    </ThemedText>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           </ThemedView>
         </ThemedView>
 
@@ -454,127 +517,178 @@ export default function NovelDetailScreen() {
           </ThemedView>
         )}
 
-        {/* Description / Synopsis */}
-        <ThemedView style={styles.synopsisContainer}>
-          <ThemedText type="smallBold" style={styles.sectionHeader}>Synopsis</ThemedText>
-          <ThemedText type="small" style={styles.descriptionText}>
-            {novel.description || 'No description available.'}
-          </ThemedText>
-        </ThemedView>
+        <TabView
+          navigationState={{ index, routes }}
+          renderScene={({ route }) => {
+            switch (route.key) {
+              case 'synopsis':
+                return (
+                  <ScrollView contentContainerStyle={styles.tabScrollContent}>
+                    <ThemedView style={styles.synopsisContainer}>
+                      <ThemedText type="small" style={styles.descriptionText}>
+                        {novel.description || 'No description available.'}
+                      </ThemedText>
+                    </ThemedView>
+                  </ScrollView>
+                );
+              case 'reviews':
+                return (
+                  <ScrollView contentContainerStyle={styles.tabScrollContent}>
+                    <ThemedView style={styles.reviewsContainer}>
+                      <ThemedView style={styles.reviewsHeaderRow}>
+                        <ThemedText type="smallBold" style={styles.sectionHeader}>
+                          User Reviews ({totalReviews})
+                        </ThemedText>
+                        <TouchableOpacity style={styles.writeReviewBtn} onPress={handleOpenReviewModal}>
+                          <ThemedText style={styles.writeReviewBtnText}>
+                            {myReview ? '✏️ Edit Review' : '⭐ Write Review'}
+                          </ThemedText>
+                        </TouchableOpacity>
+                      </ThemedView>
 
-        {/* User Reviews & Comments Section */}
-        <ThemedView style={styles.reviewsContainer}>
-          <ThemedView style={styles.reviewsHeaderRow}>
-            <ThemedText type="smallBold" style={styles.sectionHeader}>
-              User Reviews ({totalReviews})
-            </ThemedText>
-            <TouchableOpacity style={styles.writeReviewBtn} onPress={handleOpenReviewModal}>
-              <ThemedText style={styles.writeReviewBtnText}>
-                {myReview ? '✏️ Edit Review' : '⭐ Write Review'}
-              </ThemedText>
-            </TouchableOpacity>
-          </ThemedView>
+                      {reviews.length === 0 ? (
+                        <ThemedText type="small" style={styles.noChaptersText}>
+                          No reviews yet. Be the first to leave a review!
+                        </ThemedText>
+                      ) : (
+                        (showAllReviews ? reviews : reviews.slice(0, 3)).map((rev) => (
+                          <ThemedView key={rev.id} style={styles.reviewCard}>
+                            <ThemedView style={styles.reviewCardHeader}>
+                              <ThemedText style={styles.reviewerName}>{rev.user.name}</ThemedText>
+                              <ThemedText style={styles.starText}>{"⭐".repeat(rev.rating)}</ThemedText>
+                            </ThemedView>
+                            {rev.comment && (
+                              <ThemedText type="small" style={styles.reviewCommentText}>
+                                {rev.comment}
+                              </ThemedText>
+                            )}
+                            <ThemedText type="small" style={styles.reviewDate} themeColor="textSecondary">
+                              {new Date(rev.createdAt).toLocaleDateString()}
+                            </ThemedText>
+                          </ThemedView>
+                        ))
+                      )}
 
-          {reviews.length === 0 ? (
-            <ThemedText type="small" style={styles.noChaptersText}>
-              No reviews yet. Be the first to leave a review!
-            </ThemedText>
-          ) : (
-            (showAllReviews ? reviews : reviews.slice(0, 3)).map((rev) => (
-              <ThemedView key={rev.id} style={styles.reviewCard}>
-                <ThemedView style={styles.reviewCardHeader}>
-                  <ThemedText style={styles.reviewerName}>{rev.user.name}</ThemedText>
-                  <ThemedText style={styles.starText}>{"⭐".repeat(rev.rating)}</ThemedText>
-                </ThemedView>
-                {rev.comment && (
-                  <ThemedText type="small" style={styles.reviewCommentText}>
-                    {rev.comment}
-                  </ThemedText>
-                )}
-                <ThemedText type="small" style={styles.reviewDate} themeColor="textSecondary">
-                  {new Date(rev.createdAt).toLocaleDateString()}
-                </ThemedText>
-              </ThemedView>
-            ))
-          )}
+                      {reviews.length > 3 && !showAllReviews && (
+                        <TouchableOpacity style={styles.showMoreReviewsBtn} onPress={() => setShowAllReviews(true)}>
+                          <ThemedText style={styles.showMoreReviewsText}>
+                            Show all {totalReviews} reviews ↓
+                          </ThemedText>
+                        </TouchableOpacity>
+                      )}
+                    </ThemedView>
+                  </ScrollView>
+                );
+              case 'chapters':
+                return (
+                  <ScrollView contentContainerStyle={styles.tabScrollContent}>
+                    <ThemedView style={styles.chaptersContainer}>
+                      {chapters.length === 0 ? (
+                        <ThemedText type="small" style={styles.noChaptersText}>No chapters published yet.</ThemedText>
+                      ) : (
+                        volumes.map((vol) => {
+                          const volChapters = chapters.filter((ch) => ch.volumeId === vol.id);
+                          if (volChapters.length === 0) return null;
+                          return (
+                            <ThemedView key={vol.id} style={styles.volumeBlock}>
+                              <ThemedText style={styles.volumeTitle}>{vol.title}</ThemedText>
+                              {volChapters.map((ch) => (
+                                <TouchableOpacity
+                                  key={ch.id}
+                                  style={styles.chapterItem}
+                                  onPress={() => router.push(`/novel/${slug}/chapter/${ch.sortIndex}`)}
+                                  activeOpacity={0.7}
+                                >
+                                  <ThemedText style={styles.chapterItemText}>{ch.title}</ThemedText>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    {Boolean(ch.isPaid) && !ch.isUnlocked && (
+                                      <Ionicons name="lock-closed" size={14} color="#94a3b8" style={{ marginRight: 2 }} />
+                                    )}
+                                    <Ionicons name="chevron-forward" size={18} color="#3c87f7" />
+                                  </View>
+                                </TouchableOpacity>
+                              ))}
+                            </ThemedView>
+                          );
+                        })
+                      )}
 
-          {reviews.length > 3 && !showAllReviews && (
-            <TouchableOpacity style={styles.showMoreReviewsBtn} onPress={() => setShowAllReviews(true)}>
-              <ThemedText style={styles.showMoreReviewsText}>
-                Show all {totalReviews} reviews ↓
-              </ThemedText>
-            </TouchableOpacity>
-          )}
-        </ThemedView>
+                      {chapters.filter((ch) => !ch.volumeId).length > 0 && (
+                        <ThemedView style={styles.volumeBlock}>
+                          <ThemedText style={styles.volumeTitle}>Unassigned Chapters</ThemedText>
+                          {chapters.filter((ch) => !ch.volumeId).map((ch) => (
+                            <TouchableOpacity
+                              key={ch.id}
+                              style={styles.chapterItem}
+                              onPress={() => router.push(`/novel/${slug}/chapter/${ch.sortIndex}`)}
+                              activeOpacity={0.7}
+                            >
+                              <ThemedText style={styles.chapterItemText}>{ch.title}</ThemedText>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                {Boolean(ch.isPaid) && !ch.isUnlocked && (
+                                  <Ionicons name="lock-closed" size={14} color="#94a3b8" style={{ marginRight: 2 }} />
+                                )}
+                                <Ionicons name="chevron-forward" size={18} color="#3c87f7" />
+                              </View>
+                            </TouchableOpacity>
+                          ))}
+                        </ThemedView>
+                      )}
 
-        {/* Chapters Section */}
-        <ThemedView style={styles.chaptersContainer}>
-          <ThemedText type="smallBold" style={styles.sectionHeader}>Chapters</ThemedText>
-          
-          {chapters.length === 0 ? (
-            <ThemedText type="small" style={styles.noChaptersText}>No chapters published yet.</ThemedText>
-          ) : (
-            // Group chapters by volume
-            volumes.map((vol) => {
-              const volChapters = chapters.filter((ch) => ch.volumeId === vol.id);
-              if (volChapters.length === 0) return null;
-              
-              return (
-                <ThemedView key={vol.id} style={styles.volumeBlock}>
-                  <ThemedText style={styles.volumeTitle}>{vol.title}</ThemedText>
-                  {volChapters.map((ch) => (
-                    <TouchableOpacity
-                      key={ch.id}
-                      style={styles.chapterItem}
-                      onPress={() => router.push(`/novel/${slug}/chapter/${ch.sortIndex}`)}
-                      activeOpacity={0.7}
-                    >
-                      <ThemedText style={styles.chapterItemText}>{ch.title}</ThemedText>
-                      <ThemedText style={styles.chapterChevron}>→</ThemedText>
-                    </TouchableOpacity>
-                  ))}
-                </ThemedView>
-              );
-            })
-          )}
-
-          {/* Fallback for chapters without a volume */}
-          {chapters.filter((ch) => !ch.volumeId).length > 0 && (
-            <ThemedView style={styles.volumeBlock}>
-              <ThemedText style={styles.volumeTitle}>Unassigned Chapters</ThemedText>
-              {chapters.filter((ch) => !ch.volumeId).map((ch) => (
-                <TouchableOpacity
-                  key={ch.id}
-                  style={styles.chapterItem}
-                  onPress={() => router.push(`/novel/${slug}/chapter/${ch.sortIndex}`)}
-                  activeOpacity={0.7}
-                >
-                  <ThemedText style={styles.chapterItemText}>{ch.title}</ThemedText>
-                  <ThemedText style={styles.chapterChevron}>→</ThemedText>
-                </TouchableOpacity>
-              ))}
+                      {chapters.length < totalChapters && (
+                        <TouchableOpacity
+                          style={styles.loadMoreBtn}
+                          onPress={handleLoadMoreChapters}
+                          disabled={loadingMoreChapters}
+                          activeOpacity={0.7}
+                        >
+                          {loadingMoreChapters ? (
+                            <ActivityIndicator size="small" color="#3c87f7" />
+                          ) : (
+                            <ThemedText style={styles.loadMoreBtnText}>
+                              Load More Chapters ({chapters.length} of {totalChapters})
+                            </ThemedText>
+                          )}
+                        </TouchableOpacity>
+                      )}
+                    </ThemedView>
+                  </ScrollView>
+                );
+              default:
+                return null;
+            }
+          }}
+          renderTabBar={(props) => (
+            <ThemedView style={styles.detailTabsContainer}>
+              {props.navigationState.routes.map((route: any, i: number) => {
+                const isActive = index === i;
+                const tab = route.key;
+                return (
+                  <TouchableOpacity
+                    key={tab}
+                    style={[styles.detailTabBtn, isActive && styles.detailTabBtnActive]}
+                    onPress={() => setIndex(i)}
+                    activeOpacity={0.8}
+                  >
+                    <ThemedText style={[styles.detailTabText, isActive && styles.detailTabTextActive]}>
+                      {route.title}
+                    </ThemedText>
+                    {tab !== 'synopsis' && (
+                      <ThemedView style={[styles.tabBadge, isActive && styles.tabBadgeActive]}>
+                        <ThemedText style={[styles.tabBadgeText, isActive && styles.tabBadgeTextActive]}>
+                          {tab === 'chapters' ? totalChapters : totalReviews}
+                        </ThemedText>
+                      </ThemedView>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </ThemedView>
           )}
-
-          {/* Load More Button */}
-          {chapters.length < totalChapters && (
-            <TouchableOpacity
-              style={styles.loadMoreBtn}
-              onPress={handleLoadMoreChapters}
-              disabled={loadingMoreChapters}
-              activeOpacity={0.7}
-            >
-              {loadingMoreChapters ? (
-                <ActivityIndicator size="small" color="#3c87f7" />
-              ) : (
-                <ThemedText style={styles.loadMoreBtnText}>
-                  Load More Chapters ({chapters.length} of {totalChapters})
-                </ThemedText>
-              )}
-            </TouchableOpacity>
-          )}
-        </ThemedView>
-      </ScrollView>
+          onIndexChange={setIndex}
+          initialLayout={{ width: layout.width }}
+        />
+      </View>
 
       {/* Write / Edit Review Modal */}
       <Modal
@@ -643,6 +757,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    paddingBottom: Spacing.five,
+  },
+  tabScrollContent: {
+    flexGrow: 1,
     paddingBottom: Spacing.five,
   },
   loadingContainer: {
@@ -743,6 +861,58 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748b',
   },
+  detailTabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 20,
+    padding: 4,
+    marginHorizontal: Spacing.four,
+    marginTop: Spacing.five,
+    alignItems: 'center',
+    gap: 4,
+  },
+  detailTabBtn: {
+    flex: 1,
+    paddingVertical: Spacing.two,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  detailTabBtnActive: {
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  detailTabText: {
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: '600',
+  },
+  detailTabTextActive: {
+    color: '#3c87f7',
+  },
+  tabBadge: {
+    backgroundColor: '#e2e8f0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  tabBadgeActive: {
+    backgroundColor: '#eff6ff',
+  },
+  tabBadgeText: {
+    fontSize: 10,
+    color: '#64748b',
+    fontWeight: 'bold',
+  },
+  tabBadgeTextActive: {
+    color: '#3c87f7',
+  },
   synopsisContainer: {
     marginTop: Spacing.four,
     paddingHorizontal: Spacing.four,
@@ -809,45 +979,87 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  bookmarkBtn: {
-    marginTop: Spacing.two,
-    paddingVertical: Spacing.one + 2,
-    paddingHorizontal: Spacing.three,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-  },
-  unbookmarkedBtn: {
-    backgroundColor: 'transparent',
-    borderColor: '#3c87f7',
-  },
-  bookmarkedBtn: {
+  readNowBtn: {
     backgroundColor: '#3c87f7',
-    borderColor: '#3c87f7',
-  },
-  bookmarkBtnText: {
-    color: '#3c87f7',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  bookmarkBtnTextActive: {
-    color: '#e11d48', // rose-600
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  downloadAllBtn: {
-    backgroundColor: '#10b981', // emerald green
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.four,
-    borderRadius: 8,
-    marginTop: Spacing.two,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: Spacing.two,
+    shadowColor: '#3c87f7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  downloadAllBtnText: {
+  readNowBtnText: {
     color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    marginTop: Spacing.two,
+    flexWrap: 'wrap',
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 6,
+  },
+  actionBtnOutline: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#3c87f7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  actionBtnSelected: {
+    backgroundColor: '#3c87f7',
+    borderWidth: 1,
+    borderColor: '#3c87f7',
+    shadowColor: '#3c87f7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionBtnPrimary: {
+    backgroundColor: '#3c87f7',
+    borderWidth: 1,
+    borderColor: '#3c87f7',
+    shadowColor: '#3c87f7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionBtnTextOutline: {
+    color: '#3c87f7',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  actionBtnTextSelected: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  actionBtnTextPrimary: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '600',
   },
   ratingRow: {
     flexDirection: 'row',

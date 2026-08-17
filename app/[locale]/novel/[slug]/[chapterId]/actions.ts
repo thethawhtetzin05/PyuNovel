@@ -34,6 +34,7 @@ export async function deleteChapterAction(chapterId: string, novelSlug: string) 
 
 import { eq, sql } from 'drizzle-orm';
 import { chapterUnlocks, coinTransactions, user } from '@/db/schema';
+import { checkChapterAccess } from '@/lib/resources/chapters/unlocks';
 
 export async function unlockChapterAction(
   chapterId: number,
@@ -52,6 +53,12 @@ export async function unlockChapterAction(
   }
 
   const userId = session.user.id;
+
+  // Check if chapter is already unlocked
+  const hasAccess = await checkChapterAccess(db, userId, novelId, chapterId);
+  if (hasAccess) {
+    return { success: true };
+  }
 
   // Need to fetch latest user info to get current coin balance
   const currentUser = await db.query.user.findFirst({

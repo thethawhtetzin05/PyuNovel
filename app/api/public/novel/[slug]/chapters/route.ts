@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerContext } from "@/lib/server-context";
 import { getNovelBySlug } from "@/lib/resources/novels/queries";
 import { getPaginatedChaptersByNovelId, getChaptersCountByNovelId } from "@/lib/resources/chapters/queries";
+import { chapterUnlocks, session as sessionTable } from "@/db/schema";
+import { eq, and, inArray } from "drizzle-orm";
 
 export const runtime = 'edge';
 
@@ -45,9 +47,40 @@ export async function GET(
             getChaptersCountByNovelId(db, novel.id, volumeId),
         ]);
 
+        // Check if user is logged in to check unlocked chapters
+        let userId: string | undefined = undefined;
+        const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            const bearerToken = authHeader.substring(7).trim();
+            const foundSession = await db.query.session.findFirst({
+                where: eq(sessionTable.token, bearerToken)
+            });
+            if (foundSession?.userId) {
+                userId = foundSession.userId;
+            }
+        }
+
+        let unlockedSet = new Set<number>();
+        if (userId && chapters.length > 0) {
+            const chapterIds = chapters.map(ch => ch.id);
+            const unlockedList = await db.select({ chapterId: chapterUnlocks.chapterId })
+                .from(chapterUnlocks)
+                .where(and(
+                    eq(chapterUnlocks.userId, userId),
+                    inArray(chapterUnlocks.chapterId, chapterIds)
+                ))
+                .all();
+            unlockedSet = new Set(unlockedList.map(u => u.chapterId));
+        }
+
+        const chaptersWithUnlockStatus = chapters.map(ch => ({
+            ...ch,
+            isUnlocked: unlockedSet.has(ch.id)
+        }));
+
         return NextResponse.json({
             success: true,
-            chapters,
+            chapters: chaptersWithUnlockStatus,
             total,
             page,
             limit,

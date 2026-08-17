@@ -14,7 +14,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { API_URL } from './index';
+import { API_URL } from '@/constants/api';
+import { Ionicons } from '@expo/vector-icons';
 
 interface BookmarkedNovel {
   id: number;
@@ -76,6 +77,33 @@ export default function LibraryScreen() {
       console.error('Error fetching library data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const deleteDownload = async (slug: string, chapters: any[]) => {
+    try {
+      for (const ch of chapters || []) {
+        await AsyncStorage.removeItem(`pyunovel_download_chapter_${slug}_${ch.sortIndex}`);
+      }
+      const updated = downloads.filter((d) => d.slug !== slug);
+      await AsyncStorage.setItem('pyunovel_download_catalog', JSON.stringify(updated));
+      setDownloads(updated);
+    } catch (e) {
+      console.error('Error deleting download:', e);
+    }
+  };
+
+  const clearAllDownloads = async () => {
+    try {
+      for (const d of downloads) {
+        for (const ch of d.chapters || []) {
+          await AsyncStorage.removeItem(`pyunovel_download_chapter_${d.slug}_${ch.sortIndex}`);
+        }
+      }
+      await AsyncStorage.removeItem('pyunovel_download_catalog');
+      setDownloads([]);
+    } catch (e) {
+      console.error('Error clearing all downloads:', e);
     }
   };
 
@@ -162,7 +190,7 @@ export default function LibraryScreen() {
         {activeTab === 'bookmarks' ? (
           bookmarks.length === 0 ? (
             <ThemedView style={styles.emptyContainer}>
-              <ThemedText style={styles.emptyEmoji}>📚</ThemedText>
+              <Ionicons name="book-outline" size={56} color={theme.textSecondary || "#94a3b8"} />
               <ThemedText style={styles.emptyText} themeColor="textSecondary">
                 No bookmarks yet.
               </ThemedText>
@@ -193,21 +221,42 @@ export default function LibraryScreen() {
           /* Downloads Tab */
           downloads.length === 0 ? (
             <ThemedView style={styles.emptyContainer}>
-              <ThemedText style={styles.emptyEmoji}>💾</ThemedText>
+              <Ionicons name="cloud-download-outline" size={56} color={theme.textSecondary || "#94a3b8"} />
               <ThemedText style={styles.emptyText} themeColor="textSecondary">
                 No downloaded novels.
               </ThemedText>
             </ThemedView>
           ) : (
             <ThemedView style={styles.downloadsList}>
+              <ThemedView style={styles.downloadsHeaderRow}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {downloads.length} {downloads.length === 1 ? 'novel' : 'novels'} saved offline
+                </ThemedText>
+                <TouchableOpacity onPress={clearAllDownloads} activeOpacity={0.7}>
+                  <ThemedText type="small" style={{ color: '#ef4444', fontWeight: 'bold' }}>
+                    Clear All
+                  </ThemedText>
+                </TouchableOpacity>
+              </ThemedView>
+
               {downloads.map((item) => (
                 <ThemedView key={item.slug} style={styles.downloadItem}>
                   <RNImage source={{ uri: getCoverUrl(item.coverUrl) }} style={styles.downloadCover} />
                   <ThemedView style={styles.downloadInfo}>
-                    <ThemedText style={styles.downloadTitle}>{item.title}</ThemedText>
+                    <ThemedView style={styles.downloadTitleRow}>
+                      <ThemedText style={styles.downloadTitle} numberOfLines={1}>{item.title}</ThemedText>
+                      <TouchableOpacity 
+                        onPress={() => deleteDownload(item.slug, item.chapters)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                      </TouchableOpacity>
+                    </ThemedView>
+                    
                     <ThemedText type="small" style={styles.downloadCount} themeColor="textSecondary">
-                      {item.chaptersCount} chapters downloaded
+                      {item.chaptersCount} chapters available
                     </ThemedText>
+
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.downloadChScroll}>
                       {item.chapters.map((ch: any) => (
                         <TouchableOpacity
@@ -391,10 +440,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  downloadsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.one,
+  },
+  downloadTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
   downloadTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
-    marginBottom: 2,
+    flex: 1,
   },
   downloadCount: {
     marginBottom: Spacing.two,

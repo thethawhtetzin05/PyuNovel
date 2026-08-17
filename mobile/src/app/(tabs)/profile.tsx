@@ -15,7 +15,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { API_URL } from './index';
+import { API_URL } from '@/constants/api';
 
 interface UserProfile {
   id: string;

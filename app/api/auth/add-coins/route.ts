@@ -1,20 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerContext } from "@/lib/server-context";
 import { eq, sql } from "drizzle-orm";
-import { user, coinTransactions } from "@/db/schema";
+import { user, session as sessionTable, coinTransactions } from "@/db/schema";
 
 export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
     try {
         const { db, auth } = getServerContext({ withAuth: true });
-        const session = await auth.api.getSession({ headers: request.headers });
+        let session = await auth?.api?.getSession({ headers: request.headers });
 
-        if (!session?.user) {
+        // Fallback for mobile apps passing Bearer token directly
+        let userId = session?.user?.id;
+        if (!userId) {
+            const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
+            if (authHeader && authHeader.startsWith("Bearer ")) {
+                const bearerToken = authHeader.substring(7).trim();
+                const foundSession = await db.query.session.findFirst({
+                    where: eq(sessionTable.token, bearerToken)
+                });
+                if (foundSession?.userId) {
+                    userId = foundSession.userId;
+                }
+            }
+        }
+
+        if (!userId) {
             return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
         }
 
-        const userId = session.user.id;
         const topupAmount = 500;
 
         // Perform coin update

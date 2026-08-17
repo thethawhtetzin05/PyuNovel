@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerContext } from "@/lib/server-context";
 import { eq, sql } from "drizzle-orm";
-import { chapterUnlocks, coinTransactions, user } from "@/db/schema";
+import { chapterUnlocks, coinTransactions, user, session as sessionTable } from "@/db/schema";
+import { checkChapterAccess } from "@/lib/resources/chapters/unlocks";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -18,12 +19,24 @@ const unlockSchema = z.object({
 export async function POST(request: NextRequest) {
     try {
         const { db, auth } = getServerContext();
-        if (!auth) {
-            return NextResponse.json({ success: false, error: "Auth system is not available" }, { status: 500 });
-        }
-        const session = await auth.api.getSession({ headers: request.headers });
+        let session = auth ? await auth.api.getSession({ headers: request.headers }) : null;
 
-        if (!session?.user) {
+        // Fallback for mobile apps passing Bearer token directly
+        let userId = session?.user?.id;
+        if (!userId) {
+            const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
+            if (authHeader && authHeader.startsWith("Bearer ")) {
+                const bearerToken = authHeader.substring(7).trim();
+                const foundSession = await db.query.session.findFirst({
+                    where: eq(sessionTable.token, bearerToken)
+                });
+                if (foundSession?.userId) {
+                    userId = foundSession.userId;
+                }
+            }
+        }
+
+        if (!userId) {
             return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
         }
 
@@ -34,7 +47,11 @@ export async function POST(request: NextRequest) {
         }
         const { chapterId, novelId, chapterPrice, slug, sortIndex } = validation.data;
 
-        const userId = session.user.id;
+        // Check if chapter is already unlocked or accessible
+        const hasAccess = await checkChapterAccess(db, userId, novelId, chapterId);
+        if (hasAccess) {
+            return NextResponse.json({ success: true, message: "Already unlocked" });
+        }
 
         // Need to fetch latest user info to get current coin balance
         const currentUser = await db.query.user.findFirst({

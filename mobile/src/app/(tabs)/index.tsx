@@ -10,29 +10,12 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Constants from 'expo-constants';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useRouter } from 'expo-router';
-
-declare const __DEV__: boolean;
-
-// Robust Dev IP detection or fallback to production URL
-const getApiUrl = () => {
-  if (__DEV__) {
-    const hostUri = Constants.expoConfig?.hostUri;
-    if (hostUri) {
-      const ip = hostUri.split(':').shift();
-      return `http://${ip}:3000`;
-    }
-    return 'http://10.0.2.2:3000'; // fallback for android emulator
-  }
-  return 'https://pyunovel.pages.dev';
-};
-
-export const API_URL = getApiUrl();
+import { API_URL } from '@/constants/api';
 
 interface Novel {
   id: number;
@@ -214,7 +197,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.four,
-    gap: 2,
   },
   logo: {
     width: 32,
@@ -224,6 +206,7 @@ const styles = StyleSheet.create({
   headerTextContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: -4, // pull text closer to the logo to counter any built-in padding
   },
   headerBrand: {
     fontSize: 22,

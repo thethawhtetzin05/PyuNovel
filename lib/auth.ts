@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { bearer } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { D1Database } from "@cloudflare/workers-types";
 import { drizzle } from "drizzle-orm/d1";
@@ -37,10 +38,7 @@ export const createAuth = (dbBinding: D1Database) => {
       }
     },
     plugins: [
-      {
-        id: "bearer",
-        bearer: {}
-      }
+      bearer()
     ]
   });
 

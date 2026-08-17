@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 0.0.0.0",
     "build": "next build",
     "build:app": "NEXT_PUBLIC_IS_APP=true next build",
     "pages:build": "npx @cloudflare/next-on-pages --disable-chunks-dedup",
