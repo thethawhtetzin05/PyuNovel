@@ -6,11 +6,13 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "buildRootDir": "../"
     },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
+      "buildRootDir": "../",
       "android": {
         "buildType": "apk"
       },
@@ -20,6 +22,7 @@
     },
     "production": {
       "channel": "production",
+      "buildRootDir": "../",
       "android": {
         "buildType": "apk"
       }
