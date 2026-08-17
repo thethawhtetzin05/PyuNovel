@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Menu, X, Home, Users, Coins, Megaphone, LogOut, Book } from "lucide-react";
+import { Menu, X, Home, Users, Coins, Megaphone, LogOut, Book, PenTool } from "lucide-react";
 import { Link } from "@/i18n/routing";
 
 export default function AdminMobileMenu({ 
@@ -97,6 +97,17 @@ export default function AdminMobileMenu({
                             <Users size={20} />
                         </div>
                         <span className="font-semibold">User Stats</span>
+                    </Link>
+
+                    <Link 
+                        href="/admin/authors" 
+                        onClick={() => setIsOpen(false)} 
+                        className="flex items-center gap-4 px-4 py-4 text-[var(--text-muted)] hover:bg-[var(--surface-2)] rounded-2xl transition-all active:scale-[0.98]"
+                    >
+                        <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center">
+                            <PenTool size={20} />
+                        </div>
+                        <span className="font-semibold">Authors</span>
                     </Link>
 
                     <Link 

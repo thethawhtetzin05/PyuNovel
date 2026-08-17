@@ -1,6 +1,6 @@
 import { DrizzleD1Database } from 'drizzle-orm/d1';
-import { user, session } from '@/db/schema';
-import { sql, desc, eq, gt, or } from 'drizzle-orm';
+import { user, session, novels } from '@/db/schema';
+import { sql, desc, eq, gt, or, inArray, isNull } from 'drizzle-orm';
 
 export interface UserStats {
     totalUsers: number;
@@ -8,6 +8,187 @@ export interface UserStats {
     weekly: number;
     monthly: number;
     peakHours: { hour: string; count: number }[];
+}
+
+export interface AuthorNovel {
+    id: number;
+    title: string;
+    englishTitle: string;
+    slug: string;
+    coverUrl: string | null;
+    status: string | null;
+    views: number;
+    chapterPrice: number | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+}
+
+export interface AuthorListItem {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+    role: string;
+    coins: number;
+    telegramId: string | null;
+    telegramUsername: string | null;
+    telegramName: string | null;
+    exp: number;
+    level: number;
+    createdAt: Date;
+    novelsCount: number;
+    ongoingNovelsCount: number;
+    completedNovelsCount: number;
+    totalViews: number;
+    novels: AuthorNovel[];
+}
+
+export interface AuthorKPIMetrics {
+    totalAuthors: number;
+    activeAuthors: number;
+    totalNovels: number;
+    totalViews: number;
+    telegramLinkedCount: number;
+}
+
+export async function getAuthorsList(db: DrizzleD1Database<any>): Promise<{
+    authors: AuthorListItem[];
+    metrics: AuthorKPIMetrics;
+}> {
+    // 1. Fetch all non-deleted novels to associate with owners
+    const allNovels = await db.select({
+        id: novels.id,
+        ownerId: novels.ownerId,
+        title: novels.title,
+        englishTitle: novels.englishTitle,
+        slug: novels.slug,
+        coverUrl: novels.coverUrl,
+        status: novels.status,
+        views: novels.views,
+        chapterPrice: novels.chapterPrice,
+        createdAt: novels.createdAt,
+        updatedAt: novels.updatedAt,
+    }).from(novels).where(isNull(novels.deletedAt)).orderBy(desc(novels.views));
+
+    const novelOwnerIds = Array.from(new Set(allNovels.map(n => n.ownerId)));
+
+    // 2. Fetch users who are writers OR who own at least one novel
+    let authorsQuery;
+    if (novelOwnerIds.length > 0) {
+        authorsQuery = db.select({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            role: user.role,
+            coins: user.coins,
+            telegramId: user.telegramId,
+            telegramUsername: user.telegramUsername,
+            telegramName: user.telegramName,
+            exp: user.exp,
+            level: user.level,
+            createdAt: user.createdAt,
+        })
+        .from(user)
+        .where(
+            or(
+                eq(user.role, 'writer'),
+                inArray(user.id, novelOwnerIds)
+            )
+        );
+    } else {
+        authorsQuery = db.select({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            role: user.role,
+            coins: user.coins,
+            telegramId: user.telegramId,
+            telegramUsername: user.telegramUsername,
+            telegramName: user.telegramName,
+            exp: user.exp,
+            level: user.level,
+            createdAt: user.createdAt,
+        })
+        .from(user)
+        .where(eq(user.role, 'writer'));
+    }
+
+    const rawAuthors = await authorsQuery;
+
+    // Group novels by ownerId
+    const novelsByOwner = new Map<string, AuthorNovel[]>();
+    for (const novel of allNovels) {
+        if (!novelsByOwner.has(novel.ownerId)) {
+            novelsByOwner.set(novel.ownerId, []);
+        }
+        novelsByOwner.get(novel.ownerId)!.push({
+            id: novel.id,
+            title: novel.title,
+            englishTitle: novel.englishTitle,
+            slug: novel.slug,
+            coverUrl: novel.coverUrl,
+            status: novel.status,
+            views: novel.views || 0,
+            chapterPrice: novel.chapterPrice,
+            createdAt: novel.createdAt,
+            updatedAt: novel.updatedAt,
+        });
+    }
+
+    // 3. Construct Author items with aggregated metrics
+    const authors: AuthorListItem[] = rawAuthors.map(author => {
+        const authorNovels = novelsByOwner.get(author.id) || [];
+        const totalViews = authorNovels.reduce((sum, n) => sum + (n.views || 0), 0);
+        const ongoingNovelsCount = authorNovels.filter(n => n.status === 'ongoing').length;
+        const completedNovelsCount = authorNovels.filter(n => n.status === 'completed').length;
+
+        return {
+            id: author.id,
+            name: author.name,
+            email: author.email,
+            image: author.image,
+            role: author.role,
+            coins: author.coins || 0,
+            telegramId: author.telegramId,
+            telegramUsername: author.telegramUsername,
+            telegramName: author.telegramName,
+            exp: author.exp || 0,
+            level: author.level || 0,
+            createdAt: author.createdAt,
+            novelsCount: authorNovels.length,
+            ongoingNovelsCount,
+            completedNovelsCount,
+            totalViews,
+            novels: authorNovels,
+        };
+    });
+
+    // Sort by default: most views first, then most novels, then newest
+    authors.sort((a, b) => {
+        if (b.totalViews !== a.totalViews) return b.totalViews - a.totalViews;
+        if (b.novelsCount !== a.novelsCount) return b.novelsCount - a.novelsCount;
+        return (new Date(b.createdAt).getTime()) - (new Date(a.createdAt).getTime());
+    });
+
+    // 4. Calculate KPI metrics
+    const totalAuthors = authors.length;
+    const activeAuthors = authors.filter(a => a.novelsCount > 0).length;
+    const totalNovels = allNovels.length;
+    const totalViews = allNovels.reduce((sum, n) => sum + (n.views || 0), 0);
+    const telegramLinkedCount = authors.filter(a => Boolean(a.telegramId || a.telegramUsername)).length;
+
+    return {
+        authors,
+        metrics: {
+            totalAuthors,
+            activeAuthors,
+            totalNovels,
+            totalViews,
+            telegramLinkedCount,
+        }
+    };
 }
 
 export async function getUserStatistics(db: DrizzleD1Database<any>): Promise<UserStats> {
@@ -58,10 +239,6 @@ export async function getUserStatistics(db: DrizzleD1Database<any>): Promise<Use
     const monthly = monthlyResult[0]?.count || 0;
 
     // 5. Peak Active Hours (When sessions are created most frequently across all time)
-    // To do this, we format the createdAt timestamp to extract the hour component.
-    // Since timestamp is integer (milliseconds since epoch), it's more complex if it's stored as an int.
-    // Drizzle with Cloudflare D1 usually stores mode "timestamp" as epoch milliseconds (integer).
-    // SQLite's strftime('%H', datetime(created_at / 1000, 'unixepoch')) extracts the hour.
     const peakHoursResult = await db.select({
         hour: sql<string>`strftime('%H', datetime(${session.createdAt} / 1000, 'unixepoch'))`,
         count: sql<number>`count(*)`

@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { Home, Megaphone, Users, LogOut, Coins, Book } from 'lucide-react';
+import { Home, Megaphone, Users, LogOut, Coins, Book, PenTool } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { logoutAdmin } from '../actions';
 import AdminMobileMenu from '@/components/admin/AdminMobileMenu';
@@ -43,6 +43,10 @@ export default async function AdminLayout({
                         <Link href="/admin/users" className="flex items-center gap-3 px-4 py-3 text-[var(--text-muted)] hover:bg-[var(--surface-2)] rounded-xl transition">
                             <Users size={18} />
                             <span className="font-medium">User Stats</span>
+                        </Link>
+                        <Link href="/admin/authors" className="flex items-center gap-3 px-4 py-3 text-[var(--text-muted)] hover:bg-[var(--surface-2)] rounded-xl transition">
+                            <PenTool size={18} />
+                            <span className="font-medium">Authors</span>
                         </Link>
                         <Link href="/admin/novels" className="flex items-center gap-3 px-4 py-3 text-[var(--text-muted)] hover:bg-[var(--surface-2)] rounded-xl transition">
                             <Book size={18} />
