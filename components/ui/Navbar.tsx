@@ -118,6 +118,7 @@ export default function Navbar() {
                   { href: "/collection", label: t('collection') },
                   { href: "/writer", label: t('create') },
                   { href: "/documentation", label: t('documentation') },
+                  { href: "/download", label: t('download') },
                 ].map((link) => (
                   <Link
                     key={link.href}
