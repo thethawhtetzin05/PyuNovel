@@ -70,5 +70,16 @@
     "vercel": "^47.0.0",
     "vitest": "^4.1.0",
     "wrangler": "^4.69.0"
+  },
+  "pnpm": {
+    "ignoredBuiltDependencies": [
+      "@parcel/watcher",
+      "@sentry/cli",
+      "@swc/core",
+      "esbuild",
+      "sharp",
+      "unrs-resolver",
+      "workerd"
+    ]
   }
 }
