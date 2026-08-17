@@ -1,9 +1,7 @@
-name: Build Android APK
+name: Build Android APK (Legacy Capacitor)
 
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:   # Manual trigger ကလည်း run လုပ်နိုင်မယ်
+  workflow_dispatch:   # Manual trigger only
 
 jobs:
   build-apk:
