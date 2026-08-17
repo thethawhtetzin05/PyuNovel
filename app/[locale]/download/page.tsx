@@ -16,6 +16,8 @@ import {
   Bookmark
 } from 'lucide-react';
 
+export const runtime = 'edge';
+
 export const metadata = {
   title: 'Download PyuNovel App | Official Android APK',
   description: 'Download the official PyuNovel Mobile App for Android. Read web novels offline with custom reader themes, font settings, and auto updates.',
