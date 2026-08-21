@@ -12,7 +12,6 @@ import LatestChapters from '@/components/home/LatestChapters';
 import ContinueReadingBanner from '@/components/home/ContinueReading';
 import { NovelCard } from '@/components/novel/NovelCard';
 import { getTranslations } from 'next-intl/server';
-import AdUnit from '@/components/ads/AdUnit';
 
 export const runtime = 'edge';
 export const revalidate = 60; // Cache at Cloudflare edge for 60s — huge speed boost
@@ -135,9 +134,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
             </div>
           </section>
         )}
-
-        {/* NATIVE AD INTERSTITIAL */}
-        <AdUnit type="native" />
 
         {/* ─── LATEST CHAPTERS ───────────────── */}
         {latestChapterList.length > 0 && (
